@@ -1,0 +1,444 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum SplitType {
+  EQUAL
+  EXACT
+  PERCENTAGE
+}
+
+enum ExpenseStatus {
+  ACTIVE
+  PENDING_APPROVAL
+  DELETED
+}
+
+enum SettlementStatus {
+  PENDING_CONFIRMATION
+  CONFIRMED
+  DISPUTED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  RAZORPAY
+  STRIPE
+  OTHER
+}
+
+enum GroupRole {
+  OWNER
+  MEMBER
+}
+
+enum GroupStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum BalanceMode {
+  DIRECT
+  SIMPLIFIED
+}
+
+enum RecurringFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum ProposalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum VoteChoice {
+  APPROVE
+  REJECT
+}
+
+enum AuditEntityType {
+  EXPENSE
+  SETTLEMENT
+  MEMBER
+  GROUP
+  CATEGORY
+  RECURRING
+}
+
+enum AuditAction {
+  CREATED
+  UPDATED
+  DELETED
+  APPROVED
+  REJECTED
+  CONFIRMED
+  DISPUTED
+}
+
+enum NotificationEventType {
+  EXPENSE_ADDED
+  EXPENSE_EDITED
+  EXPENSE_EDIT_PROPOSAL
+  SETTLEMENT_PENDING_CONFIRMATION
+  SETTLEMENT_CONFIRMED
+  SETTLEMENT_DISPUTED
+  RECURRING_EXPENSE_ADDED
+  GROUP_INVITE_RECEIVED
+  MEMBERSHIP_CHANGED
+}
+
+enum GhostMemberStatus {
+  ACTIVE
+  MERGED
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(uuid())
+  email       String?  @unique
+  phone       String?  @unique
+  displayName String
+  avatarUrl   String?
+  locale      String   @default("en-IN")
+  currency    String   @default("INR")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownedGroups           Group[]              @relation("GroupOwner")
+  groupMembers          GroupMember[]
+  expensesCreated       Expense[]            @relation("ExpenseCreator")
+  expensePayers         ExpensePayer[]
+  expenseParticipants   ExpenseParticipant[]
+  expenseProposals      ExpenseProposal[]    @relation("ProposalAuthor")
+  proposalVotes         ProposalVote[]
+  recurringTemplates    RecurringTemplate[]  @relation("RecurringCreator")
+  settlementsAsPayer    Settlement[]         @relation("SettlementPayer")
+  settlementsAsReceiver Settlement[]         @relation("SettlementReceiver")
+  auditLogs             AuditLog[]           @relation("AuditActor")
+  notifications         Notification[]
+  notificationPrefs     NotificationPref[]
+  pushSubscriptions     PushSubscription[]
+  refreshTokens         RefreshToken[]
+
+  @@map("users")
+}
+
+model Group {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  currency    String      @default("INR")
+  color       String?
+  icon        String?
+  balanceMode BalanceMode @default(DIRECT)
+  ownerId     String
+  status      GroupStatus @default(ACTIVE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  owner              User                @relation("GroupOwner", fields: [ownerId], references: [id])
+  members            GroupMember[]
+  ghostMembers       GhostMember[]
+  categories         Category[]
+  expenses           Expense[]
+  recurringTemplates RecurringTemplate[]
+  settlements        Settlement[]
+  auditLogs          AuditLog[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String    @id @default(uuid())
+  groupId  String
+  userId   String
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+model GhostMember {
+  id          String            @id @default(uuid())
+  groupId     String
+  displayName String
+  email       String?
+  phone       String?
+  guestToken  String            @unique
+  status      GhostMemberStatus @default(ACTIVE)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  expenseParticipations ExpenseParticipant[]
+  settlementsAsPayer    Settlement[]         @relation("GhostSettlementPayer")
+  settlementsAsReceiver Settlement[]         @relation("GhostSettlementReceiver")
+
+  @@map("ghost_members")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  groupId   String?
+  name      String
+  color     String?
+  emoji     String?
+  isSystem  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group              Group?              @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  expenses           Expense[]
+  recurringTemplates RecurringTemplate[]
+
+  @@map("categories")
+}
+
+model Expense {
+  id           String        @id @default(uuid())
+  groupId      String
+  title        String
+  categoryId   String?
+  baseAmount   Int
+  taxAmount    Int           @default(0)
+  tipAmount    Int           @default(0)
+  totalAmount  Int
+  splitType    SplitType
+  taxSplitType SplitType     @default(EQUAL)
+  tipSplitType SplitType     @default(EQUAL)
+  receiptUrl   String?
+  ocrData      Json?
+  notes        String?
+  date         DateTime      @db.Date
+  status       ExpenseStatus @default(ACTIVE)
+  recurringId  String?
+  createdBy    String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  group        Group               @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  category     Category?           @relation(fields: [categoryId], references: [id])
+  creator      User                @relation("ExpenseCreator", fields: [createdBy], references: [id])
+  recurring    RecurringTemplate?  @relation(fields: [recurringId], references: [id])
+  payers       ExpensePayer[]
+  participants ExpenseParticipant[]
+  proposals    ExpenseProposal[]
+
+  @@index([groupId, date(sort: Desc)], map: "idx_expenses_group_date")
+  @@index([groupId, status])
+  // GIN FTS index must be applied via raw migration:
+  // CREATE INDEX idx_expenses_fts ON expenses USING GIN (
+  //   to_tsvector('english', coalesce(title, '') || ' ' || coalesce(notes, ''))
+  // );
+  @@map("expenses")
+}
+
+model ExpensePayer {
+  id          String @id @default(uuid())
+  expenseId   String
+  userId      String
+  amountPaise Int
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "idx_expense_payers_user")
+  @@map("expense_payers")
+}
+
+model ExpenseParticipant {
+  id            String  @id @default(uuid())
+  expenseId     String
+  userId        String
+  amountPaise   Int
+  ghostMemberId String?
+
+  expense     Expense      @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  ghostMember GhostMember? @relation(fields: [ghostMemberId], references: [id])
+
+  @@index([userId], map: "idx_expense_participants_user")
+  @@index([ghostMemberId])
+  @@map("expense_participants")
+}
+
+model ExpenseProposal {
+  id              String         @id @default(uuid())
+  expenseId       String
+  proposedBy      String
+  proposedChanges Json
+  status          ProposalStatus @default(PENDING)
+  expiresAt       DateTime
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  expense  Expense        @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  proposer User           @relation("ProposalAuthor", fields: [proposedBy], references: [id])
+  votes    ProposalVote[]
+
+  @@map("expense_proposals")
+}
+
+model ProposalVote {
+  id         String     @id @default(uuid())
+  proposalId String
+  voterId    String
+  vote       VoteChoice
+  createdAt  DateTime   @default(now())
+
+  proposal ExpenseProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  voter    User            @relation(fields: [voterId], references: [id])
+
+  @@unique([proposalId, voterId])
+  @@map("proposal_votes")
+}
+
+model RecurringTemplate {
+  id                String             @id @default(uuid())
+  groupId           String
+  title             String
+  categoryId        String?
+  amountPaise       Int
+  splitType         SplitType
+  participantConfig Json
+  taxAmountPaise    Int                @default(0)
+  tipAmountPaise    Int                @default(0)
+  frequency         RecurringFrequency
+  nextRunDate       DateTime           @db.Date
+  endDate           DateTime?          @db.Date
+  isActive          Boolean            @default(true)
+  createdBy         String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  category Category? @relation(fields: [categoryId], references: [id])
+  creator  User      @relation("RecurringCreator", fields: [createdBy], references: [id])
+  expenses Expense[]
+
+  @@map("recurring_templates")
+}
+
+model Settlement {
+  id              String           @id @default(uuid())
+  groupId         String
+  payerId         String
+  receiverId      String
+  amountPaise     Int
+  paymentMethod   PaymentMethod    @default(CASH)
+  paymentRef      String?
+  status          SettlementStatus @default(PENDING_CONFIRMATION)
+  createdAt       DateTime         @default(now())
+  confirmedAt     DateTime?
+  updatedAt       DateTime         @updatedAt
+  ghostPayerId    String?
+  ghostReceiverId String?
+
+  group         Group        @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  payer         User         @relation("SettlementPayer", fields: [payerId], references: [id], onDelete: Restrict)
+  receiver      User         @relation("SettlementReceiver", fields: [receiverId], references: [id], onDelete: Restrict)
+  ghostPayer    GhostMember? @relation("GhostSettlementPayer", fields: [ghostPayerId], references: [id])
+  ghostReceiver GhostMember? @relation("GhostSettlementReceiver", fields: [ghostReceiverId], references: [id])
+
+  @@index([payerId, receiverId, status], map: "idx_settlements_pair_status")
+  @@index([groupId, status], map: "idx_settlements_group_status")
+  @@map("settlements")
+}
+
+model AuditLog {
+  id         String          @id @default(uuid())
+  groupId    String
+  actorId    String
+  entityType AuditEntityType
+  entityId   String
+  action     AuditAction
+  oldValue   Json?
+  newValue   Json?
+  diff       Json?
+  ipAddress  String?
+  createdAt  DateTime        @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  actor User  @relation("AuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([groupId, createdAt(sort: Desc)], map: "idx_audit_logs_group_time")
+  @@map("audit_logs")
+}
+
+model Notification {
+  id         String                @id @default(uuid())
+  userId     String
+  type       NotificationEventType
+  title      String
+  body       String
+  entityType AuditEntityType?
+  entityId   String?
+  isRead     Boolean               @default(false)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead], map: "idx_notifications_user_read")
+  @@map("notifications")
+}
+
+model NotificationPref {
+  id          String                @id @default(uuid())
+  userId      String
+  eventType   NotificationEventType
+  inApp       Boolean               @default(true)
+  push        Boolean               @default(true)
+  whatsappSms Boolean               @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventType])
+  @@map("notification_prefs")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  keys      Json
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}

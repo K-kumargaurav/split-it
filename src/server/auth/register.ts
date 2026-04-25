@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 
 import { prisma } from "@/lib/prisma";
 import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
-import { generateUniqueHandle } from "@/server/auth/handle";
+import { allocateHandle } from "@/server/auth/handle";
 import { hashPassword } from "@/server/auth/password";
 import { consumeRateLimit, getClientIp } from "@/server/auth/rate-limit";
 import { createVerificationToken } from "@/server/auth/tokens";
@@ -26,7 +26,12 @@ export async function registerAction(rawInput: unknown): Promise<RegisterResult>
     const fieldErrors: RegisterResult["fieldErrors"] = {};
     for (const issue of parsed.error.issues) {
       const key = issue.path[0];
-      if (key === "email" || key === "password" || key === "displayName") {
+      if (
+        key === "email" ||
+        key === "password" ||
+        key === "displayName" ||
+        key === "handle"
+      ) {
         fieldErrors[key] = fieldErrors[key] ?? issue.message;
       }
     }
@@ -42,13 +47,13 @@ export async function registerAction(rawInput: unknown): Promise<RegisterResult>
     };
   }
 
-  const { email, password, displayName } = parsed.data;
+  const { email, password, displayName, handle } = parsed.data;
 
   // We always tell the caller "check your email", but only do real work when
   // appropriate. This intentionally takes similar wall-clock time across paths
   // (each path performs at least one bcrypt + one DB write).
   try {
-    await provisionAccount({ email, password, displayName });
+    await provisionAccount({ email, password, displayName, handle });
   } catch (err) {
     console.error("registerAction failed", err);
     return {
@@ -64,6 +69,7 @@ interface ProvisionInput {
   email: string;
   password: string;
   displayName: string;
+  handle: string;
 }
 
 async function provisionAccount(input: ProvisionInput): Promise<void> {
@@ -82,7 +88,10 @@ async function provisionAccount(input: ProvisionInput): Promise<void> {
   const newHash = await hashPassword(input.password);
 
   if (!existing) {
-    const handle = await generateUniqueHandle(input.email);
+    const handle = await allocateHandle({
+      desired: input.handle,
+      fallbackEmail: input.email,
+    });
     await prisma.user.create({
       data: {
         email: input.email,

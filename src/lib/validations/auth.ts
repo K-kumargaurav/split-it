@@ -35,10 +35,33 @@ export const displayNameSchema = z
   .min(1, { message: "Name is required." })
   .max(80, { message: "Name is too long." });
 
+// Handles are part of the user's public identity (@asha_p) and are used in
+// share links. Lowercase alphanumeric + underscores only — no dots, hyphens,
+// or unicode confusables. Must start with a letter to keep handles readable.
+export const handleSchema = z.preprocess(
+  (v) => (typeof v === "string" ? v.trim().toLowerCase() : v),
+  z
+    .string()
+    .min(3, { message: "Handle must be at least 3 characters." })
+    .max(20, { message: "Handle must be at most 20 characters." })
+    .regex(/^[a-z][a-z0-9_]*$/, {
+      message: "Use lowercase letters, numbers, and underscores. Must start with a letter.",
+    }),
+);
+
 export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   displayName: displayNameSchema,
+  handle: handleSchema,
+});
+
+export const checkHandleSchema = z.object({
+  handle: handleSchema,
+});
+
+export const magicLinkSchema = z.object({
+  email: emailSchema,
 });
 
 export const loginSchema = z.object({
@@ -69,3 +92,5 @@ export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
+export type CheckHandleInput = z.infer<typeof checkHandleSchema>;
+export type MagicLinkInput = z.infer<typeof magicLinkSchema>;

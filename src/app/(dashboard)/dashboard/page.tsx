@@ -1,50 +1,47 @@
-import { auth, signOut } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
+import { auth } from "@/lib/auth";
+import { BalanceSummary } from "@/components/dashboard/balance-summary";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { GroupsList } from "@/components/dashboard/groups-list";
+import { PendingActions } from "@/components/dashboard/pending-actions";
+import { QuickActions } from "@/components/dashboard/quick-actions";
+import { getDashboardData } from "@/server/dashboard/get-dashboard-data";
+
+// Fully-RSC dashboard. Middleware (auth-edge) already rejects unauthenticated
+// requests; the redirect here is a defence-in-depth fallback for the rare
+// case where the session cookie is present but the user record is gone.
 export default async function DashboardPage() {
   const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const data = await getDashboardData(session.user.id);
+  const hasGroups = data.groups.length > 0;
+  const displayName = session.user.name ?? `@${session.user.handle}`;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-        <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-        <p className="mt-2 text-sm text-slate-500">
-          You&apos;re signed in. This is a placeholder dashboard for testing the auth flow.
-        </p>
+    <DashboardShell
+      user={{
+        name: session.user.name ?? null,
+        email: session.user.email ?? null,
+        handle: session.user.handle,
+        image: session.user.image ?? null,
+      }}
+    >
+      <div className="space-y-8">
+        <BalanceSummary
+          netBalancePaise={data.netBalancePaise}
+          groupCount={data.groups.length}
+          displayName={displayName}
+        />
 
-        <dl className="mt-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="font-medium text-slate-700">User ID</dt>
-            <dd className="mt-1 break-all font-mono text-xs text-slate-500">{session?.user?.id ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-slate-700">Handle</dt>
-            <dd className="mt-1 text-slate-500">@{session?.user?.handle ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-slate-700">Name</dt>
-            <dd className="mt-1 text-slate-500">{session?.user?.name ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-slate-700">Email</dt>
-            <dd className="mt-1 text-slate-500">{session?.user?.email ?? "—"}</dd>
-          </div>
-        </dl>
+        <PendingActions pending={data.pending} />
 
-        <form
-          className="mt-8"
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/login" });
-          }}
-        >
-          <button
-            type="submit"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            Sign out
-          </button>
-        </form>
+        <QuickActions hasGroups={hasGroups} />
+
+        {hasGroups ? <GroupsList groups={data.groups} /> : <EmptyState />}
       </div>
-    </main>
+    </DashboardShell>
   );
 }

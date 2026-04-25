@@ -52,6 +52,7 @@ describe("registerSchema", () => {
       email: "user@example.com",
       password: "Hunter22!",
       displayName: "Asha",
+      handle: "asha_p",
     });
     expect(result.success).toBe(true);
   });
@@ -61,8 +62,40 @@ describe("registerSchema", () => {
       email: "user@example.com",
       password: "Hunter22!",
       displayName: "   ",
+      handle: "asha_p",
     });
     expect(result.success).toBe(false);
+  });
+
+  it("rejects handles that don't start with a letter", () => {
+    const result = registerSchema.safeParse({
+      email: "user@example.com",
+      password: "Hunter22!",
+      displayName: "Asha",
+      handle: "1asha",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects handles with disallowed characters", () => {
+    const result = registerSchema.safeParse({
+      email: "user@example.com",
+      password: "Hunter22!",
+      displayName: "Asha",
+      handle: "asha.p",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("normalizes handles to lowercase", () => {
+    const result = registerSchema.safeParse({
+      email: "user@example.com",
+      password: "Hunter22!",
+      displayName: "Asha",
+      handle: "Asha_P",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.handle).toBe("asha_p");
   });
 });
 

@@ -24,15 +24,22 @@ function gc(now: number): void {
   });
 }
 
-export function consumeRateLimit(key: string): boolean {
+export interface RateLimitOptions {
+  max?: number;
+  windowMs?: number;
+}
+
+export function consumeRateLimit(key: string, options: RateLimitOptions = {}): boolean {
+  const max = options.max ?? MAX_ATTEMPTS;
+  const windowMs = options.windowMs ?? WINDOW_MS;
   const now = Date.now();
   const bucket = buckets.get(key);
   if (!bucket || bucket.resetAt <= now) {
     gc(now);
-    buckets.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    buckets.set(key, { count: 1, resetAt: now + windowMs });
     return true;
   }
-  if (bucket.count >= MAX_ATTEMPTS) return false;
+  if (bucket.count >= max) return false;
   bucket.count += 1;
   return true;
 }

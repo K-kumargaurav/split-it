@@ -26,8 +26,10 @@ jest.mock("@/server/auth/tokens", () => ({
   createVerificationToken: (...args: unknown[]) => createVerificationToken(...args),
 }));
 
+const allocateHandle = jest.fn();
 const generateUniqueHandle = jest.fn();
 jest.mock("@/server/auth/handle", () => ({
+  allocateHandle: (...args: unknown[]) => allocateHandle(...args),
   generateUniqueHandle: (...args: unknown[]) => generateUniqueHandle(...args),
 }));
 
@@ -37,6 +39,7 @@ import { registerAction } from "@/server/auth/register";
 beforeEach(() => {
   jest.clearAllMocks();
   rateTesting.reset();
+  allocateHandle.mockResolvedValue("asha");
   generateUniqueHandle.mockResolvedValue("asha");
   createVerificationToken.mockResolvedValue("rawtoken");
   sendVerificationEmail.mockResolvedValue(undefined);
@@ -68,9 +71,21 @@ describe("registerAction validation", () => {
       email: "user@example.com",
       password: "Hunter22!",
       displayName: "  ",
+      handle: "asha_p",
     });
     expect(result.ok).toBe(false);
     expect(result.fieldErrors?.displayName).toBeDefined();
+  });
+
+  it("returns a handle fieldError when the handle is malformed", async () => {
+    const result = await registerAction({
+      email: "user@example.com",
+      password: "Hunter22!",
+      displayName: "Asha",
+      handle: "ab",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.fieldErrors?.handle).toBeDefined();
   });
 });
 
@@ -83,6 +98,7 @@ describe("registerAction provisioning paths", () => {
       email: "Asha@Example.com",
       password: "Hunter22!",
       displayName: "Asha",
+      handle: "asha_p",
     });
     expect(result).toEqual({ ok: true });
     expect(create).toHaveBeenCalledTimes(1);
@@ -110,6 +126,7 @@ describe("registerAction provisioning paths", () => {
       email: "asha@example.com",
       password: "Hunter22!",
       displayName: "Asha",
+      handle: "asha_p",
     });
     // Caller still sees ok: true — no enumeration channel.
     expect(result).toEqual({ ok: true });
@@ -132,6 +149,7 @@ describe("registerAction provisioning paths", () => {
       email: "asha@example.com",
       password: "Hunter22!",
       displayName: "Asha",
+      handle: "asha_p",
     });
     expect(result).toEqual({ ok: true });
     expect(update).toHaveBeenCalledWith({
@@ -155,6 +173,7 @@ describe("registerAction provisioning paths", () => {
       email: "asha@example.com",
       password: "Hunter22!",
       displayName: "Asha",
+      handle: "asha_p",
     });
     expect(result).toEqual({ ok: true });
     expect(update).toHaveBeenCalled();
@@ -174,6 +193,7 @@ describe("registerAction provisioning paths", () => {
       email: "asha@example.com",
       password: "Hunter22!",
       displayName: "Asha",
+      handle: "asha_p",
     });
     expect(result).toEqual({ ok: true });
     expect(create).not.toHaveBeenCalled();
@@ -192,6 +212,7 @@ describe("registerAction rate limit", () => {
         email: `u${i}@example.com`,
         password: "Hunter22!",
         displayName: "Asha",
+        handle: `asha_${i}`,
       });
       expect(r.ok).toBe(true);
     }
@@ -199,6 +220,7 @@ describe("registerAction rate limit", () => {
       email: "u-extra@example.com",
       password: "Hunter22!",
       displayName: "Asha",
+      handle: "asha_p",
     });
     expect(blocked.ok).toBe(false);
     expect(blocked.formError).toMatch(/too many/i);

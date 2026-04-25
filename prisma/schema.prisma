@@ -107,20 +107,27 @@ enum GhostMemberStatus {
   MERGED
 }
 
+enum VerificationPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
-  id          String    @id @default(uuid())
-  email       String?   @unique
-  phone       String?   @unique
-  handle      String    @unique
-  displayName String
-  avatarUrl   String?
-  locale      String    @default("en-IN")
-  currency    String    @default("INR")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id              String    @id @default(uuid())
+  email           String?   @unique
+  phone           String?   @unique
+  handle          String    @unique
+  displayName     String
+  avatarUrl       String?
+  passwordHash    String?
+  emailVerifiedAt DateTime?
+  locale          String    @default("en-IN")
+  currency        String    @default("INR")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
 
   ownedGroups           Group[]              @relation("GroupOwner")
   groupMembers          GroupMember[]
@@ -138,10 +145,47 @@ model User {
   pushSubscriptions     PushSubscription[]
   refreshTokens         RefreshToken[]
   mergedGhostMembers    GhostMember[]        @relation("GhostMergedUser")
+  accounts              Account[]
 
   @@index([handle])
   @@index([deletedAt])
   @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+// Stores SHA-256 hashes of single-use tokens for email verification and password
+// reset. The raw token is sent in the URL; only the hash hits the DB so a snapshot
+// leak does not yield active links.
+model VerificationToken {
+  identifier String
+  tokenHash  String              @unique
+  purpose    VerificationPurpose
+  expires    DateTime
+  createdAt  DateTime            @default(now())
+
+  @@unique([identifier, purpose])
+  @@index([expires])
+  @@map("verification_tokens")
 }
 
 model Group {
@@ -249,10 +293,10 @@ model Expense {
   updatedAt    DateTime      @updatedAt
   deletedAt    DateTime?
 
-  group        Group               @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  category     Category?           @relation(fields: [categoryId], references: [id])
-  creator      User                @relation("ExpenseCreator", fields: [createdBy], references: [id])
-  recurring    RecurringTemplate?  @relation(fields: [recurringId], references: [id])
+  group        Group                @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  category     Category?            @relation(fields: [categoryId], references: [id])
+  creator      User                 @relation("ExpenseCreator", fields: [createdBy], references: [id])
+  recurring    RecurringTemplate?   @relation(fields: [recurringId], references: [id])
   payers       ExpensePayer[]
   participants ExpenseParticipant[]
   proposals    ExpenseProposal[]

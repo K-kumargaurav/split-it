@@ -1,5 +1,7 @@
 import { sendMail } from "@/server/email/client";
 import {
+  renderEmailOtp,
+  renderMagicLinkEmail,
   renderPasswordResetEmail,
   renderVerificationEmail,
 } from "@/server/email/templates";
@@ -23,6 +25,46 @@ export async function sendVerificationEmail(input: SendVerificationInput): Promi
   const rendered = renderVerificationEmail({
     verifyUrl,
     displayName: input.displayName,
+  });
+  await sendMail({
+    to: input.to,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+  });
+}
+
+interface SendEmailOtpInput {
+  to: string;
+  displayName: string;
+  code: string;
+  ttlMinutes: number;
+}
+
+export async function sendEmailOtpEmail(input: SendEmailOtpInput): Promise<void> {
+  const rendered = renderEmailOtp({
+    code: input.code,
+    displayName: input.displayName,
+    ttlMinutes: input.ttlMinutes,
+  });
+  await sendMail({
+    to: input.to,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+  });
+}
+
+interface SendMagicLinkInput {
+  to: string;
+  signInUrl: string;
+  ttlMinutes: number;
+}
+
+export async function sendMagicLinkEmail(input: SendMagicLinkInput): Promise<void> {
+  const rendered = renderMagicLinkEmail({
+    signInUrl: input.signInUrl,
+    ttlMinutes: input.ttlMinutes,
   });
   await sendMail({
     to: input.to,

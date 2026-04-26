@@ -64,6 +64,22 @@ export const magicLinkSchema = z.object({
   email: emailSchema,
 });
 
+export const checkEmailSchema = z.object({
+  email: emailSchema,
+});
+
+// 6-digit numeric OTP. We accept the raw string (with possible whitespace
+// from autofill) and let the server normalize before hashing.
+export const otpCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, { message: "Enter the 6-digit code." });
+
+export const verifyEmailOtpSchema = z.object({
+  email: emailSchema,
+  code: otpCodeSchema,
+});
+
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1).max(PASSWORD_MAX),
@@ -94,3 +110,5 @@ export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
 export type CheckHandleInput = z.infer<typeof checkHandleSchema>;
 export type MagicLinkInput = z.infer<typeof magicLinkSchema>;
+export type CheckEmailInput = z.infer<typeof checkEmailSchema>;
+export type VerifyEmailOtpInput = z.infer<typeof verifyEmailOtpSchema>;

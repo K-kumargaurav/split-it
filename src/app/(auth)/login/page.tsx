@@ -8,10 +8,10 @@ interface LoginPageProps {
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
-  CredentialsSignin: "Invalid email or password.",
+  CredentialsSignin: "Incorrect password.",
+  AccountNotFound: "No account found with this email. Create one?",
   EmailNotVerified:
     "Your email isn't verified. Check your inbox for the verification link, or request a new one.",
-  OAuthAccountNotLinked: "This email is already registered with a different sign-in method.",
   OAuthSignin: "Couldn't start the Google sign-in flow. Please try again.",
   OAuthCallback: "Google sign-in didn't complete. Please try again.",
   Configuration: "Authentication is misconfigured. Please contact support.",

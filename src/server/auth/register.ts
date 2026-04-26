@@ -4,21 +4,28 @@ import { headers } from "next/headers";
 
 import { prisma } from "@/lib/prisma";
 import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
+import { OTP_TTL_MS, createEmailOtp } from "@/server/auth/email-otp";
 import { allocateHandle } from "@/server/auth/handle";
 import { hashPassword } from "@/server/auth/password";
 import { consumeRateLimit, getClientIp } from "@/server/auth/rate-limit";
-import { createVerificationToken } from "@/server/auth/tokens";
-import { sendVerificationEmail } from "@/server/email/auth-emails";
+import { sendEmailOtpEmail } from "@/server/email/auth-emails";
 
-// We always return the same shape regardless of whether the email was already
-// taken — this prevents account enumeration via the registration form.
+// Result shapes:
+//   • { ok: true, otpSent: true }           — new account or OAuth-link path:
+//                                             OTP is on the way; client should
+//                                             transition to OTP_SENT state.
+//   • { ok: true, otpSent: false }          — already-verified OAuth account
+//                                             linked to a password; no OTP.
+//                                             Client can sign in directly.
+//   • { ok: false, fieldErrors.email: ... } — duplicate email with password
+//                                             set. Client surfaces "already
+//                                             registered, sign in instead".
 export interface RegisterResult {
   ok: boolean;
+  otpSent?: boolean;
   fieldErrors?: Partial<Record<keyof RegisterInput, string>>;
   formError?: string;
 }
-
-const GENERIC_OK: RegisterResult = { ok: true };
 
 export async function registerAction(rawInput: unknown): Promise<RegisterResult> {
   const parsed = registerSchema.safeParse(rawInput);
@@ -39,8 +46,7 @@ export async function registerAction(rawInput: unknown): Promise<RegisterResult>
   }
 
   const ip = getClientIp(await headers());
-  const rateKey = `register:${ip}`;
-  if (!consumeRateLimit(rateKey)) {
+  if (!consumeRateLimit(`register:${ip}`)) {
     return {
       ok: false,
       formError: "Too many attempts. Please wait a minute and try again.",
@@ -49,11 +55,8 @@ export async function registerAction(rawInput: unknown): Promise<RegisterResult>
 
   const { email, password, displayName, handle } = parsed.data;
 
-  // We always tell the caller "check your email", but only do real work when
-  // appropriate. This intentionally takes similar wall-clock time across paths
-  // (each path performs at least one bcrypt + one DB write).
   try {
-    await provisionAccount({ email, password, displayName, handle });
+    return await provisionAccount({ email, password, displayName, handle });
   } catch (err) {
     console.error("registerAction failed", err);
     return {
@@ -61,8 +64,6 @@ export async function registerAction(rawInput: unknown): Promise<RegisterResult>
       formError: "Something went wrong. Please try again in a moment.",
     };
   }
-
-  return GENERIC_OK;
 }
 
 interface ProvisionInput {
@@ -72,7 +73,7 @@ interface ProvisionInput {
   handle: string;
 }
 
-async function provisionAccount(input: ProvisionInput): Promise<void> {
+async function provisionAccount(input: ProvisionInput): Promise<RegisterResult> {
   const existing = await prisma.user.findUnique({
     where: { email: input.email },
     select: {
@@ -84,10 +85,20 @@ async function provisionAccount(input: ProvisionInput): Promise<void> {
     },
   });
 
-  // Always run bcrypt so timing is constant whether the user existed or not.
+  // Always run bcrypt so timing on the "duplicate email" path stays close to
+  // the create / OAuth-link paths.
   const newHash = await hashPassword(input.password);
 
-  if (!existing) {
+  if (!existing || existing.deletedAt) {
+    if (existing?.deletedAt) {
+      // Soft-deleted record squatting on this email. Per §2.4 the email is
+      // null'd on delete so this branch is mostly defensive — but the user
+      // can't claim it. Treat as "duplicate" without leaking why.
+      return {
+        ok: false,
+        fieldErrors: { email: "This email isn't available." },
+      };
+    }
     const handle = await allocateHandle({
       desired: input.handle,
       fallbackEmail: input.email,
@@ -101,47 +112,46 @@ async function provisionAccount(input: ProvisionInput): Promise<void> {
       },
       select: { id: true },
     });
-    const token = await createVerificationToken({
-      identifier: input.email,
-      purpose: "EMAIL_VERIFICATION",
-    });
-    await sendVerificationEmail({
+    const code = await createEmailOtp({ email: input.email });
+    await sendEmailOtpEmail({
       to: input.email,
       displayName: input.displayName,
-      rawToken: token,
+      code,
+      ttlMinutes: Math.round(OTP_TTL_MS / 60_000),
     });
-    return;
-  }
-
-  if (existing.deletedAt) {
-    // Soft-deleted accounts: do nothing observable. Caller still gets the
-    // generic success response.
-    return;
+    return { ok: true, otpSent: true };
   }
 
   if (existing.passwordHash) {
-    // Already has a password — do not overwrite. We could send a "you already
-    // have an account" email here, but skipping for v1 to avoid abuse vectors
-    // (mass enumeration via the register endpoint to spam users).
-    return;
+    // Active account already has a password — block. The user is steered
+    // to /login. (This is the case the new check-email flow surfaces; we
+    // re-check here to close the race between client check and submit.)
+    return {
+      ok: false,
+      fieldErrors: {
+        email: "An account with this email already exists.",
+      },
+    };
   }
 
-  // OAuth-only account adding a password. Set the hash. If their email was
-  // already verified via Google, no further action; otherwise issue a
-  // verification token.
+  // OAuth-only account adding a password. Link the hash. If the email was
+  // already verified via Google, sign-in can proceed immediately; otherwise
+  // issue an OTP.
   await prisma.user.update({
     where: { id: existing.id },
     data: { passwordHash: newHash },
   });
-  if (!existing.emailVerifiedAt) {
-    const token = await createVerificationToken({
-      identifier: input.email,
-      purpose: "EMAIL_VERIFICATION",
-    });
-    await sendVerificationEmail({
-      to: input.email,
-      displayName: existing.displayName,
-      rawToken: token,
-    });
+
+  if (existing.emailVerifiedAt) {
+    return { ok: true, otpSent: false };
   }
+
+  const code = await createEmailOtp({ email: input.email });
+  await sendEmailOtpEmail({
+    to: input.email,
+    displayName: existing.displayName,
+    code,
+    ttlMinutes: Math.round(OTP_TTL_MS / 60_000),
+  });
+  return { ok: true, otpSent: true };
 }

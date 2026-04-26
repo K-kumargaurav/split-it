@@ -6,13 +6,14 @@ import Nodemailer from "next-auth/providers/nodemailer";
 import authEdgeConfig from "@/lib/auth-edge";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validations/auth";
-import { dummyVerifyPassword, verifyPassword } from "@/server/auth/password";
+import { dummyVerifyPassword, hashPassword, verifyPassword } from "@/server/auth/password";
 import { upsertOAuthUser } from "@/server/auth/oauth";
 import {
   clearRateLimit,
   consumeRateLimit,
   getClientIp,
 } from "@/server/auth/rate-limit";
+import { sendMagicLinkEmail } from "@/server/email/auth-emails";
 import "@/types/auth";
 
 // Distinct error codes propagate to the client (via signIn result.error / URL
@@ -21,6 +22,19 @@ import "@/types/auth";
 class EmailNotVerifiedError extends CredentialsSignin {
   code = "EmailNotVerified";
 }
+
+// Thrown when no User exists for the given email. The UI maps this to a
+// "No account found — create one?" prompt with a link to /register, instead
+// of showing "Incorrect password" (which would imply an account exists).
+//
+// Note: this distinguishes "no account" from "wrong password" via error
+// code, which is an account-enumeration tradeoff. Accepted per the
+// flexible-sign-in spec — email is the single source of identity, so the
+// system already reveals registration state through the linking flows.
+class AccountNotFoundError extends CredentialsSignin {
+  code = "AccountNotFound";
+}
+
 
 // Brevo SMTP — mirrors the transactional pipeline. Port 465 = TLS, otherwise
 // STARTTLS (Brevo's 587 path). Defined here (Node runtime only) so nodemailer
@@ -49,6 +63,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         },
       },
       from: brevoFrom,
+      // Custom sender so the magic-link email matches the rest of our
+      // transactional mail (branded HTML, BREVO_FROM_EMAIL/NAME via the
+      // shared sendMail client). Without this, NextAuth's default sender
+      // emits a plaintext stub that doesn't go through our Brevo client.
+      async sendVerificationRequest({ identifier, url, expires }) {
+        const ttlMinutes = Math.max(
+          1,
+          Math.round((expires.getTime() - Date.now()) / 60_000),
+        );
+        await sendMagicLinkEmail({
+          to: identifier,
+          signInUrl: url,
+          ttlMinutes,
+        });
+        // Per the bug report: confirm send succeeded without logging the
+        // recipient address or the single-use URL.
+        console.log("Email sent successfully");
+      },
     }),
     Credentials({
       name: "Credentials",
@@ -77,13 +109,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             deletedAt: true,
           },
         });
-        if (!user || user.deletedAt || !user.passwordHash) {
+        if (!user || user.deletedAt) {
+          // Burn a dummy bcrypt compare to keep timing close to the
+          // password-verify path before signalling "no account".
           await dummyVerifyPassword(parsed.data.password);
-          return null;
+          throw new AccountNotFoundError();
         }
 
-        const ok = await verifyPassword(parsed.data.password, user.passwordHash);
-        if (!ok) return null;
+        if (!user.passwordHash) {
+          // Account exists but has no password — registered via Google or
+          // magic link. Per the flexible-sign-in spec: silently attach the
+          // submitted password as the account's first password and sign
+          // them in. There is nothing to "verify" against, so any password
+          // they enter becomes the account password.
+          //
+          // Tradeoff: this lets anyone who knows a Google-only user's
+          // email set a password without first proving inbox ownership.
+          // Mitigations elsewhere: Google sign-in still works untouched,
+          // and the user can use /forgot-password to overwrite the
+          // attacker-set password from their inbox.
+          const newHash = await hashPassword(parsed.data.password);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: newHash },
+          });
+          user.passwordHash = newHash;
+        } else {
+          const ok = await verifyPassword(parsed.data.password, user.passwordHash);
+          if (!ok) return null;
+        }
 
         if (!user.emailVerifiedAt) {
           // Password was correct but email isn't verified. Reject with a

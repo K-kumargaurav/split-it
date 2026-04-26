@@ -46,7 +46,7 @@ export async function requestMagicLink(rawInput: unknown): Promise<MagicLinkResu
     console.error("requestMagicLink failed", err);
     return {
       ok: false,
-      formError: "Couldn't send the sign-in link. Please try again in a moment.",
+      formError: "Couldn't send the link. Please try again.",
     };
   }
 

@@ -32,12 +32,14 @@ export function MagicLinkForm() {
     try {
       const result = await requestMagicLink({ email: values.email });
       if (!result.ok) {
-        setServerError(result.formError ?? result.fieldError ?? "Couldn't send the link.");
+        setServerError(
+          result.formError ?? result.fieldError ?? "Couldn't send the link. Please try again.",
+        );
         return;
       }
       setSentTo(values.email);
     } catch {
-      setServerError("Something went wrong. Please try again.");
+      setServerError("Couldn't send the link. Please try again.");
     }
   }
 

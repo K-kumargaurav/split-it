@@ -16,14 +16,17 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
+const sendEmailOtpEmail = jest.fn();
 const sendVerificationEmail = jest.fn();
 jest.mock("@/server/email/auth-emails", () => ({
+  sendEmailOtpEmail: (...args: unknown[]) => sendEmailOtpEmail(...args),
   sendVerificationEmail: (...args: unknown[]) => sendVerificationEmail(...args),
 }));
 
-const createVerificationToken = jest.fn();
-jest.mock("@/server/auth/tokens", () => ({
-  createVerificationToken: (...args: unknown[]) => createVerificationToken(...args),
+const createEmailOtp = jest.fn();
+jest.mock("@/server/auth/email-otp", () => ({
+  OTP_TTL_MS: 15 * 60 * 1000,
+  createEmailOtp: (...args: unknown[]) => createEmailOtp(...args),
 }));
 
 const allocateHandle = jest.fn();
@@ -41,8 +44,8 @@ beforeEach(() => {
   rateTesting.reset();
   allocateHandle.mockResolvedValue("asha");
   generateUniqueHandle.mockResolvedValue("asha");
-  createVerificationToken.mockResolvedValue("rawtoken");
-  sendVerificationEmail.mockResolvedValue(undefined);
+  createEmailOtp.mockResolvedValue("123456");
+  sendEmailOtpEmail.mockResolvedValue(undefined);
 });
 
 describe("registerAction validation", () => {
@@ -51,6 +54,7 @@ describe("registerAction validation", () => {
       email: "user@example.com",
       password: "short",
       displayName: "Asha",
+      handle: "asha_p",
     });
     expect(result.ok).toBe(false);
     expect(result.fieldErrors?.password).toBeDefined();
@@ -61,6 +65,7 @@ describe("registerAction validation", () => {
       email: "not-an-email",
       password: "Hunter22!",
       displayName: "Asha",
+      handle: "asha_p",
     });
     expect(result.ok).toBe(false);
     expect(result.fieldErrors?.email).toBeDefined();
@@ -90,7 +95,7 @@ describe("registerAction validation", () => {
 });
 
 describe("registerAction provisioning paths", () => {
-  it("creates a new user, issues a verification token, and sends an email", async () => {
+  it("creates a new user and dispatches a 6-digit OTP email", async () => {
     findUnique.mockResolvedValue(null);
     create.mockResolvedValue({ id: "u1" });
 
@@ -100,20 +105,17 @@ describe("registerAction provisioning paths", () => {
       displayName: "Asha",
       handle: "asha_p",
     });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, otpSent: true });
     expect(create).toHaveBeenCalledTimes(1);
     expect(create.mock.calls[0][0]?.data?.email).toBe("asha@example.com");
     expect(create.mock.calls[0][0]?.data?.passwordHash).toMatch(/^\$2[aby]\$12\$/);
-    expect(createVerificationToken).toHaveBeenCalledWith({
-      identifier: "asha@example.com",
-      purpose: "EMAIL_VERIFICATION",
-    });
-    expect(sendVerificationEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ to: "asha@example.com", rawToken: "rawtoken" }),
+    expect(createEmailOtp).toHaveBeenCalledWith({ email: "asha@example.com" });
+    expect(sendEmailOtpEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "asha@example.com", code: "123456", ttlMinutes: 15 }),
     );
   });
 
-  it("does not overwrite the password when the account already has one (and does not enumerate)", async () => {
+  it("surfaces a duplicate-email field error when the account already has a password", async () => {
     findUnique.mockResolvedValue({
       id: "u1",
       displayName: "Asha",
@@ -128,14 +130,14 @@ describe("registerAction provisioning paths", () => {
       displayName: "Asha",
       handle: "asha_p",
     });
-    // Caller still sees ok: true — no enumeration channel.
-    expect(result).toEqual({ ok: true });
+    expect(result.ok).toBe(false);
+    expect(result.fieldErrors?.email).toMatch(/already exists/i);
     expect(create).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
-    expect(sendVerificationEmail).not.toHaveBeenCalled();
+    expect(sendEmailOtpEmail).not.toHaveBeenCalled();
   });
 
-  it("links a password to an OAuth-only account and sends verification when not yet verified", async () => {
+  it("links a password to an OAuth-only account and sends OTP when email is unverified", async () => {
     findUnique.mockResolvedValue({
       id: "u1",
       displayName: "Asha",
@@ -151,15 +153,15 @@ describe("registerAction provisioning paths", () => {
       displayName: "Asha",
       handle: "asha_p",
     });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, otpSent: true });
     expect(update).toHaveBeenCalledWith({
       where: { id: "u1" },
       data: expect.objectContaining({ passwordHash: expect.stringMatching(/^\$2[aby]\$12\$/) }),
     });
-    expect(sendVerificationEmail).toHaveBeenCalled();
+    expect(sendEmailOtpEmail).toHaveBeenCalled();
   });
 
-  it("links a password to an already-verified OAuth account WITHOUT issuing a new verification email", async () => {
+  it("links a password to an already-verified OAuth account WITHOUT sending an OTP", async () => {
     findUnique.mockResolvedValue({
       id: "u1",
       displayName: "Asha",
@@ -175,12 +177,12 @@ describe("registerAction provisioning paths", () => {
       displayName: "Asha",
       handle: "asha_p",
     });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, otpSent: false });
     expect(update).toHaveBeenCalled();
-    expect(sendVerificationEmail).not.toHaveBeenCalled();
+    expect(sendEmailOtpEmail).not.toHaveBeenCalled();
   });
 
-  it("treats soft-deleted accounts as a no-op success", async () => {
+  it("blocks registration on a soft-deleted email squatter", async () => {
     findUnique.mockResolvedValue({
       id: "u1",
       displayName: "Asha",
@@ -195,10 +197,11 @@ describe("registerAction provisioning paths", () => {
       displayName: "Asha",
       handle: "asha_p",
     });
-    expect(result).toEqual({ ok: true });
+    expect(result.ok).toBe(false);
+    expect(result.fieldErrors?.email).toBeDefined();
     expect(create).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
-    expect(sendVerificationEmail).not.toHaveBeenCalled();
+    expect(sendEmailOtpEmail).not.toHaveBeenCalled();
   });
 });
 

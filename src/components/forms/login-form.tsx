@@ -27,6 +27,7 @@ interface LoginFormProps {
 interface ServerError {
   message: string;
   unverifiedEmail?: string;
+  showRegisterLink?: boolean;
 }
 
 // Same-origin guard for the post-login redirect — `callbackUrl` arrives
@@ -81,7 +82,14 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
         });
         return;
       }
-      setServerError({ message: "Invalid email or password." });
+      if (code === "AccountNotFound") {
+        setServerError({
+          message: "No account found with this email.",
+          showRegisterLink: true,
+        });
+        return;
+      }
+      setServerError({ message: "Incorrect password." });
       return;
     }
     window.location.assign(result.url ?? safeInternalPath(callbackUrl, "/dashboard"));
@@ -196,6 +204,14 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
                   className="inline-block font-medium text-rose-800 underline"
                 >
                   Resend verification email
+                </Link>
+              ) : null}
+              {serverError.showRegisterLink ? (
+                <Link
+                  href="/register"
+                  className="inline-block font-medium text-rose-800 underline"
+                >
+                  Create one?
                 </Link>
               ) : null}
             </div>

@@ -20,6 +20,12 @@ export const authEdgeConfig = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      // Email is the single source of identity in this app: a user who
+      // registered with email+password (or magic link) can later "Continue
+      // with Google" and the OAuth account is linked to the existing user
+      // instead of NextAuth throwing OAuthAccountNotLinked. Safe with Google
+      // because Google guarantees the email is verified on its side.
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   callbacks: {

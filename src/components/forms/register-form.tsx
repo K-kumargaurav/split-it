@@ -1,19 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
-import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { cn } from "@/lib/cn";
+import { EmailField, type AvailabilityState } from "@/components/forms/email-field";
 import { GoogleButton } from "@/components/forms/google-button";
 import { HandleField } from "@/components/forms/handle-field";
 import { PasswordStrength } from "@/components/forms/password-strength";
-import { registerAction } from "@/server/auth/register";
 
-// Client-side schema. Server re-validates with the canonical `registerSchema`
-// (including normalization of email + handle to lowercase).
 const formSchema = z.object({
   displayName: z
     .string()
@@ -38,11 +36,25 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+type Phase = "idle" | "submitting" | "signing-in";
+
+interface RegisterErrorBody {
+  error?: {
+    code?: string;
+    message?: string;
+    fieldErrors?: Record<string, string>;
+  };
+}
+
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [phase, setPhase] = useState<Phase>("idle");
   const [serverError, setServerError] = useState<string | null>(null);
-  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const [serverFieldErrors, setServerFieldErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
+  const [emailTaken, setEmailTaken] = useState(false);
+  // Tracked outside React state because we read it synchronously inside
+  // onSubmit to short-circuit before the API call.
+  const emailAvailabilityRef = useRef<AvailabilityState["kind"]>("idle");
 
   const {
     register,
@@ -59,54 +71,98 @@ export function RegisterForm() {
 
   const password = watch("password");
   const handle = watch("handle");
+  const email = watch("email");
+
+  // Duplicate-email is shown only on submit (no enumeration on blur). Clear
+  // the flag as soon as the user edits the email so they can retry.
+  useEffect(() => {
+    if (emailTaken) setEmailTaken(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email]);
 
   async function onSubmit(values: FormValues) {
     setServerError(null);
     setServerFieldErrors({});
-    try {
-      const result = await registerAction({
-        email: values.email,
-        password: values.password,
-        displayName: values.displayName,
-        handle: values.handle,
-      });
-      if (!result.ok) {
-        if (result.fieldErrors) setServerFieldErrors(result.fieldErrors);
-        if (result.formError) setServerError(result.formError);
-        return;
-      }
-      setSubmittedEmail(values.email);
-    } catch {
-      setServerError("Something went wrong. Please try again.");
+    setEmailTaken(false);
+
+    // Short-circuit on a known-taken email from the on-blur check, so we
+    // don't spend a register call (and a bcrypt hash) on a guaranteed 409.
+    if (emailAvailabilityRef.current === "taken") {
+      setEmailTaken(true);
+      return;
     }
+
+    setPhase("submitting");
+
+    let response: Response;
+    try {
+      response = await fetch("/api/v1/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+    } catch {
+      setServerError("Couldn't reach the server. Check your connection and try again.");
+      setPhase("idle");
+      return;
+    }
+
+    if (!response.ok) {
+      let body: RegisterErrorBody = {};
+      try {
+        body = (await response.json()) as RegisterErrorBody;
+      } catch {
+        // Body wasn't JSON. Fall through; status-based branches below.
+      }
+      const code = body.error?.code;
+
+      // Order matters: dispatch on the (status, code) pair so a specific
+      // inline error is always preferred over the generic banner.
+      if (response.status === 409 && code === "EMAIL_EXISTS") {
+        setEmailTaken(true);
+      } else if (response.status === 409 && code === "HANDLE_EXISTS") {
+        setServerFieldErrors({
+          handle: body.error?.message ?? "This handle is already taken.",
+        });
+      } else if (response.status === 422 && body.error?.fieldErrors) {
+        // Zod validation: surface each issue under its own field. We never
+        // fall back to the generic banner here — every Zod issue has a path.
+        const fe: Partial<Record<keyof FormValues, string>> = {};
+        for (const [k, v] of Object.entries(body.error.fieldErrors)) {
+          if (k === "email" || k === "password" || k === "displayName" || k === "handle") {
+            fe[k] = v;
+          }
+        }
+        setServerFieldErrors(fe);
+      } else if (response.status === 429) {
+        setServerError(body.error?.message ?? "Too many attempts. Please try again shortly.");
+      } else {
+        setServerError(
+          body.error?.message ?? "Something went wrong. Please try again.",
+        );
+      }
+      setPhase("idle");
+      return;
+    }
+
+    // 201: account created. Sign the user in via Credentials. We drive the
+    // redirect ourselves so the failure path (rare — credentials we just
+    // hashed) can be surfaced as a form error instead of the URL ?error= flow.
+    setPhase("signing-in");
+    const result = await signIn("credentials", {
+      email: values.email,
+      password: values.password,
+      redirect: false,
+    });
+    if (!result || result.error) {
+      setServerError("Account created, but sign-in failed. Please sign in manually.");
+      setPhase("idle");
+      return;
+    }
+    window.location.assign("/dashboard");
   }
 
-  if (submittedEmail) {
-    return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-sm text-emerald-900"
-      >
-        <h2 className="text-base font-semibold">Check your email</h2>
-        <p className="mt-2 text-emerald-800">
-          If an account doesn&apos;t already exist, we&apos;ve sent a verification link to{" "}
-          <span className="font-medium">{submittedEmail}</span>. Click the link to activate your
-          account. The link expires in 24 hours.
-        </p>
-        <p className="mt-3 text-xs text-emerald-700">
-          Didn&apos;t get the email? Check your spam folder, or{" "}
-          <Link
-            href={`/verify-email/pending?email=${encodeURIComponent(submittedEmail)}`}
-            className="font-medium underline"
-          >
-            request another link
-          </Link>
-          .
-        </p>
-      </div>
-    );
-  }
+  const submitting = phase !== "idle" || isSubmitting;
 
   return (
     <div className="space-y-5">
@@ -160,30 +216,16 @@ export function RegisterForm() {
           serverError={serverFieldErrors.handle}
         />
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-            Email address
-          </label>
-          <input
-            {...register("email")}
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            aria-invalid={Boolean(errors.email ?? serverFieldErrors.email)}
-            aria-describedby={errors.email || serverFieldErrors.email ? "email-error" : undefined}
-            className={cn(
-              "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
-              "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-              (errors.email || serverFieldErrors.email) && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
-            )}
-          />
-          {(errors.email?.message || serverFieldErrors.email) ? (
-            <p id="email-error" className="mt-1.5 text-xs text-rose-600">
-              {errors.email?.message ?? serverFieldErrors.email}
-            </p>
-          ) : null}
-        </div>
+        <EmailField
+          registration={register("email")}
+          value={email}
+          fieldError={errors.email}
+          serverError={serverFieldErrors.email}
+          forceTaken={emailTaken}
+          onAvailabilityChange={(state) => {
+            emailAvailabilityRef.current = state.kind;
+          }}
+        />
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-slate-700">
@@ -235,14 +277,18 @@ export function RegisterForm() {
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={submitting}
           className={cn(
             "flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
             "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >
-          {isSubmitting ? "Creating account…" : "Create account"}
+          {phase === "submitting"
+            ? "Creating account…"
+            : phase === "signing-in"
+              ? "Signing you in…"
+              : "Create account"}
         </button>
       </form>
     </div>

@@ -4,8 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { cn } from "@/lib/cn";
-import { formatPaise } from "@/lib/format";
+import { formatPaise, formatRelativeTime } from "@/lib/format";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { PendingSettlementActions } from "@/components/settlements/pending-settlement-actions";
 import {
   calculateDirectBalances,
   calculateSimplifiedBalances,
@@ -13,6 +14,10 @@ import {
   type SimplifiedTransfer,
 } from "@/server/balance/calculate-balances";
 import { getExpensesForGroup, type ExpenseListItem } from "@/server/expenses/get-expenses";
+import {
+  getSettlementsForGroup,
+  type SettlementListItem,
+} from "@/server/settlements/get-settlements";
 import { getGroupById, type GroupDetail } from "@/server/groups/get-groups";
 
 interface GroupPageProps {
@@ -32,7 +37,10 @@ export default async function GroupPage({ params }: GroupPageProps) {
     throw err;
   }
 
-  const { items: expenses } = await getExpensesForGroup(session.user.id, params.id);
+  const [{ items: expenses }, { items: settlements }] = await Promise.all([
+    getExpensesForGroup(session.user.id, params.id),
+    getSettlementsForGroup(session.user.id, params.id, undefined, 50),
+  ]);
 
   // Per group's own balance mode (SPEC §3.4 / §4.5). The DB always holds
   // the full direct ledger; we just pick which view to render.
@@ -48,6 +56,9 @@ export default async function GroupPage({ params }: GroupPageProps) {
           session.user.id,
           group.members,
         );
+
+  const pendingSettlements = settlements.filter((s) => s.status === "PENDING_CONFIRMATION");
+  const confirmedSettlements = settlements.filter((s) => s.status === "CONFIRMED");
 
   const isOwner = group.viewerRole === "OWNER";
   const settled = group.balancePaise === 0;
@@ -127,9 +138,24 @@ export default async function GroupPage({ params }: GroupPageProps) {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <ExpensesSection groupId={group.id} expenses={expenses} viewerId={session.user.id} />
         <div className="space-y-6">
-          <BalancesSection lines={balanceLines} mode={group.balanceMode} />
+          <ExpensesSection groupId={group.id} expenses={expenses} viewerId={session.user.id} />
+          <ActivityFeed
+            settlements={confirmedSettlements}
+            viewerId={session.user.id}
+          />
+        </div>
+        <div className="space-y-6">
+          <BalancesSection
+            lines={balanceLines}
+            mode={group.balanceMode}
+            groupId={group.id}
+          />
+          <PendingSettlementsSection
+            groupId={group.id}
+            pending={pendingSettlements}
+            viewerId={session.user.id}
+          />
           <MembersSection members={group.members} viewerId={session.user.id} />
         </div>
       </div>
@@ -309,15 +335,18 @@ interface BalanceLine {
   //   "owes"  → the viewer owes the counterparty
   direction: "owed" | "owes";
   counterpartyName: string;
+  counterpartyId: string;
   amountPaise: bigint;
 }
 
 function BalancesSection({
   lines,
   mode,
+  groupId,
 }: {
   lines: BalanceLine[];
   mode: "DIRECT" | "SIMPLIFIED";
+  groupId: string;
 }) {
   const modeLabel = mode === "DIRECT" ? "Direct" : "Simplified";
   return (
@@ -344,7 +373,7 @@ function BalancesSection({
         <ul className="divide-y divide-slate-100">
           {lines.map((line, i) => (
             <li
-              key={`${line.direction}-${line.counterpartyName}-${i}`}
+              key={`${line.direction}-${line.counterpartyId}-${i}`}
               className="flex items-center justify-between gap-4 py-3"
             >
               <p className="text-sm text-slate-700">
@@ -360,20 +389,172 @@ function BalancesSection({
                   </>
                 )}
               </p>
-              <p
-                className={cn(
-                  "font-mono text-sm font-semibold tabular-nums",
-                  line.direction === "owed" ? "text-emerald-700" : "text-rose-700",
-                )}
-              >
-                {formatPaise(line.amountPaise)}
-              </p>
+              <div className="flex items-center gap-3">
+                <p
+                  className={cn(
+                    "font-mono text-sm font-semibold tabular-nums",
+                    line.direction === "owed" ? "text-emerald-700" : "text-rose-700",
+                  )}
+                >
+                  {formatPaise(line.amountPaise)}
+                </p>
+                {line.direction === "owes" ? (
+                  <Link
+                    href={`/groups/${groupId}/settlements/new?to=${line.counterpartyId}`}
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                  >
+                    Mark as paid
+                  </Link>
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>
       )}
     </section>
   );
+}
+
+function PendingSettlementsSection({
+  groupId,
+  pending,
+  viewerId,
+}: {
+  groupId: string;
+  pending: SettlementListItem[];
+  viewerId: string;
+}) {
+  if (pending.length === 0) return null;
+  return (
+    <section
+      aria-labelledby="pending-settlements-heading"
+      className="rounded-2xl border border-amber-200 bg-amber-50/50 p-6 shadow-sm sm:p-8"
+    >
+      <h2
+        id="pending-settlements-heading"
+        className="mb-3 text-lg font-semibold tracking-tight text-amber-900"
+      >
+        Pending settlements
+      </h2>
+      <ul className="divide-y divide-amber-200/70">
+        {pending.map((s) => {
+          const isReceiver = s.receiver.userId === viewerId;
+          const isPayer = s.payer.userId === viewerId;
+          return (
+            <li key={s.id} className="flex items-center justify-between gap-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm text-slate-800">
+                  {isPayer ? (
+                    <>
+                      You paid{" "}
+                      <span className="font-medium text-slate-900">{s.receiver.displayName}</span>
+                    </>
+                  ) : isReceiver ? (
+                    <>
+                      <span className="font-medium text-slate-900">{s.payer.displayName}</span>{" "}
+                      paid you
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium text-slate-900">{s.payer.displayName}</span> →{" "}
+                      <span className="font-medium text-slate-900">{s.receiver.displayName}</span>
+                    </>
+                  )}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {formatPaise(s.amountPaise)} · {paymentMethodLabel(s.paymentMethod)} ·{" "}
+                  {formatRelativeTime(s.createdAt)}
+                </p>
+              </div>
+              {isReceiver ? (
+                <PendingSettlementActions groupId={groupId} settlementId={s.id} />
+              ) : (
+                <span className="rounded-full bg-amber-200/60 px-2 py-0.5 text-xs font-medium text-amber-900">
+                  Awaiting confirmation
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function ActivityFeed({
+  settlements,
+  viewerId,
+}: {
+  settlements: SettlementListItem[];
+  viewerId: string;
+}) {
+  if (settlements.length === 0) return null;
+  const recent = settlements.slice(0, 8);
+  return (
+    <section
+      aria-labelledby="activity-heading"
+      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+    >
+      <h2
+        id="activity-heading"
+        className="mb-3 text-lg font-semibold tracking-tight text-slate-900"
+      >
+        Settlement activity
+      </h2>
+      <ul className="divide-y divide-slate-100">
+        {recent.map((s) => {
+          const isPayer = s.payer.userId === viewerId;
+          const isReceiver = s.receiver.userId === viewerId;
+          const when = s.confirmedAt ?? s.createdAt;
+          return (
+            <li key={s.id} className="flex items-center justify-between gap-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm text-slate-700">
+                  {isPayer ? (
+                    <>
+                      You paid{" "}
+                      <span className="font-medium text-slate-900">{s.receiver.displayName}</span>
+                    </>
+                  ) : isReceiver ? (
+                    <>
+                      <span className="font-medium text-slate-900">{s.payer.displayName}</span>{" "}
+                      paid you
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium text-slate-900">{s.payer.displayName}</span> →{" "}
+                      <span className="font-medium text-slate-900">{s.receiver.displayName}</span>
+                    </>
+                  )}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {paymentMethodLabel(s.paymentMethod)} · {formatRelativeTime(when)}
+                </p>
+              </div>
+              <p className="font-mono text-sm font-semibold tabular-nums text-slate-900">
+                {formatPaise(s.amountPaise)}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function paymentMethodLabel(method: SettlementListItem["paymentMethod"]): string {
+  switch (method) {
+    case "CASH":
+      return "Cash";
+    case "UPI":
+      return "UPI";
+    case "RAZORPAY":
+      return "Razorpay";
+    case "STRIPE":
+      return "Stripe";
+    default:
+      return "Other";
+  }
 }
 
 function toDirectLines(
@@ -391,7 +572,12 @@ function toDirectLines(
   // Money owed to the viewer.
   for (const [debtorId, amount] of Object.entries(direct[viewerId] ?? {})) {
     if (amount > ZERO) {
-      lines.push({ direction: "owed", counterpartyName: nameOf(debtorId), amountPaise: amount });
+      lines.push({
+        direction: "owed",
+        counterpartyName: nameOf(debtorId),
+        counterpartyId: debtorId,
+        amountPaise: amount,
+      });
     }
   }
   // Money the viewer owes.
@@ -399,7 +585,12 @@ function toDirectLines(
     if (creditorId === viewerId) continue;
     const amount = debts[viewerId];
     if (amount && amount > ZERO) {
-      lines.push({ direction: "owes", counterpartyName: nameOf(creditorId), amountPaise: amount });
+      lines.push({
+        direction: "owes",
+        counterpartyName: nameOf(creditorId),
+        counterpartyId: creditorId,
+        amountPaise: amount,
+      });
     }
   }
   return lines.sort((a, b) => (a.amountPaise > b.amountPaise ? -1 : 1));
@@ -418,9 +609,19 @@ function toSimplifiedLines(
   const lines: BalanceLine[] = [];
   for (const t of transfers) {
     if (t.from === viewerId) {
-      lines.push({ direction: "owes", counterpartyName: nameOf(t.to), amountPaise: t.amount });
+      lines.push({
+        direction: "owes",
+        counterpartyName: nameOf(t.to),
+        counterpartyId: t.to,
+        amountPaise: t.amount,
+      });
     } else if (t.to === viewerId) {
-      lines.push({ direction: "owed", counterpartyName: nameOf(t.from), amountPaise: t.amount });
+      lines.push({
+        direction: "owed",
+        counterpartyName: nameOf(t.from),
+        counterpartyId: t.from,
+        amountPaise: t.amount,
+      });
     }
   }
   return lines.sort((a, b) => (a.amountPaise > b.amountPaise ? -1 : 1));

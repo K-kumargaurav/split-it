@@ -6,6 +6,12 @@ import { AppError } from "@/lib/errors";
 import { cn } from "@/lib/cn";
 import { formatPaise } from "@/lib/format";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import {
+  calculateDirectBalances,
+  calculateSimplifiedBalances,
+  type BalanceMap,
+  type SimplifiedTransfer,
+} from "@/server/balance/calculate-balances";
 import { getExpensesForGroup, type ExpenseListItem } from "@/server/expenses/get-expenses";
 import { getGroupById, type GroupDetail } from "@/server/groups/get-groups";
 
@@ -27,6 +33,21 @@ export default async function GroupPage({ params }: GroupPageProps) {
   }
 
   const { items: expenses } = await getExpensesForGroup(session.user.id, params.id);
+
+  // Per group's own balance mode (SPEC §3.4 / §4.5). The DB always holds
+  // the full direct ledger; we just pick which view to render.
+  const balanceLines =
+    group.balanceMode === "DIRECT"
+      ? toDirectLines(
+          await calculateDirectBalances(group.id, session.user.id),
+          session.user.id,
+          group.members,
+        )
+      : toSimplifiedLines(
+          await calculateSimplifiedBalances(group.id, session.user.id),
+          session.user.id,
+          group.members,
+        );
 
   const isOwner = group.viewerRole === "OWNER";
   const settled = group.balancePaise === 0;
@@ -107,7 +128,10 @@ export default async function GroupPage({ params }: GroupPageProps) {
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <ExpensesSection groupId={group.id} expenses={expenses} viewerId={session.user.id} />
-        <MembersSection members={group.members} viewerId={session.user.id} />
+        <div className="space-y-6">
+          <BalancesSection lines={balanceLines} mode={group.balanceMode} />
+          <MembersSection members={group.members} viewerId={session.user.id} />
+        </div>
       </div>
     </DashboardShell>
   );
@@ -277,4 +301,127 @@ function MembersSection({
       </ul>
     </section>
   );
+}
+
+interface BalanceLine {
+  // direction is from the viewer's perspective:
+  //   "owed"  → the counterparty owes the viewer
+  //   "owes"  → the viewer owes the counterparty
+  direction: "owed" | "owes";
+  counterpartyName: string;
+  amountPaise: bigint;
+}
+
+function BalancesSection({
+  lines,
+  mode,
+}: {
+  lines: BalanceLine[];
+  mode: "DIRECT" | "SIMPLIFIED";
+}) {
+  const modeLabel = mode === "DIRECT" ? "Direct" : "Simplified";
+  return (
+    <section
+      aria-labelledby="balances-heading"
+      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+    >
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2
+          id="balances-heading"
+          className="text-lg font-semibold tracking-tight text-slate-900"
+        >
+          Balances
+        </h2>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+          {modeLabel}
+        </span>
+      </div>
+      {lines.length === 0 ? (
+        <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          You&apos;re all settled up in this group.
+        </p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {lines.map((line, i) => (
+            <li
+              key={`${line.direction}-${line.counterpartyName}-${i}`}
+              className="flex items-center justify-between gap-4 py-3"
+            >
+              <p className="text-sm text-slate-700">
+                {line.direction === "owed" ? (
+                  <>
+                    <span className="font-medium text-slate-900">{line.counterpartyName}</span>{" "}
+                    owes you
+                  </>
+                ) : (
+                  <>
+                    You owe{" "}
+                    <span className="font-medium text-slate-900">{line.counterpartyName}</span>
+                  </>
+                )}
+              </p>
+              <p
+                className={cn(
+                  "font-mono text-sm font-semibold tabular-nums",
+                  line.direction === "owed" ? "text-emerald-700" : "text-rose-700",
+                )}
+              >
+                {formatPaise(line.amountPaise)}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function toDirectLines(
+  direct: BalanceMap,
+  viewerId: string,
+  members: GroupDetail["members"],
+): BalanceLine[] {
+  const nameOf = (id: string): string => {
+    const m = members.find((x) => x.user.id === id);
+    return m?.user.displayName ?? "Unknown";
+  };
+
+  const ZERO = BigInt(0);
+  const lines: BalanceLine[] = [];
+  // Money owed to the viewer.
+  for (const [debtorId, amount] of Object.entries(direct[viewerId] ?? {})) {
+    if (amount > ZERO) {
+      lines.push({ direction: "owed", counterpartyName: nameOf(debtorId), amountPaise: amount });
+    }
+  }
+  // Money the viewer owes.
+  for (const [creditorId, debts] of Object.entries(direct)) {
+    if (creditorId === viewerId) continue;
+    const amount = debts[viewerId];
+    if (amount && amount > ZERO) {
+      lines.push({ direction: "owes", counterpartyName: nameOf(creditorId), amountPaise: amount });
+    }
+  }
+  return lines.sort((a, b) => (a.amountPaise > b.amountPaise ? -1 : 1));
+}
+
+function toSimplifiedLines(
+  transfers: SimplifiedTransfer[],
+  viewerId: string,
+  members: GroupDetail["members"],
+): BalanceLine[] {
+  const nameOf = (id: string): string => {
+    const m = members.find((x) => x.user.id === id);
+    return m?.user.displayName ?? "Unknown";
+  };
+
+  const lines: BalanceLine[] = [];
+  for (const t of transfers) {
+    if (t.from === viewerId) {
+      lines.push({ direction: "owes", counterpartyName: nameOf(t.to), amountPaise: t.amount });
+    } else if (t.to === viewerId) {
+      lines.push({ direction: "owed", counterpartyName: nameOf(t.from), amountPaise: t.amount });
+    }
+  }
+  return lines.sort((a, b) => (a.amountPaise > b.amountPaise ? -1 : 1));
 }

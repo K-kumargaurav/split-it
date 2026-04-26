@@ -44,6 +44,17 @@ const brevoFrom = process.env.BREVO_FROM_NAME
   ? `${process.env.BREVO_FROM_NAME} <${process.env.BREVO_FROM_EMAIL ?? ""}>`
   : process.env.BREVO_FROM_EMAIL;
 
+// Surface missing SMTP config at server start so magic-link sends don't fail
+// silently with a generic "couldn't send" downstream. Logs once per process.
+const missingSmtpEnv = (
+  ["BREVO_SMTP_HOST", "BREVO_SMTP_PORT", "BREVO_SMTP_USER", "BREVO_SMTP_PASS"] as const
+).filter((key) => !process.env[key]);
+if (missingSmtpEnv.length > 0) {
+  console.warn(
+    `[auth] Missing SMTP env vars: ${missingSmtpEnv.join(", ")}. Magic-link emails will fail.`,
+  );
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authEdgeConfig,
   // The Nodemailer (magic-link) provider stores single-use tokens via the
@@ -72,14 +83,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           1,
           Math.round((expires.getTime() - Date.now()) / 60_000),
         );
-        await sendMagicLinkEmail({
-          to: identifier,
-          signInUrl: url,
-          ttlMinutes,
-        });
-        // Per the bug report: confirm send succeeded without logging the
-        // recipient address or the single-use URL.
-        console.log("Email sent successfully");
+        try {
+          await sendMagicLinkEmail({
+            to: identifier,
+            signInUrl: url,
+            ttlMinutes,
+          });
+          // Per the bug report: confirm send succeeded without logging the
+          // recipient address or the single-use URL.
+          console.log("Email sent successfully");
+        } catch (err) {
+          // Surface the underlying SMTP failure so "couldn't send" has a
+          // root cause to grep for. NextAuth swallows the message otherwise.
+          console.error("[auth] sendVerificationRequest failed:", err);
+          throw err;
+        }
       },
     }),
     Credentials({

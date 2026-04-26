@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -47,6 +48,7 @@ interface RegisterErrorBody {
 }
 
 export function RegisterForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [serverError, setServerError] = useState<string | null>(null);
@@ -159,7 +161,8 @@ export function RegisterForm() {
       setPhase("idle");
       return;
     }
-    window.location.assign("/dashboard");
+    router.push("/dashboard");
+    router.refresh();
   }
 
   const submitting = phase !== "idle" || isSubmitting;

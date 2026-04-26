@@ -6,6 +6,7 @@ import { AppError } from "@/lib/errors";
 import { cn } from "@/lib/cn";
 import { formatPaise } from "@/lib/format";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { getExpensesForGroup, type ExpenseListItem } from "@/server/expenses/get-expenses";
 import { getGroupById, type GroupDetail } from "@/server/groups/get-groups";
 
 interface GroupPageProps {
@@ -25,6 +26,8 @@ export default async function GroupPage({ params }: GroupPageProps) {
     throw err;
   }
 
+  const { items: expenses } = await getExpensesForGroup(session.user.id, params.id);
+
   const isOwner = group.viewerRole === "OWNER";
   const settled = group.balancePaise === 0;
   const owedToYou = group.balancePaise > 0;
@@ -36,7 +39,6 @@ export default async function GroupPage({ params }: GroupPageProps) {
       : { chip: "bg-rose-50 text-rose-700", label: "You owe", amount: "text-rose-700" };
 
   const monogramBg = group.color ?? "#6366F1";
-  const expenseCount = group._count.expenses;
 
   return (
     <DashboardShell
@@ -104,7 +106,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <ExpensesSection groupId={group.id} expenseCount={expenseCount} />
+        <ExpensesSection groupId={group.id} expenses={expenses} viewerId={session.user.id} />
         <MembersSection members={group.members} viewerId={session.user.id} />
       </div>
     </DashboardShell>
@@ -113,12 +115,14 @@ export default async function GroupPage({ params }: GroupPageProps) {
 
 function ExpensesSection({
   groupId,
-  expenseCount,
+  expenses,
+  viewerId,
 }: {
   groupId: string;
-  expenseCount: number;
+  expenses: ExpenseListItem[];
+  viewerId: string;
 }) {
-  const hasExpenses = expenseCount > 0;
+  const hasExpenses = expenses.length > 0;
   return (
     <section
       aria-labelledby="expenses-heading"
@@ -137,9 +141,11 @@ function ExpensesSection({
       </div>
 
       {hasExpenses ? (
-        <p className="text-sm text-slate-500">
-          {expenseCount} {expenseCount === 1 ? "expense" : "expenses"} · list view coming soon.
-        </p>
+        <ul className="divide-y divide-slate-100">
+          {expenses.map((e) => (
+            <ExpenseRow key={e.id} expense={e} viewerId={viewerId} />
+          ))}
+        </ul>
       ) : (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-10 text-center">
           <p className="text-sm font-medium text-slate-700">No expenses yet</p>
@@ -156,6 +162,65 @@ function ExpensesSection({
       )}
     </section>
   );
+}
+
+function ExpenseRow({
+  expense,
+  viewerId,
+}: {
+  expense: ExpenseListItem;
+  viewerId: string;
+}) {
+  const payerLabel = formatPayerLabel(expense.payers, viewerId);
+  const dateLabel = new Date(expense.date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  const yourShare = expense.yourSharePaise;
+  const youOwe = yourShare - expense.yourPaidPaise;
+
+  return (
+    <li className="flex items-center justify-between gap-4 py-3">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-slate-900">{expense.title}</p>
+        <p className="mt-0.5 text-xs text-slate-500">
+          {payerLabel} · {dateLabel}
+        </p>
+      </div>
+      <div className="text-right">
+        <p className="font-mono text-sm font-semibold tabular-nums text-slate-900">
+          {formatPaise(expense.totalAmountPaise)}
+        </p>
+        {yourShare > 0 ? (
+          <p
+            className={cn(
+              "mt-0.5 text-xs",
+              youOwe > 0 ? "text-rose-600" : youOwe < 0 ? "text-emerald-600" : "text-slate-500",
+            )}
+          >
+            {youOwe > 0
+              ? `You owe ${formatPaise(youOwe)}`
+              : youOwe < 0
+                ? `You're owed ${formatPaise(-youOwe)}`
+                : `Your share ${formatPaise(yourShare)}`}
+          </p>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+function formatPayerLabel(
+  payers: ExpenseListItem["payers"],
+  viewerId: string,
+): string {
+  if (payers.length === 0) return "Unknown payer";
+  if (payers.length === 1) {
+    const only = payers[0]!;
+    return `Paid by ${only.userId === viewerId ? "you" : only.displayName}`;
+  }
+  return `Paid by ${payers.length} people`;
 }
 
 function MembersSection({

@@ -1,0 +1,353 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { cn } from "@/lib/cn";
+import { formatPaise, rupeesToPaise } from "@/lib/format";
+import { equalSplit } from "@/lib/split";
+
+// Form is rupees-facing — the user thinks in ₹, the wire format is paise.
+// Convert at the boundary (onSubmit) and validate the integer in `paise` as
+// the source of truth, since `1.50 * 100 = 150.00000…` can drift in IEEE-754.
+
+interface MemberOption {
+  id: string;
+  displayName: string;
+  handle: string;
+}
+
+interface CategoryOption {
+  id: string;
+  name: string;
+  emoji: string | null;
+}
+
+interface ExpenseFormProps {
+  groupId: string;
+  viewerId: string;
+  members: MemberOption[];
+  categories: CategoryOption[];
+}
+
+const formSchema = z.object({
+  title: z.string().trim().min(1, { message: "Title is required." }).max(120),
+  amount: z
+    .number({ message: "Amount is required." })
+    .positive({ message: "Amount must be greater than zero." })
+    .max(10_000_000, { message: "Amount is too large." }),
+  date: z.string().min(1, { message: "Date is required." }),
+  categoryId: z.string().optional(),
+  paidById: z.string().uuid({ message: "Choose who paid." }),
+  participantIds: z
+    .array(z.string().uuid())
+    .min(1, { message: "Select at least one person to split with." }),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+interface CreateExpenseErrorBody {
+  error?: { code?: string; message?: string };
+}
+
+export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseFormProps) {
+  const router = useRouter();
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const allIds = useMemo(() => members.map((m) => m.id), [members]);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    mode: "onTouched",
+    defaultValues: {
+      title: "",
+      amount: undefined,
+      date: today,
+      categoryId: "",
+      paidById: viewerId,
+      participantIds: allIds,
+    },
+  });
+
+  const amount = watch("amount");
+  const participantIds = watch("participantIds");
+
+  // Live preview uses the same equalSplit() the server uses, so what the user
+  // sees is exactly what gets written. Skip when amount or participants are
+  // not yet valid — preview hides instead of rendering "₹0.00 each".
+  const preview = useMemo(() => {
+    if (!amount || amount <= 0) return null;
+    if (!participantIds || participantIds.length === 0) return null;
+    const totalPaise = rupeesToPaise(amount);
+    if (totalPaise < 1) return null;
+    try {
+      const shares = equalSplit(totalPaise, participantIds.length);
+      return participantIds.map((id, i) => ({
+        memberId: id,
+        amountPaise: shares[i] ?? 0,
+      }));
+    } catch {
+      return null;
+    }
+  }, [amount, participantIds]);
+
+  async function onSubmit(values: FormValues) {
+    setServerError(null);
+
+    const totalPaise = rupeesToPaise(values.amount);
+    const payload = {
+      title: values.title,
+      categoryId: values.categoryId ? values.categoryId : null,
+      date: values.date,
+      totalAmount: totalPaise,
+      splitType: "EQUAL" as const,
+      payerSplits: [{ userId: values.paidById, amountPaise: totalPaise }],
+      participantIds: values.participantIds,
+    };
+
+    let response: Response;
+    try {
+      response = await fetch(`/api/v1/groups/${groupId}/expenses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      setServerError("Couldn't reach the server. Check your connection and try again.");
+      return;
+    }
+
+    if (!response.ok) {
+      let body: CreateExpenseErrorBody = {};
+      try {
+        body = (await response.json()) as CreateExpenseErrorBody;
+      } catch {
+        // fall through
+      }
+      setServerError(body.error?.message ?? "Couldn't save expense. Please try again.");
+      return;
+    }
+
+    router.push(`/groups/${groupId}`);
+    router.refresh();
+  }
+
+  const memberById = new Map(members.map((m) => [m.id, m]));
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+      <div>
+        <label htmlFor="title" className="block text-sm font-medium text-slate-700">
+          Title
+        </label>
+        <input
+          {...register("title")}
+          id="title"
+          type="text"
+          placeholder="Dinner at Toit"
+          aria-invalid={Boolean(errors.title)}
+          className={cn(
+            "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+            "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
+            errors.title && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
+          )}
+        />
+        {errors.title?.message ? (
+          <p className="mt-1.5 text-xs text-rose-600">{errors.title.message}</p>
+        ) : null}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="amount" className="block text-sm font-medium text-slate-700">
+            Amount (₹)
+          </label>
+          <input
+            {...register("amount", { valueAsNumber: true })}
+            id="amount"
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0.01"
+            placeholder="0.00"
+            aria-invalid={Boolean(errors.amount)}
+            className={cn(
+              "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+              "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
+              errors.amount && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
+            )}
+          />
+          {errors.amount?.message ? (
+            <p className="mt-1.5 text-xs text-rose-600">{errors.amount.message}</p>
+          ) : null}
+        </div>
+
+        <div>
+          <label htmlFor="date" className="block text-sm font-medium text-slate-700">
+            Date
+          </label>
+          <input
+            {...register("date")}
+            id="date"
+            type="date"
+            aria-invalid={Boolean(errors.date)}
+            className={cn(
+              "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition",
+              "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
+              errors.date && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
+            )}
+          />
+          {errors.date?.message ? (
+            <p className="mt-1.5 text-xs text-rose-600">{errors.date.message}</p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="categoryId" className="block text-sm font-medium text-slate-700">
+            Category
+          </label>
+          <select
+            {...register("categoryId")}
+            id="categoryId"
+            className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="">Uncategorised</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.emoji ? `${c.emoji} ` : ""}
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="paidById" className="block text-sm font-medium text-slate-700">
+            Paid by
+          </label>
+          <select
+            {...register("paidById")}
+            id="paidById"
+            aria-invalid={Boolean(errors.paidById)}
+            className={cn(
+              "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition",
+              "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
+              errors.paidById && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
+            )}
+          >
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.displayName}
+                {m.id === viewerId ? " (you)" : ""}
+              </option>
+            ))}
+          </select>
+          {errors.paidById?.message ? (
+            <p className="mt-1.5 text-xs text-rose-600">{errors.paidById.message}</p>
+          ) : null}
+        </div>
+      </div>
+
+      <fieldset>
+        <legend className="block text-sm font-medium text-slate-700">Split among</legend>
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {members.map((m) => (
+            <label
+              key={m.id}
+              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 hover:border-slate-300"
+            >
+              <input
+                type="checkbox"
+                value={m.id}
+                {...register("participantIds")}
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="truncate">
+                {m.displayName}
+                {m.id === viewerId ? <span className="ml-1 text-xs text-slate-400">(you)</span> : null}
+              </span>
+            </label>
+          ))}
+        </div>
+        {errors.participantIds?.message ? (
+          <p className="mt-1.5 text-xs text-rose-600">{errors.participantIds.message}</p>
+        ) : null}
+      </fieldset>
+
+      {preview ? (
+        <section
+          aria-label="Split preview"
+          className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+        >
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+            Each person owes
+          </p>
+          <ul className="mt-2 divide-y divide-slate-200">
+            {preview.map((row) => {
+              const member = memberById.get(row.memberId);
+              if (!member) return null;
+              return (
+                <li
+                  key={row.memberId}
+                  className="flex items-center justify-between py-1.5 text-sm text-slate-700"
+                >
+                  <span className="truncate">
+                    {member.displayName}
+                    {member.id === viewerId ? (
+                      <span className="ml-1 text-xs text-slate-400">(you)</span>
+                    ) : null}
+                  </span>
+                  <span className="font-mono tabular-nums text-slate-900">
+                    {formatPaise(row.amountPaise)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
+      {serverError ? (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700"
+        >
+          {serverError}
+        </div>
+      ) : null}
+
+      <div className="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => router.push(`/groups/${groupId}`)}
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={cn(
+            "rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
+            "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+            "disabled:cursor-not-allowed disabled:opacity-60",
+          )}
+        >
+          {isSubmitting ? "Saving…" : "Save expense"}
+        </button>
+      </div>
+    </form>
+  );
+}

@@ -58,8 +58,8 @@ export default async function NewExpensePage({ params }: NewExpensePageProps) {
           Add expense
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Split equally across selected members. Tax, tip, and other split types
-          coming soon.
+          Drop a receipt to auto-fill amount and date, or enter the details
+          manually. Choose how to split the total below.
         </p>
       </header>
 

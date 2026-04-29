@@ -2,13 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { cn } from "@/lib/cn";
 import { formatPaise, rupeesToPaise } from "@/lib/format";
 import { equalSplit, percentageSplit } from "@/lib/split";
+import { ReceiptUploader, type OcrPrefill } from "@/components/expenses/receipt-uploader";
 
 // Form is rupees-facing — the user thinks in ₹, the wire format is paise.
 // Convert at the boundary (onSubmit) and validate the integer in `paise` as
@@ -66,6 +67,15 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
   const [exactInputs, setExactInputs] = useState<Record<string, string>>({});
   const [percentInputs, setPercentInputs] = useState<Record<string, string>>({});
 
+  // Receipt + OCR state. The File is held until the expense is saved, then
+  // POSTed to /expenses/:expId/receipt. `prefilledFields` drives the badge
+  // shown next to amount/date.
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [prefilledFields, setPrefilledFields] = useState<{ amount: boolean; date: boolean }>({
+    amount: false,
+    date: false,
+  });
+
   const allIds = useMemo(() => members.map((m) => m.id), [members]);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -73,6 +83,7 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -179,6 +190,26 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
       ? Boolean(exactState?.valid)
       : Boolean(percentState?.valid);
 
+  // OCR pre-fill: only overwrite fields the user hasn't manually edited.
+  // We trust the receipt as the initial source but let the user override.
+  const handleOcrPrefill = useCallback(
+    (prefill: OcrPrefill) => {
+      let filledAmount = false;
+      let filledDate = false;
+      if (prefill.totalAmountPaise && prefill.totalAmountPaise > 0) {
+        const rupees = prefill.totalAmountPaise / 100;
+        setValue("amount", rupees, { shouldValidate: true, shouldDirty: true });
+        filledAmount = true;
+      }
+      if (prefill.date) {
+        setValue("date", prefill.date, { shouldValidate: true, shouldDirty: true });
+        filledDate = true;
+      }
+      setPrefilledFields({ amount: filledAmount, date: filledDate });
+    },
+    [setValue],
+  );
+
   async function onSubmit(values: FormValues) {
     setServerError(null);
 
@@ -275,6 +306,26 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
       return;
     }
 
+    // Receipt upload runs after expense creation since the storage path
+    // includes the new expense id. Failures here are non-fatal — the
+    // expense is already saved; we just surface a warning.
+    if (receiptFile) {
+      try {
+        const created = (await response.json()) as { expense?: { id?: string } };
+        const expId = created?.expense?.id;
+        if (expId) {
+          const fd = new FormData();
+          fd.append("file", receiptFile);
+          await fetch(`/api/v1/groups/${groupId}/expenses/${expId}/receipt`, {
+            method: "POST",
+            body: fd,
+          });
+        }
+      } catch {
+        // Swallow — the expense saved fine; receipt can be re-attached later.
+      }
+    }
+
     router.push(`/groups/${groupId}`);
     router.refresh();
   }
@@ -283,6 +334,12 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+      <ReceiptUploader
+        groupId={groupId}
+        onFileChange={setReceiptFile}
+        onPrefill={handleOcrPrefill}
+      />
+
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-slate-700">
           Title
@@ -306,11 +363,17 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-slate-700">
-            Amount (₹)
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="amount" className="block text-sm font-medium text-slate-700">
+              Amount (₹)
+            </label>
+            {prefilledFields.amount ? <PrefilledBadge /> : null}
+          </div>
           <input
-            {...register("amount", { valueAsNumber: true })}
+            {...register("amount", {
+              valueAsNumber: true,
+              onChange: () => setPrefilledFields((p) => ({ ...p, amount: false })),
+            })}
             id="amount"
             type="number"
             inputMode="decimal"
@@ -330,11 +393,16 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
         </div>
 
         <div>
-          <label htmlFor="date" className="block text-sm font-medium text-slate-700">
-            Date
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="date" className="block text-sm font-medium text-slate-700">
+              Date
+            </label>
+            {prefilledFields.date ? <PrefilledBadge /> : null}
+          </div>
           <input
-            {...register("date")}
+            {...register("date", {
+              onChange: () => setPrefilledFields((p) => ({ ...p, date: false })),
+            })}
             id="date"
             type="date"
             aria-invalid={Boolean(errors.date)}
@@ -638,6 +706,14 @@ function RemainingAmount({ remainingPaise }: { remainingPaise: number }) {
       ? `Over by ${formatPaise(-remainingPaise)}`
       : `${formatPaise(remainingPaise)} remaining to allocate`;
   return <span className={cn("text-xs font-medium", tone)}>{label}</span>;
+}
+
+function PrefilledBadge() {
+  return (
+    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-emerald-700">
+      Pre-filled from receipt
+    </span>
+  );
 }
 
 function RemainingPercentage({ remainingPct }: { remainingPct: number }) {

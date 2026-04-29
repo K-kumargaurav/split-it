@@ -7,6 +7,7 @@ import {
   type CreateExpenseInput,
 } from "@/lib/validations/expenses";
 import { formatPaise } from "@/lib/format";
+import { notifyGroupMembersAfterCommit } from "@/server/notifications/create-notification";
 
 // Returned shape — payers + participants joined with the corresponding user
 // row so the API can echo back display names without a follow-up fetch.
@@ -64,7 +65,20 @@ export async function createExpense(
     );
   }
 
-  return runCreateTransaction(userId, groupId, input, resolved);
+  const expense = await runCreateTransaction(userId, groupId, input, resolved);
+
+  // Fan-out notifications to every other group member. Fire-and-forget —
+  // the expense is already committed and we don't want a downstream push
+  // failure to surface as a 500. The helper internally swallows errors.
+  void notifyGroupMembersAfterCommit(groupId, [userId], {
+    type: "EXPENSE_ADDED",
+    title: "New expense",
+    body: `${input.title} — ${formatPaise(input.totalAmount)}`,
+    entityType: "EXPENSE",
+    entityId: expense.id,
+  });
+
+  return expense;
 }
 
 // Branches on splitType to compute the per-participant shares. Each branch

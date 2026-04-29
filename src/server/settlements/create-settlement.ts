@@ -7,6 +7,7 @@ import {
   createSettlementSchema,
   type CreateSettlementInput,
 } from "@/lib/validations/settlements";
+import { dispatchExternal } from "@/server/notifications/create-notification";
 
 // Returned shape — payer + receiver joined so the caller can echo display
 // names without a follow-up fetch.
@@ -82,7 +83,26 @@ export async function createSettlement(
     );
   }
 
-  return runCreateTransaction(payerId, groupId, input, amountBig);
+  const settlement = await runCreateTransaction(
+    payerId,
+    groupId,
+    input,
+    amountBig,
+  );
+
+  // Post-commit dispatch of push + WhatsApp to the receiver. The in-app
+  // row was already inserted inside the transaction.
+  void dispatchExternal([input.receiverId], {
+    type: "SETTLEMENT_PENDING_CONFIRMATION",
+    title: "Confirm payment",
+    body: `${settlement.payer.displayName} says they paid you ${formatPaise(
+      input.amountPaise,
+    )} — confirm?`,
+    entityType: "SETTLEMENT",
+    entityId: settlement.id,
+  });
+
+  return settlement;
 }
 
 async function assertBothAreMembers(

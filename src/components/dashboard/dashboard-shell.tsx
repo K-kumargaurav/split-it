@@ -3,6 +3,7 @@ import Link from "next/link";
 import { signOut } from "@/lib/auth";
 import { cn } from "@/lib/cn";
 import { Logo } from "@/components/ui/logo";
+import { NotificationBell } from "@/components/ui/notification-bell";
 
 interface DashboardShellProps {
   user: {
@@ -24,6 +25,7 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
           <Logo />
 
           <nav className="flex items-center gap-2">
+            <NotificationBell />
             <Link
               href={`/u/${user.handle}`}
               className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-3 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 sm:inline-flex"

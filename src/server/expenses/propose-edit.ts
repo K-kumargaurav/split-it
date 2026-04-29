@@ -9,6 +9,7 @@ import {
 } from "@/lib/validations/proposals";
 
 import { applyExpensePatch } from "./apply-patch";
+import { dispatchExternal } from "@/server/notifications/create-notification";
 
 // SPEC §4.9 case 1+2: edits to your own expense are applied immediately;
 // edits to someone else's go through a proposal + 48h voting window. Only
@@ -75,7 +76,7 @@ async function applyImmediately(
   title: string,
   patch: ExpensePatch,
 ): Promise<ProposeEditResult> {
-  return prisma.$transaction(async (tx) => {
+  const out = await prisma.$transaction(async (tx) => {
     const result = await applyExpensePatch(tx, expenseId, patch);
 
     await tx.auditLog.create({
@@ -91,15 +92,25 @@ async function applyImmediately(
       },
     });
 
-    await notifyMembers(tx, groupId, [userId], {
+    const recipients = await notifyMembers(tx, groupId, [userId], {
       type: "EXPENSE_EDITED",
       title: "Expense updated",
       body: `${title} was edited`,
       entityId: expenseId,
     });
 
-    return { applied: true, expenseId };
+    return { recipients };
   });
+
+  void dispatchExternal(out.recipients, {
+    type: "EXPENSE_EDITED",
+    title: "Expense updated",
+    body: `${title} was edited`,
+    entityType: "EXPENSE",
+    entityId: expenseId,
+  });
+
+  return { applied: true, expenseId };
 }
 
 async function openProposal(
@@ -123,7 +134,7 @@ async function openProposal(
   const expiresAt = new Date(Date.now() + PROPOSAL_VOTING_WINDOW_MS);
   const proposedChanges: ProposedChanges = { kind: "EDIT", patch };
 
-  return prisma.$transaction(async (tx) => {
+  const out = await prisma.$transaction(async (tx) => {
     let proposal: ExpenseProposal;
     try {
       proposal = await tx.expenseProposal.create({
@@ -142,23 +153,33 @@ async function openProposal(
       throw asConflict(err);
     }
 
-    await notifyMembers(tx, groupId, [proposerId], {
+    const recipients = await notifyMembers(tx, groupId, [proposerId], {
       type: "EXPENSE_EDIT_PROPOSAL",
       title: "Vote on expense edit",
       body: `${title} — proposed change needs your vote`,
       entityId: proposal.id,
     });
 
-    return {
-      applied: false,
-      expenseId,
-      proposal: {
-        id: proposal.id,
-        expiresAt: proposal.expiresAt,
-        proposedChanges,
-      },
-    };
+    return { proposal, recipients };
   });
+
+  void dispatchExternal(out.recipients, {
+    type: "EXPENSE_EDIT_PROPOSAL",
+    title: "Vote on expense edit",
+    body: `${title} — proposed change needs your vote`,
+    entityType: "EXPENSE",
+    entityId: out.proposal.id,
+  });
+
+  return {
+    applied: false,
+    expenseId,
+    proposal: {
+      id: out.proposal.id,
+      expiresAt: out.proposal.expiresAt,
+      proposedChanges,
+    },
+  };
 }
 
 async function assertViewerIsMember(userId: string, groupId: string): Promise<void> {
@@ -182,31 +203,35 @@ interface NotifyOpts {
 
 // Re-exported for the vote/delete modules so notification fan-out is
 // consistent. `excludeUserIds` lets callers skip the actor (proposer or
-// editor) so they don't notify themselves.
+// editor) so they don't notify themselves. Returns the recipient userIds
+// so the caller can dispatch push/WhatsApp after the transaction commits.
 export async function notifyMembers(
   tx: { groupMember: { findMany: typeof prisma.groupMember.findMany }; notification: { createMany: typeof prisma.notification.createMany } },
   groupId: string,
   excludeUserIds: string[],
   opts: NotifyOpts,
-): Promise<void> {
+): Promise<string[]> {
   const members = await tx.groupMember.findMany({
     where: { groupId },
     select: { userId: true },
   });
   const exclude = new Set(excludeUserIds);
-  const data = members
-    .filter((m) => !exclude.has(m.userId))
-    .map((m) => ({
-      userId: m.userId,
+  const recipients = members
+    .map((m) => m.userId)
+    .filter((uid) => !exclude.has(uid));
+  if (recipients.length === 0) return [];
+
+  await tx.notification.createMany({
+    data: recipients.map((userId) => ({
+      userId,
       type: opts.type,
       title: opts.title,
       body: opts.body,
       entityType: "EXPENSE" as const,
       entityId: opts.entityId,
-    }));
-  if (data.length > 0) {
-    await tx.notification.createMany({ data });
-  }
+    })),
+  });
+  return recipients;
 }
 
 function asConflict(err: unknown): AppError {

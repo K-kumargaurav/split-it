@@ -7,6 +7,7 @@ import {
   INVITE_LINK_DEFAULT_MAX_USES,
   INVITE_LINK_MAX_USES_CAP,
 } from "@/lib/validations/invites";
+import { dispatchExternal } from "@/server/notifications/create-notification";
 
 // SPEC §4.1: invite by email or by shareable link. Both flows use the same
 // 32-byte random token; only the SHA-256 hash hits the DB so a snapshot leak
@@ -185,6 +186,14 @@ async function addExistingUser(args: AddExistingArgs): Promise<InviteByEmailResu
         entityId: args.groupId,
       },
     });
+  });
+
+  void dispatchExternal([args.userId], {
+    type: "MEMBERSHIP_CHANGED",
+    title: "Added to a group",
+    body: `You've been added to a SplitEasy group.`,
+    entityType: "GROUP",
+    entityId: args.groupId,
   });
 
   return {

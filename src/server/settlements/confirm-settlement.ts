@@ -2,6 +2,7 @@ import type { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
 import { formatPaise } from "@/lib/format";
+import { dispatchExternal } from "@/server/notifications/create-notification";
 
 // SPEC §4.5 step 4–6: only the receiver can confirm or dispute. Confirming
 // flips the status to CONFIRMED and stamps `confirmedAt`; disputing flips it
@@ -26,8 +27,8 @@ export async function confirmSettlement(
   assertReceiver(existing, userId);
   assertPending(existing);
 
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.settlement.update({
+  const updated = await prisma.$transaction(async (tx) => {
+    const row = await tx.settlement.update({
       where: { id: settlementId },
       data: { status: "CONFIRMED", confirmedAt: new Date() },
       include: {
@@ -44,7 +45,7 @@ export async function confirmSettlement(
         entityId: settlementId,
         action: "CONFIRMED",
         oldValue: { status: existing.status },
-        newValue: { status: "CONFIRMED", confirmedAt: updated.confirmedAt },
+        newValue: { status: "CONFIRMED", confirmedAt: row.confirmedAt },
       },
     });
 
@@ -53,16 +54,28 @@ export async function confirmSettlement(
         userId: existing.payerId,
         type: "SETTLEMENT_CONFIRMED",
         title: "Payment confirmed",
-        body: `${updated.receiver.displayName} confirmed your payment of ${formatPaise(
-          updated.amountPaise,
+        body: `${row.receiver.displayName} confirmed your payment of ${formatPaise(
+          row.amountPaise,
         )}.`,
         entityType: "SETTLEMENT",
         entityId: settlementId,
       },
     });
 
-    return updated;
+    return row;
   });
+
+  void dispatchExternal([existing.payerId], {
+    type: "SETTLEMENT_CONFIRMED",
+    title: "Payment confirmed",
+    body: `${updated.receiver.displayName} confirmed your payment of ${formatPaise(
+      updated.amountPaise,
+    )}.`,
+    entityType: "SETTLEMENT",
+    entityId: settlementId,
+  });
+
+  return updated;
 }
 
 export async function disputeSettlement(
@@ -73,8 +86,8 @@ export async function disputeSettlement(
   assertReceiver(existing, userId);
   assertPending(existing);
 
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.settlement.update({
+  const updated = await prisma.$transaction(async (tx) => {
+    const row = await tx.settlement.update({
       where: { id: settlementId },
       data: { status: "DISPUTED" },
       include: {
@@ -100,16 +113,28 @@ export async function disputeSettlement(
         userId: existing.payerId,
         type: "SETTLEMENT_DISPUTED",
         title: "Payment disputed",
-        body: `${updated.receiver.displayName} disputed your payment of ${formatPaise(
-          updated.amountPaise,
+        body: `${row.receiver.displayName} disputed your payment of ${formatPaise(
+          row.amountPaise,
         )}. The debt remains on your balance.`,
         entityType: "SETTLEMENT",
         entityId: settlementId,
       },
     });
 
-    return updated;
+    return row;
   });
+
+  void dispatchExternal([existing.payerId], {
+    type: "SETTLEMENT_DISPUTED",
+    title: "Payment disputed",
+    body: `${updated.receiver.displayName} disputed your payment of ${formatPaise(
+      updated.amountPaise,
+    )}. The debt remains on your balance.`,
+    entityType: "SETTLEMENT",
+    entityId: settlementId,
+  });
+
+  return updated;
 }
 
 async function loadOrThrow(settlementId: string): Promise<SettlementWithUsers> {

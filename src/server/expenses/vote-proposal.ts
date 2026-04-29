@@ -9,6 +9,7 @@ import {
 
 import { applyExpensePatch } from "./apply-patch";
 import { notifyMembers } from "./propose-edit";
+import { dispatchExternal } from "@/server/notifications/create-notification";
 
 // SPEC §4.9: voting majority is "strictly more than 50% of members
 // (excluding proposer)". Tied votes on expiry favour the status quo
@@ -65,13 +66,44 @@ export async function voteOnProposal(
     throw new AppError("CONFLICT", "You've already voted on this proposal.");
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     await tx.proposalVote.create({
       data: { proposalId, voterId: userId, vote },
     });
 
     return tallyAndDecide(tx, proposalId);
   });
+
+  // Post-commit: push + WhatsApp dispatch for whatever fan-out the inner
+  // tally produced (in-app rows already exist). We re-derive recipients
+  // here based on the resolved status — for APPROVED, all members; for
+  // REJECTED, the proposer only.
+  if (result.status === "APPROVED") {
+    const members = await prisma.groupMember.findMany({
+      where: { groupId: proposal.expense.groupId },
+      select: { userId: true },
+    });
+    void dispatchExternal(
+      members.map((m) => m.userId),
+      {
+        type: "EXPENSE_EDITED",
+        title: "Expense updated",
+        body: `${proposal.expense.title} — proposal approved`,
+        entityType: "EXPENSE",
+        entityId: proposal.expense.id,
+      },
+    );
+  } else if (result.status === "REJECTED") {
+    void dispatchExternal([proposal.proposedBy], {
+      type: "EXPENSE_EDIT_PROPOSAL",
+      title: "Proposal rejected",
+      body: `Your proposed edit to ${proposal.expense.title} did not pass`,
+      entityType: "EXPENSE",
+      entityId: proposalId,
+    });
+  }
+
+  return result;
 }
 
 // Counts votes against the current eligible-voter pool (members - proposer).

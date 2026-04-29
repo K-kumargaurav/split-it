@@ -1,6 +1,7 @@
 import { sendMail } from "@/server/email/client";
 import {
   renderEmailOtp,
+  renderGroupInviteEmail,
   renderMagicLinkEmail,
   renderPasswordResetEmail,
   renderVerificationEmail,
@@ -85,6 +86,30 @@ export async function sendPasswordResetEmail(input: SendPasswordResetInput): Pro
   const rendered = renderPasswordResetEmail({
     resetUrl,
     displayName: input.displayName,
+  });
+  await sendMail({
+    to: input.to,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+  });
+}
+
+interface SendGroupInviteInput {
+  to: string;
+  inviterName: string;
+  groupName: string;
+  rawToken: string;
+  ttlDays: number;
+}
+
+export async function sendGroupInviteEmail(input: SendGroupInviteInput): Promise<void> {
+  const joinUrl = `${getAppUrl()}/invite/${encodeURIComponent(input.rawToken)}`;
+  const rendered = renderGroupInviteEmail({
+    inviterName: input.inviterName,
+    groupName: input.groupName,
+    joinUrl,
+    ttlDays: input.ttlDays,
   });
   await sendMail({
     to: input.to,

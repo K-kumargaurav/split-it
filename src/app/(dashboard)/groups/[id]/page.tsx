@@ -156,7 +156,11 @@ export default async function GroupPage({ params }: GroupPageProps) {
             pending={pendingSettlements}
             viewerId={session.user.id}
           />
-          <MembersSection members={group.members} viewerId={session.user.id} />
+          <MembersSection
+            members={group.members}
+            viewerId={session.user.id}
+            groupId={group.id}
+          />
         </div>
       </div>
     </DashboardShell>
@@ -276,55 +280,76 @@ function formatPayerLabel(
 function MembersSection({
   members,
   viewerId,
+  groupId,
 }: {
   members: GroupDetail["members"];
   viewerId: string;
+  groupId: string;
 }) {
+  const MAX_VISIBLE = 5;
+  const visible = members.slice(0, MAX_VISIBLE);
+  const overflow = Math.max(0, members.length - MAX_VISIBLE);
   return (
     <section
       aria-labelledby="members-heading"
       className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
     >
-      <h2 id="members-heading" className="mb-4 text-lg font-semibold tracking-tight text-slate-900">
-        Members
-      </h2>
-      <ul className="divide-y divide-slate-100">
-        {members.map((m) => {
+      <div className="mb-4 flex items-center justify-between">
+        <h2
+          id="members-heading"
+          className="text-lg font-semibold tracking-tight text-slate-900"
+        >
+          Members
+        </h2>
+        <Link
+          href={`/groups/${groupId}/members`}
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+        >
+          Manage
+        </Link>
+      </div>
+
+      <div className="flex items-center -space-x-2">
+        {visible.map((m) => {
           const initial = (m.user.displayName[0] ?? m.user.handle[0] ?? "?").toUpperCase();
           const isYou = m.user.id === viewerId;
-          return (
-            <li key={m.id} className="flex items-center gap-3 py-3">
-              {m.user.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={m.user.avatarUrl}
-                  alt=""
-                  className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
-                />
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white"
-                >
-                  {initial}
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-900">
-                  {m.user.displayName}
-                  {isYou ? <span className="ml-1 text-xs text-slate-400">(you)</span> : null}
-                </p>
-                <p className="truncate text-xs text-slate-500">@{m.user.handle}</p>
-              </div>
-              {m.role === "OWNER" ? (
-                <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                  Owner
-                </span>
-              ) : null}
-            </li>
+          const title = `${m.user.displayName}${isYou ? " (you)" : ""} — @${m.user.handle}`;
+          return m.user.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={m.id}
+              src={m.user.avatarUrl}
+              alt={title}
+              title={title}
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-white"
+            />
+          ) : (
+            <span
+              key={m.id}
+              aria-label={title}
+              title={title}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white ring-2 ring-white"
+            >
+              {initial}
+            </span>
           );
         })}
-      </ul>
+        {overflow > 0 ? (
+          <span
+            aria-label={`${overflow} more members`}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-700 ring-2 ring-white"
+          >
+            +{overflow}
+          </span>
+        ) : null}
+      </div>
+
+      <p className="mt-3 text-xs text-slate-500">
+        {members.length} {members.length === 1 ? "member" : "members"}
+        {members.find((m) => m.role === "OWNER")
+          ? ` · ${members.find((m) => m.role === "OWNER")!.user.displayName} is owner`
+          : ""}
+      </p>
     </section>
   );
 }

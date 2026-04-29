@@ -1,11 +1,12 @@
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
+import { getUserNetBalance } from "@/server/balance/calculate-balances";
 
-// Per-group balance for the requesting user, computed the same way as
-// `getDashboardData` to keep the two sources of truth aligned:
-//   (paid as payer) − (owed as participant) − (settlements out) + (settlements in)
-// All money is paise (BigInt in DB → number in JS, safe up to 2^53 paise).
+// Per-group balance is sourced from `getUserNetBalance` — the same function
+// the group's Balances section uses — so the header and the line-item list
+// can never disagree. Pending (unconfirmed) settlements are deliberately
+// excluded; only CONFIRMED settlements affect balance.
 
 export interface GroupSummary {
   id: string;
@@ -50,11 +51,12 @@ export async function getGroupsForUser(userId: string): Promise<GroupSummary[]> 
 
   if (memberships.length === 0) return [];
 
-  const groupIds = memberships.map((m) => m.group.id);
-  const balances = await computeBalancesByGroup(userId, groupIds);
+  const balances = await Promise.all(
+    memberships.map(({ group }) => getUserNetBalance(group.id, userId)),
+  );
 
   return memberships
-    .map(({ group, role }) => ({
+    .map(({ group, role }, i) => ({
       id: group.id,
       name: group.name,
       description: group.description,
@@ -64,7 +66,7 @@ export async function getGroupsForUser(userId: string): Promise<GroupSummary[]> 
       balanceMode: group.balanceMode,
       status: group.status,
       memberCount: group._count.members,
-      balancePaise: balances.get(group.id) ?? 0,
+      balancePaise: Number(balances[i] ?? BigInt(0)),
       role,
       updatedAt: group.updatedAt,
     }))
@@ -123,81 +125,11 @@ export async function getGroupById(
     throw new AppError("FORBIDDEN", "You don't have access to this group.");
   }
 
-  const balances = await computeBalancesByGroup(userId, [group.id]);
+  const balance = await getUserNetBalance(group.id, userId);
 
   return {
     ...group,
-    balancePaise: balances.get(group.id) ?? 0,
+    balancePaise: Number(balance),
     viewerRole: viewer.role,
   };
-}
-
-// Shared balance aggregator — used by both list and detail paths so the
-// per-group number is identical regardless of entry point. Keep this in sync
-// with `getDashboardData` until we extract a single canonical helper.
-async function computeBalancesByGroup(
-  userId: string,
-  groupIds: string[],
-): Promise<Map<string, number>> {
-  const balances = new Map<string, number>();
-  for (const id of groupIds) balances.set(id, 0);
-  if (groupIds.length === 0) return balances;
-
-  const [expensesAffectingMe, settlementsOut, settlementsIn] = await Promise.all([
-    prisma.expense.findMany({
-      where: {
-        groupId: { in: groupIds },
-        status: "ACTIVE",
-        deletedAt: null,
-        OR: [
-          { payers: { some: { userId } } },
-          { participants: { some: { userId } } },
-        ],
-      },
-      select: {
-        groupId: true,
-        payers: { where: { userId }, select: { amountPaise: true } },
-        participants: { where: { userId }, select: { amountPaise: true } },
-      },
-    }),
-    prisma.settlement.groupBy({
-      by: ["groupId"],
-      where: {
-        groupId: { in: groupIds },
-        payerId: userId,
-        status: "CONFIRMED",
-        deletedAt: null,
-      },
-      _sum: { amountPaise: true },
-    }),
-    prisma.settlement.groupBy({
-      by: ["groupId"],
-      where: {
-        groupId: { in: groupIds },
-        receiverId: userId,
-        status: "CONFIRMED",
-        deletedAt: null,
-      },
-      _sum: { amountPaise: true },
-    }),
-  ]);
-
-  for (const expense of expensesAffectingMe) {
-    const paid = expense.payers.reduce((s, p) => s + Number(p.amountPaise), 0);
-    const owed = expense.participants.reduce((s, p) => s + Number(p.amountPaise), 0);
-    balances.set(expense.groupId, (balances.get(expense.groupId) ?? 0) + paid - owed);
-  }
-  for (const row of settlementsOut) {
-    balances.set(
-      row.groupId,
-      (balances.get(row.groupId) ?? 0) - Number(row._sum.amountPaise ?? 0),
-    );
-  }
-  for (const row of settlementsIn) {
-    balances.set(
-      row.groupId,
-      (balances.get(row.groupId) ?? 0) + Number(row._sum.amountPaise ?? 0),
-    );
-  }
-  return balances;
 }

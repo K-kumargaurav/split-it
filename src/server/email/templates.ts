@@ -174,6 +174,50 @@ If you did not request this link, you can ignore this message.
   return { subject, text, html };
 }
 
+interface GroupInviteEmailInput {
+  inviterName: string;
+  groupName: string;
+  joinUrl: string;
+  ttlDays: number;
+}
+
+export function renderGroupInviteEmail(input: GroupInviteEmailInput): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const subject = `${input.inviterName} invited you to ${input.groupName} on SplitEasy`;
+  const text = `${input.inviterName} invited you to join the SplitEasy group "${input.groupName}".
+
+Accept the invite (valid for ${input.ttlDays} days):
+${input.joinUrl}
+
+If you don't want to join, you can ignore this message.
+`;
+  const html = `<!doctype html>
+<html><body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:32px;">
+        <tr><td>
+          <h1 style="margin:0 0 12px;font-size:20px;font-weight:600;color:#0f172a;">You're invited to ${escapeHtml(input.groupName)}</h1>
+          <p style="margin:0 0 16px;font-size:14px;line-height:22px;color:#334155;">${escapeHtml(input.inviterName)} invited you to join their SplitEasy group. Click below to accept and start splitting expenses.</p>
+          <p style="margin:0 0 24px;">
+            <a href="${escapeHtmlAttr(input.joinUrl)}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px;">Accept invitation</a>
+          </p>
+          <p style="margin:0 0 8px;font-size:12px;color:#64748b;">This link expires in ${input.ttlDays} days.</p>
+          <p style="margin:0 0 8px;font-size:12px;color:#64748b;">Or paste this URL into your browser:</p>
+          <p style="margin:0 0 16px;font-size:12px;color:#475569;word-break:break-all;">${escapeHtml(input.joinUrl)}</p>
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
+          <p style="margin:0;font-size:12px;color:#94a3b8;">If you weren't expecting this invitation, you can safely ignore this email.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+  return { subject, text, html };
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")

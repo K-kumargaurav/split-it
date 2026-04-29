@@ -112,6 +112,13 @@ enum VerificationPurpose {
   PASSWORD_RESET
 }
 
+enum GroupInviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -146,6 +153,9 @@ model User {
   refreshTokens         RefreshToken[]
   mergedGhostMembers    GhostMember[]        @relation("GhostMergedUser")
   accounts              Account[]
+  groupInvitesSent      GroupInvite[]        @relation("GroupInviteInviter")
+  groupInvitesAccepted  GroupInvite[]        @relation("GroupInviteAcceptor")
+  groupInviteLinks      GroupInviteLink[]    @relation("GroupInviteLinkCreator")
 
   @@index([handle])
   @@index([deletedAt])
@@ -210,9 +220,58 @@ model Group {
   recurringTemplates RecurringTemplate[]
   settlements        Settlement[]
   auditLogs          AuditLog[]
+  invites            GroupInvite[]
+  inviteLinks        GroupInviteLink[]
 
   @@index([deletedAt])
   @@map("groups")
+}
+
+// Email-based invite. One outstanding row per (groupId, email); accepting,
+// revoking, or letting it expire flips `status`. The row keeps the SHA-256
+// hash of the invite token — only the raw token (sent in the email URL) is
+// ever shown to the recipient.
+model GroupInvite {
+  id              String            @id @default(uuid())
+  groupId         String
+  invitedEmail    String
+  invitedById     String
+  tokenHash       String            @unique
+  status          GroupInviteStatus @default(PENDING)
+  expiresAt       DateTime
+  createdAt       DateTime          @default(now())
+  acceptedAt      DateTime?
+  acceptedByUserId String?
+
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  invitedBy User   @relation("GroupInviteInviter", fields: [invitedById], references: [id], onDelete: Restrict)
+  acceptedBy User? @relation("GroupInviteAcceptor", fields: [acceptedByUserId], references: [id])
+
+  @@index([groupId, status])
+  @@index([invitedEmail])
+  @@map("group_invites")
+}
+
+// Shareable invite link — one row per generated link. `tokenHash` is the
+// only persisted form of the secret; `usedCount`/`maxUses` cap reuse and
+// `expiresAt` enforces the 7-day TTL. Per-link rate limiting (10 joins/hr)
+// is applied at the join site, not stored here.
+model GroupInviteLink {
+  id           String    @id @default(uuid())
+  groupId      String
+  createdById  String
+  tokenHash    String    @unique
+  maxUses      Int       @default(100)
+  usedCount    Int       @default(0)
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("GroupInviteLinkCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([groupId])
+  @@map("group_invite_links")
 }
 
 model GroupMember {

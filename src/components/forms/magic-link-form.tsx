@@ -6,12 +6,17 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { cn } from "@/lib/cn";
-import { requestMagicLink } from "@/server/auth/magic-link";
 
 const formSchema = z.object({
   email: z.email({ message: "Enter a valid email address." }).max(254),
 });
 type FormValues = z.infer<typeof formSchema>;
+
+interface MagicLinkResult {
+  ok: boolean;
+  formError?: string;
+  fieldError?: string;
+}
 
 export function MagicLinkForm() {
   const [serverError, setServerError] = useState<string | null>(null);
@@ -29,18 +34,31 @@ export function MagicLinkForm() {
 
   async function onSubmit(values: FormValues) {
     setServerError(null);
+    let response: Response;
     try {
-      const result = await requestMagicLink({ email: values.email });
-      if (!result.ok) {
-        setServerError(
-          result.formError ?? result.fieldError ?? "Couldn't send the link. Please try again.",
-        );
-        return;
-      }
-      setSentTo(values.email);
+      response = await fetch("/api/v1/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.email }),
+      });
     } catch {
       setServerError("Couldn't send the link. Please try again.");
+      return;
     }
+    let result: MagicLinkResult;
+    try {
+      result = (await response.json()) as MagicLinkResult;
+    } catch {
+      setServerError("Couldn't send the link. Please try again.");
+      return;
+    }
+    if (!result.ok) {
+      setServerError(
+        result.formError ?? result.fieldError ?? "Couldn't send the link. Please try again.",
+      );
+      return;
+    }
+    setSentTo(values.email);
   }
 
   if (sentTo) {

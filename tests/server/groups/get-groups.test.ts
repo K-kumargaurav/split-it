@@ -1,18 +1,26 @@
+// Both `getGroupsForUser` and `getGroupById` now route their per-group
+// balance through `getUserNetBalance` so the dashboard, the group list, and
+// the group page all read from a single canonical algorithm. Mocks below
+// reflect that internal call shape: full ledger reads (not the per-user
+// aggregate that the old buggy implementation used).
+
 const memberFindMany = jest.fn();
+const memberFindUnique = jest.fn();
 const expenseFindMany = jest.fn();
-const settlementGroupBy = jest.fn();
+const settlementFindMany = jest.fn();
 const groupFindFirst = jest.fn();
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     groupMember: {
       findMany: (...args: unknown[]) => memberFindMany(...args),
+      findUnique: (...args: unknown[]) => memberFindUnique(...args),
     },
     expense: {
       findMany: (...args: unknown[]) => expenseFindMany(...args),
     },
     settlement: {
-      groupBy: (...args: unknown[]) => settlementGroupBy(...args),
+      findMany: (...args: unknown[]) => settlementFindMany(...args),
     },
     group: {
       findFirst: (...args: unknown[]) => groupFindFirst(...args),
@@ -24,21 +32,16 @@ import { AppError } from "@/lib/errors";
 import { getGroupById, getGroupsForUser } from "@/server/groups/get-groups";
 
 const USER_ID = "u_alice";
-
-function settlementsBy(payerOrReceiver: "payer" | "receiver") {
-  // The first groupBy() call inside the implementation queries settlements
-  // OUT (where I'm payerId), the second IN (where I'm receiverId). We let
-  // the test set up both arms via shared queue ordering.
-  return settlementGroupBy.mock.calls.find((c) =>
-    payerOrReceiver === "payer" ? c[0]?.where?.payerId : c[0]?.where?.receiverId,
-  );
-}
+const BOB = "u_bob";
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Defaults — most tests overwrite these as needed.
+  // Membership gate inside `getUserNetBalance` — the SUT only invokes this
+  // for groups the caller already proved access to, so a stub success row
+  // matches reality.
+  memberFindUnique.mockResolvedValue({ id: "gm_self" });
   expenseFindMany.mockResolvedValue([]);
-  settlementGroupBy.mockResolvedValue([]);
+  settlementFindMany.mockResolvedValue([]);
 });
 
 describe("getGroupsForUser", () => {
@@ -47,10 +50,10 @@ describe("getGroupsForUser", () => {
     const groups = await getGroupsForUser(USER_ID);
     expect(groups).toEqual([]);
     expect(expenseFindMany).not.toHaveBeenCalled();
-    expect(settlementGroupBy).not.toHaveBeenCalled();
+    expect(settlementFindMany).not.toHaveBeenCalled();
   });
 
-  it("returns groups with member count and net balance from expenses + settlements", async () => {
+  it("returns groups with member count and net balance from the direct ledger", async () => {
     const updatedAt = new Date("2026-04-20T10:00:00Z");
     memberFindMany.mockResolvedValue([
       {
@@ -70,18 +73,23 @@ describe("getGroupsForUser", () => {
       },
     ]);
 
-    // Alice paid 50000 paise total, owes 30000 paise → +20000.
+    // Alice paid 50000 paise for an expense split equally with Bob (25000
+    // each). Direct-ledger net for Alice from this expense alone is +25000.
     expenseFindMany.mockResolvedValue([
       {
-        groupId: "g_1",
-        payers: [{ amountPaise: BigInt(50000) }],
-        participants: [{ amountPaise: BigInt(30000) }],
+        payers: [{ userId: USER_ID, amountPaise: BigInt(50000) }],
+        participants: [
+          { userId: USER_ID, amountPaise: BigInt(25000) },
+          { userId: BOB, amountPaise: BigInt(25000) },
+        ],
       },
     ]);
-    // Settled out 10000 paise → balance becomes +10000 net.
-    settlementGroupBy
-      .mockResolvedValueOnce([{ groupId: "g_1", _sum: { amountPaise: BigInt(10000) } }])
-      .mockResolvedValueOnce([]);
+    // Bob settles 10000 to Alice (Bob is settlement-payer, Alice is
+    // receiver). Settlement reduces Alice's outstanding credit, so the
+    // canonical net drops from +25000 to +15000.
+    settlementFindMany.mockResolvedValue([
+      { payerId: BOB, receiverId: USER_ID, amountPaise: BigInt(10000) },
+    ]);
 
     const groups = await getGroupsForUser(USER_ID);
 
@@ -91,13 +99,10 @@ describe("getGroupsForUser", () => {
       name: "Goa",
       memberCount: 4,
       role: "OWNER",
-      balancePaise: 10_000,
+      balancePaise: 15_000,
       currency: "INR",
       balanceMode: "DIRECT",
     });
-
-    expect(settlementsBy("payer")).toBeDefined();
-    expect(settlementsBy("receiver")).toBeDefined();
   });
 
   it("sorts groups by most-recent updatedAt", async () => {
@@ -178,17 +183,23 @@ describe("getGroupById", () => {
           joinedAt: new Date(),
           user: { id: USER_ID, handle: "alice", displayName: "Alice", avatarUrl: null },
         },
+        {
+          id: "gm_2",
+          role: "OWNER",
+          joinedAt: new Date(),
+          user: { id: BOB, handle: "bob", displayName: "Bob", avatarUrl: null },
+        },
       ],
       _count: { expenses: 3 },
     });
+    // Bob covered an expense; Alice's share is 2500. Direct ledger says
+    // Alice owes Bob 2500 → viewer's net is -2500.
     expenseFindMany.mockResolvedValue([
       {
-        groupId: "g_1",
-        payers: [],
-        participants: [{ amountPaise: BigInt(2500) }],
+        payers: [{ userId: BOB, amountPaise: BigInt(2500) }],
+        participants: [{ userId: USER_ID, amountPaise: BigInt(2500) }],
       },
     ]);
-    settlementGroupBy.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
     const result = await getGroupById(USER_ID, "g_1");
 

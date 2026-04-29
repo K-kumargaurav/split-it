@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getUserNetBalance } from "@/server/balance/calculate-balances";
 import type { DashboardData, DashboardGroupSummary } from "@/server/dashboard/types";
 
 // Aggregates a user's view of the home dashboard:
@@ -6,11 +7,11 @@ import type { DashboardData, DashboardGroupSummary } from "@/server/dashboard/ty
 //   • Per-group balance, member count, last activity
 //   • Pending settlement confirmations + open edit-proposal votes
 //
-// The per-group balance is:
-//   (sum of expense_payers I covered)
-//   − (sum of expense_participants I owe on)
-//   − (sum of confirmed settlements I paid out in this group)
-//   + (sum of confirmed settlements I received in this group)
+// Per-group balance is sourced from `getUserNetBalance` — the same algorithm
+// the group-detail page's Balances section uses — so the dashboard cards and
+// the group page can never disagree on a number. Pending (unconfirmed)
+// settlements are deliberately excluded from balance; they're surfaced in
+// the dedicated "awaiting confirmation" section instead.
 //
 // All money is in paise (BigInt in DB → number in JS — safe up to 2^53 paise,
 // roughly ₹90 trillion, comfortably above any plausible single-user balance).
@@ -46,55 +47,15 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   const groupIds = memberships.map((m) => m.group.id);
 
   const [
-    expensesAffectingMe,
-    settlementsOut,
-    settlementsIn,
+    perGroupBalances,
     lastExpenseDates,
     pendingSettlements,
     pendingProposals,
     votedProposalIds,
   ] = await Promise.all([
-    // Pull each expense in my groups that I'm involved in (as payer or
-    // participant), including only my rows from each side. Computing
-    // net-per-group in JS is fine here — typical user has O(thousands) of
-    // expenses across all groups, well within memory.
-    prisma.expense.findMany({
-      where: {
-        groupId: { in: groupIds },
-        status: "ACTIVE",
-        deletedAt: null,
-        OR: [
-          { payers: { some: { userId } } },
-          { participants: { some: { userId } } },
-        ],
-      },
-      select: {
-        groupId: true,
-        createdAt: true,
-        payers: { where: { userId }, select: { amountPaise: true } },
-        participants: { where: { userId }, select: { amountPaise: true } },
-      },
-    }),
-    prisma.settlement.groupBy({
-      by: ["groupId"],
-      where: {
-        groupId: { in: groupIds },
-        payerId: userId,
-        status: "CONFIRMED",
-        deletedAt: null,
-      },
-      _sum: { amountPaise: true },
-    }),
-    prisma.settlement.groupBy({
-      by: ["groupId"],
-      where: {
-        groupId: { in: groupIds },
-        receiverId: userId,
-        status: "CONFIRMED",
-        deletedAt: null,
-      },
-      _sum: { amountPaise: true },
-    }),
+    // One canonical net per group — same function the group-detail page uses
+    // for its Balances section. Pending settlements are excluded by design.
+    Promise.all(groupIds.map((id) => getUserNetBalance(id, userId))),
     prisma.expense.groupBy({
       by: ["groupId"],
       where: {
@@ -130,28 +91,10 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
 
   const balanceByGroup = new Map<string, number>();
   const lastActivityByGroup = new Map<string, Date>();
-  for (const id of groupIds) balanceByGroup.set(id, 0);
+  groupIds.forEach((id, i) => {
+    balanceByGroup.set(id, Number(perGroupBalances[i] ?? BigInt(0)));
+  });
 
-  for (const expense of expensesAffectingMe) {
-    const paid = expense.payers.reduce((s, p) => s + Number(p.amountPaise), 0);
-    const owed = expense.participants.reduce((s, p) => s + Number(p.amountPaise), 0);
-    balanceByGroup.set(
-      expense.groupId,
-      (balanceByGroup.get(expense.groupId) ?? 0) + paid - owed,
-    );
-  }
-  for (const row of settlementsOut) {
-    balanceByGroup.set(
-      row.groupId,
-      (balanceByGroup.get(row.groupId) ?? 0) - Number(row._sum.amountPaise ?? 0),
-    );
-  }
-  for (const row of settlementsIn) {
-    balanceByGroup.set(
-      row.groupId,
-      (balanceByGroup.get(row.groupId) ?? 0) + Number(row._sum.amountPaise ?? 0),
-    );
-  }
   for (const row of lastExpenseDates) {
     if (row._max.createdAt) lastActivityByGroup.set(row.groupId, row._max.createdAt);
   }

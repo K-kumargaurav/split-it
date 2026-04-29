@@ -7,7 +7,6 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { GroupsList } from "@/components/dashboard/groups-list";
 import { PendingActions } from "@/components/dashboard/pending-actions";
 import { QuickActions } from "@/components/dashboard/quick-actions";
-import { getUserNetBalance } from "@/server/balance/calculate-balances";
 import { getDashboardData } from "@/server/dashboard/get-dashboard-data";
 
 // Fully-RSC dashboard. Middleware (auth-edge) already rejects unauthenticated
@@ -21,17 +20,6 @@ export default async function DashboardPage() {
   const hasGroups = data.groups.length > 0;
   const displayName = session.user.name ?? `@${session.user.handle}`;
 
-  // Cross-group net is the sum of per-group nets from the balance module —
-  // sourced through getUserNetBalance so it stays consistent with the
-  // group-detail view (same algorithm, same direct ledger).
-  const userId = session.user.id;
-  const perGroupNets = await Promise.all(
-    data.groups.map((g) => getUserNetBalance(g.id, userId)),
-  );
-  const netBalancePaise = Number(
-    perGroupNets.reduce((sum, n) => sum + n, BigInt(0)),
-  );
-
   return (
     <DashboardShell
       user={{
@@ -43,7 +31,7 @@ export default async function DashboardPage() {
     >
       <div className="space-y-8">
         <BalanceSummary
-          netBalancePaise={netBalancePaise}
+          netBalancePaise={data.netBalancePaise}
           groupCount={data.groups.length}
           displayName={displayName}
         />

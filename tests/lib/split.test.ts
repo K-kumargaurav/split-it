@@ -3,6 +3,17 @@ import { equalSplit } from "@/lib/split";
 describe("equalSplit", () => {
   it("100 paise across 3 people → [34, 33, 33]", () => {
     expect(equalSplit(100, 3)).toEqual([34, 33, 33]);
+    expect(equalSplit(100, 3).reduce((s, x) => s + x, 0)).toBe(100);
+  });
+
+  it("3333 paise across 2 people → [1667, 1666] (remainder lands on first)", () => {
+    expect(equalSplit(3333, 2)).toEqual([1667, 1666]);
+    expect(equalSplit(3333, 2).reduce((s, x) => s + x, 0)).toBe(3333);
+  });
+
+  it("3333 paise across 3 people → [1111, 1111, 1111] (no remainder)", () => {
+    expect(equalSplit(3333, 3)).toEqual([1111, 1111, 1111]);
+    expect(equalSplit(3333, 3).reduce((s, x) => s + x, 0)).toBe(3333);
   });
 
   it("10 paise across 3 people → [4, 3, 3]", () => {

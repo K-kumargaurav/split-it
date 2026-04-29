@@ -1,11 +1,12 @@
 import type { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
-import { equalSplit } from "@/lib/split";
+import { equalSplit, exactSplit, percentageSplit } from "@/lib/split";
 import {
   createExpenseSchema,
   type CreateExpenseInput,
 } from "@/lib/validations/expenses";
+import { formatPaise } from "@/lib/format";
 
 // Returned shape — payers + participants joined with the corresponding user
 // row so the API can echo back display names without a follow-up fetch.
@@ -23,6 +24,11 @@ export type CreatedExpense = Prisma.ExpenseGetPayload<{
     };
   };
 }>;
+
+interface ResolvedSplit {
+  participantIds: string[];
+  shares: number[];
+}
 
 export async function createExpense(
   userId: string,
@@ -47,21 +53,62 @@ export async function createExpense(
   assertActorsAreMembers(input, memberIds);
   assertPayerSumEqualsTotal(input);
 
-  // EQUAL split: deterministic per SPEC §4.2. Order is significant — the
-  // remainder lands on `participantIds[0]`, so the caller's array order is
-  // the source of truth for who absorbs the extra paise.
-  const shares = equalSplit(input.totalAmount, input.participantIds.length);
-  const partSum = shares.reduce((s, x) => s + x, 0);
+  const resolved = resolveSplit(input);
+  const partSum = resolved.shares.reduce((s, x) => s + x, 0);
   if (partSum !== input.totalAmount) {
-    // Defence-in-depth — equalSplit() already guarantees this; the check is
-    // here so a future refactor can't quietly desync the invariant.
+    // Defence-in-depth — the split helpers already guarantee this; the check
+    // is here so a future refactor can't quietly desync the invariant.
     throw new AppError(
       "VALIDATION_ERROR",
-      "Participant splits must sum to the total amount exactly.",
+      `Split amounts sum to ${formatPaise(partSum)} but expense total is ${formatPaise(input.totalAmount)}.`,
     );
   }
 
-  return runCreateTransaction(userId, groupId, input, shares);
+  return runCreateTransaction(userId, groupId, input, resolved);
+}
+
+// Branches on splitType to compute the per-participant shares. Each branch
+// returns the participant order alongside the matching share array so the
+// transaction layer doesn't have to know which split shape it's writing.
+function resolveSplit(input: CreateExpenseInput): ResolvedSplit {
+  if (input.splitType === "EQUAL") {
+    // EQUAL split: deterministic per SPEC §4.2. Order is significant — the
+    // remainder lands on `participantIds[0]`, so the caller's array order is
+    // the source of truth for who absorbs the extra paise.
+    const shares = equalSplit(input.totalAmount, input.participantIds.length);
+    return { participantIds: input.participantIds, shares };
+  }
+
+  if (input.splitType === "EXACT") {
+    const participantIds = input.participantSplits.map((p) => p.userId);
+    const amounts = input.participantSplits.map((p) => p.amountPaise);
+    const sum = amounts.reduce((s, x) => s + x, 0);
+    if (sum !== input.totalAmount) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        `Split amounts sum to ${formatPaise(sum)} but expense total is ${formatPaise(input.totalAmount)}.`,
+        [{ path: ["participantSplits"], message: "Exact amounts must sum to the total." }],
+      );
+    }
+    const shares = exactSplit(input.totalAmount, amounts);
+    return { participantIds, shares };
+  }
+
+  // PERCENTAGE — must sum to exactly 100. floor(total * pct / 100) per
+  // participant, leftover paise distributed to the LAST participants
+  // backward so the shares sum to total exactly.
+  const participantIds = input.participantSplits.map((p) => p.userId);
+  const percentages = input.participantSplits.map((p) => p.percentage);
+  const pctSum = percentages.reduce((s, x) => s + x, 0);
+  if (pctSum !== 100) {
+    throw new AppError(
+      "VALIDATION_ERROR",
+      `Percentages must sum to exactly 100 (got ${pctSum}).`,
+      [{ path: ["participantSplits"], message: "Percentages must sum to exactly 100." }],
+    );
+  }
+  const shares = percentageSplit(input.totalAmount, percentages);
+  return { participantIds, shares };
 }
 
 async function assertViewerIsMember(userId: string, groupId: string): Promise<void> {
@@ -95,12 +142,20 @@ function assertActorsAreMembers(
       );
     }
   }
-  for (const id of input.participantIds) {
+
+  const participantIds =
+    input.splitType === "EQUAL"
+      ? input.participantIds
+      : input.participantSplits.map((p) => p.userId);
+  const participantField =
+    input.splitType === "EQUAL" ? "participantIds" : "participantSplits";
+
+  for (const id of participantIds) {
     if (!memberIds.has(id)) {
       throw new AppError(
         "VALIDATION_ERROR",
         "All participants must be members of the group.",
-        [{ path: ["participantIds"], message: `User ${id} is not a member.` }],
+        [{ path: [participantField], message: `User ${id} is not a member.` }],
       );
     }
   }
@@ -126,7 +181,7 @@ async function runCreateTransaction(
   userId: string,
   groupId: string,
   input: CreateExpenseInput,
-  shares: number[],
+  resolved: ResolvedSplit,
 ): Promise<CreatedExpense> {
   return prisma.$transaction(async (tx) => {
     const expense = await tx.expense.create({
@@ -136,7 +191,7 @@ async function runCreateTransaction(
         categoryId: input.categoryId ?? null,
         baseAmount: BigInt(input.totalAmount),
         totalAmount: BigInt(input.totalAmount),
-        splitType: "EQUAL",
+        splitType: input.splitType,
         date: input.date,
         createdBy: userId,
         payers: {
@@ -146,9 +201,9 @@ async function runCreateTransaction(
           })),
         },
         participants: {
-          create: input.participantIds.map((uid, i) => ({
+          create: resolved.participantIds.map((uid, i) => ({
             userId: uid,
-            amountPaise: BigInt(shares[i]!),
+            amountPaise: BigInt(resolved.shares[i]!),
           })),
         },
       },
@@ -176,11 +231,11 @@ async function runCreateTransaction(
         newValue: {
           title: expense.title,
           totalAmount: input.totalAmount,
-          splitType: "EQUAL",
+          splitType: input.splitType,
           payerSplits: input.payerSplits,
-          participantShares: input.participantIds.map((uid, i) => ({
+          participantShares: resolved.participantIds.map((uid, i) => ({
             userId: uid,
-            amountPaise: shares[i]!,
+            amountPaise: resolved.shares[i]!,
           })),
         },
       },

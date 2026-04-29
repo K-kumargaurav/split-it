@@ -8,7 +8,7 @@ import { z } from "zod";
 
 import { cn } from "@/lib/cn";
 import { formatPaise, rupeesToPaise } from "@/lib/format";
-import { equalSplit } from "@/lib/split";
+import { equalSplit, percentageSplit } from "@/lib/split";
 
 // Form is rupees-facing — the user thinks in ₹, the wire format is paise.
 // Convert at the boundary (onSubmit) and validate the integer in `paise` as
@@ -33,6 +33,8 @@ interface ExpenseFormProps {
   categories: CategoryOption[];
 }
 
+type SplitType = "EQUAL" | "EXACT" | "PERCENTAGE";
+
 const formSchema = z.object({
   title: z.string().trim().min(1, { message: "Title is required." }).max(120),
   amount: z
@@ -56,6 +58,13 @@ interface CreateExpenseErrorBody {
 export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseFormProps) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [splitType, setSplitType] = useState<SplitType>("EQUAL");
+
+  // EXACT/PERCENTAGE inputs are tracked as strings keyed by participant id so
+  // empty input is distinguishable from zero, and so React doesn't have to
+  // re-mount inputs as participants are toggled.
+  const [exactInputs, setExactInputs] = useState<Record<string, string>>({});
+  const [percentInputs, setPercentInputs] = useState<Record<string, string>>({});
 
   const allIds = useMemo(() => members.map((m) => m.id), [members]);
   const today = new Date().toISOString().slice(0, 10);
@@ -81,38 +90,167 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
   const amount = watch("amount");
   const participantIds = watch("participantIds");
 
-  // Live preview uses the same equalSplit() the server uses, so what the user
-  // sees is exactly what gets written. Skip when amount or participants are
-  // not yet valid — preview hides instead of rendering "₹0.00 each".
-  const preview = useMemo(() => {
-    if (!amount || amount <= 0) return null;
-    if (!participantIds || participantIds.length === 0) return null;
-    const totalPaise = rupeesToPaise(amount);
-    if (totalPaise < 1) return null;
+  const totalPaise = useMemo(() => {
+    if (!amount || amount <= 0) return 0;
+    const p = rupeesToPaise(amount);
+    return p > 0 ? p : 0;
+  }, [amount]);
+
+  // ── EQUAL preview ─────────────────────────────────────────────────────
+  // Live preview uses the same equalSplit() the server uses, so what the
+  // user sees is exactly what gets written.
+  const equalPreview = useMemo(() => {
+    if (splitType !== "EQUAL") return null;
+    if (totalPaise < 1 || !participantIds || participantIds.length === 0) return null;
     try {
       const shares = equalSplit(totalPaise, participantIds.length);
-      return participantIds.map((id, i) => ({
-        memberId: id,
-        amountPaise: shares[i] ?? 0,
-      }));
+      return participantIds.map((id, i) => ({ memberId: id, amountPaise: shares[i] ?? 0 }));
     } catch {
       return null;
     }
-  }, [amount, participantIds]);
+  }, [splitType, totalPaise, participantIds]);
+
+  // ── EXACT validation ──────────────────────────────────────────────────
+  // Every selected participant gets an amount input. Sum is in paise. Form
+  // is valid iff sum === totalPaise exactly.
+  const exactState = useMemo(() => {
+    if (splitType !== "EXACT") return null;
+    const ids = participantIds ?? [];
+    let sumPaise = 0;
+    let allFilled = true;
+    const rows = ids.map((id) => {
+      const raw = exactInputs[id] ?? "";
+      if (raw === "") allFilled = false;
+      const rupees = Number(raw);
+      const paise = Number.isFinite(rupees) && rupees >= 0 ? rupeesToPaise(rupees) : 0;
+      sumPaise += paise;
+      return { memberId: id, amountPaise: paise };
+    });
+    const remainingPaise = totalPaise - sumPaise;
+    return {
+      rows,
+      sumPaise,
+      remainingPaise,
+      allFilled,
+      valid: totalPaise > 0 && remainingPaise === 0 && allFilled && ids.length > 0,
+    };
+  }, [splitType, participantIds, exactInputs, totalPaise]);
+
+  // ── PERCENTAGE validation ─────────────────────────────────────────────
+  // Each selected participant gets a percentage input. Sum must equal 100
+  // exactly. Computed shares preview uses percentageSplit().
+  const percentState = useMemo(() => {
+    if (splitType !== "PERCENTAGE") return null;
+    const ids = participantIds ?? [];
+    let sumPct = 0;
+    let allFilled = true;
+    const pcts = ids.map((id) => {
+      const raw = percentInputs[id] ?? "";
+      if (raw === "") allFilled = false;
+      const n = Number(raw);
+      const pct = Number.isFinite(n) && n >= 0 ? n : 0;
+      sumPct += pct;
+      return pct;
+    });
+    const remainingPct = 100 - sumPct;
+    let preview: { memberId: string; amountPaise: number }[] | null = null;
+    if (totalPaise > 0 && sumPct === 100 && allFilled) {
+      try {
+        const shares = percentageSplit(totalPaise, pcts);
+        preview = ids.map((id, i) => ({ memberId: id, amountPaise: shares[i] ?? 0 }));
+      } catch {
+        preview = null;
+      }
+    }
+    return {
+      pcts,
+      sumPct,
+      remainingPct,
+      allFilled,
+      preview,
+      valid: totalPaise > 0 && sumPct === 100 && allFilled && ids.length > 0,
+    };
+  }, [splitType, participantIds, percentInputs, totalPaise]);
+
+  const splitValid =
+    splitType === "EQUAL"
+      ? Boolean(equalPreview)
+      : splitType === "EXACT"
+      ? Boolean(exactState?.valid)
+      : Boolean(percentState?.valid);
 
   async function onSubmit(values: FormValues) {
     setServerError(null);
 
-    const totalPaise = rupeesToPaise(values.amount);
-    const payload = {
+    const computedTotal = rupeesToPaise(values.amount);
+
+    type Payload =
+      | {
+          title: string;
+          categoryId: string | null;
+          date: string;
+          totalAmount: number;
+          splitType: "EQUAL";
+          payerSplits: { userId: string; amountPaise: number }[];
+          participantIds: string[];
+        }
+      | {
+          title: string;
+          categoryId: string | null;
+          date: string;
+          totalAmount: number;
+          splitType: "EXACT";
+          payerSplits: { userId: string; amountPaise: number }[];
+          participantSplits: { userId: string; amountPaise: number }[];
+        }
+      | {
+          title: string;
+          categoryId: string | null;
+          date: string;
+          totalAmount: number;
+          splitType: "PERCENTAGE";
+          payerSplits: { userId: string; amountPaise: number }[];
+          participantSplits: { userId: string; percentage: number }[];
+        };
+
+    const base = {
       title: values.title,
       categoryId: values.categoryId ? values.categoryId : null,
       date: values.date,
-      totalAmount: totalPaise,
-      splitType: "EQUAL" as const,
-      payerSplits: [{ userId: values.paidById, amountPaise: totalPaise }],
-      participantIds: values.participantIds,
+      totalAmount: computedTotal,
+      payerSplits: [{ userId: values.paidById, amountPaise: computedTotal }],
     };
+
+    let payload: Payload;
+    if (splitType === "EQUAL") {
+      payload = { ...base, splitType: "EQUAL", participantIds: values.participantIds };
+    } else if (splitType === "EXACT") {
+      if (!exactState?.valid) {
+        setServerError("Exact amounts must sum to the total before saving.");
+        return;
+      }
+      payload = {
+        ...base,
+        splitType: "EXACT",
+        participantSplits: exactState.rows.map((r) => ({
+          userId: r.memberId,
+          amountPaise: r.amountPaise,
+        })),
+      };
+    } else {
+      if (!percentState?.valid) {
+        setServerError("Percentages must sum to exactly 100 before saving.");
+        return;
+      }
+      payload = {
+        ...base,
+        splitType: "PERCENTAGE",
+        participantSplits: values.participantIds.map((id, i) => ({
+          userId: id,
+          percentage: percentState.pcts[i] ?? 0,
+        })),
+      };
+    }
 
     let response: Response;
     try {
@@ -285,7 +423,34 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
         ) : null}
       </fieldset>
 
-      {preview ? (
+      <fieldset>
+        <legend className="block text-sm font-medium text-slate-700">Split type</legend>
+        <div
+          role="tablist"
+          aria-label="Split type"
+          className="mt-2 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1"
+        >
+          {(["EQUAL", "EXACT", "PERCENTAGE"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="tab"
+              aria-selected={splitType === t}
+              onClick={() => setSplitType(t)}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                splitType === t
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              {t === "EQUAL" ? "Equal" : t === "EXACT" ? "Exact" : "Percentage"}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      {splitType === "EQUAL" && equalPreview ? (
         <section
           aria-label="Split preview"
           className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3"
@@ -294,7 +459,7 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
             Each person owes
           </p>
           <ul className="mt-2 divide-y divide-slate-200">
-            {preview.map((row) => {
+            {equalPreview.map((row) => {
               const member = memberById.get(row.memberId);
               if (!member) return null;
               return (
@@ -311,6 +476,111 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
                   <span className="font-mono tabular-nums text-slate-900">
                     {formatPaise(row.amountPaise)}
                   </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
+      {splitType === "EXACT" && exactState ? (
+        <section
+          aria-label="Exact amounts"
+          className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+              Enter exact amount
+            </p>
+            <RemainingAmount remainingPaise={exactState.remainingPaise} />
+          </div>
+          <ul className="mt-2 divide-y divide-slate-200">
+            {(participantIds ?? []).map((id) => {
+              const member = memberById.get(id);
+              if (!member) return null;
+              return (
+                <li
+                  key={id}
+                  className="flex items-center justify-between gap-3 py-1.5 text-sm text-slate-700"
+                >
+                  <span className="truncate">
+                    {member.displayName}
+                    {member.id === viewerId ? (
+                      <span className="ml-1 text-xs text-slate-400">(you)</span>
+                    ) : null}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-slate-500">₹</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={exactInputs[id] ?? ""}
+                      onChange={(e) =>
+                        setExactInputs((prev) => ({ ...prev, [id]: e.target.value }))
+                      }
+                      className="w-28 rounded-lg border border-slate-300 bg-white px-2 py-1 text-right font-mono text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
+      {splitType === "PERCENTAGE" && percentState ? (
+        <section
+          aria-label="Percentage shares"
+          className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+              Enter % per person
+            </p>
+            <RemainingPercentage remainingPct={percentState.remainingPct} />
+          </div>
+          <ul className="mt-2 divide-y divide-slate-200">
+            {(participantIds ?? []).map((id, i) => {
+              const member = memberById.get(id);
+              if (!member) return null;
+              const previewRow = percentState.preview?.[i];
+              return (
+                <li
+                  key={id}
+                  className="flex items-center justify-between gap-3 py-1.5 text-sm text-slate-700"
+                >
+                  <span className="truncate">
+                    {member.displayName}
+                    {member.id === viewerId ? (
+                      <span className="ml-1 text-xs text-slate-400">(you)</span>
+                    ) : null}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    {previewRow ? (
+                      <span className="font-mono text-xs tabular-nums text-slate-500">
+                        {formatPaise(previewRow.amountPaise)}
+                      </span>
+                    ) : null}
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        placeholder="0"
+                        value={percentInputs[id] ?? ""}
+                        onChange={(e) =>
+                          setPercentInputs((prev) => ({ ...prev, [id]: e.target.value }))
+                        }
+                        className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-right font-mono text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                      <span className="text-xs text-slate-500">%</span>
+                    </div>
+                  </div>
                 </li>
               );
             })}
@@ -338,7 +608,7 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
         </button>
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !splitValid}
           className={cn(
             "rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
             "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
@@ -350,4 +620,38 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
       </div>
     </form>
   );
+}
+
+function RemainingAmount({ remainingPaise }: { remainingPaise: number }) {
+  // Green when exactly zero — the split adds up. Red when over (more
+  // allocated than the total). Slate when there's still room to allocate.
+  const tone =
+    remainingPaise === 0
+      ? "text-emerald-700"
+      : remainingPaise < 0
+      ? "text-rose-700"
+      : "text-slate-600";
+  const label =
+    remainingPaise === 0
+      ? "Allocated exactly"
+      : remainingPaise < 0
+      ? `Over by ${formatPaise(-remainingPaise)}`
+      : `${formatPaise(remainingPaise)} remaining to allocate`;
+  return <span className={cn("text-xs font-medium", tone)}>{label}</span>;
+}
+
+function RemainingPercentage({ remainingPct }: { remainingPct: number }) {
+  const tone =
+    remainingPct === 0
+      ? "text-emerald-700"
+      : remainingPct < 0
+      ? "text-rose-700"
+      : "text-slate-600";
+  const label =
+    remainingPct === 0
+      ? "100% allocated"
+      : remainingPct < 0
+      ? `Over by ${(-remainingPct).toFixed(2)}%`
+      : `${remainingPct.toFixed(2)}% remaining`;
+  return <span className={cn("text-xs font-medium", tone)}>{label}</span>;
 }

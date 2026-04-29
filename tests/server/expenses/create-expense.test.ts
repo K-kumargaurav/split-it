@@ -222,3 +222,119 @@ describe("createExpense — guards", () => {
     expect(groupMemberFindUnique).not.toHaveBeenCalled();
   });
 });
+
+describe("createExpense — EXACT split", () => {
+  it("[500, 300, 200] of 1000 paise → persists those exact shares", async () => {
+    defaultMembership();
+    expenseCreate.mockResolvedValue({
+      id: "exp_exact",
+      title: "Brunch",
+      totalAmount: BigInt(1000),
+      splitType: "EXACT",
+      date: new Date(),
+      createdAt: new Date(),
+      payers: [],
+      participants: [],
+    });
+
+    await createExpense(ACTOR, GROUP, {
+      title: "Brunch",
+      date: "2026-04-26",
+      totalAmount: 1000,
+      splitType: "EXACT",
+      payerSplits: [{ userId: ACTOR, amountPaise: 1000 }],
+      participantSplits: [
+        { userId: ALICE, amountPaise: 500 },
+        { userId: BOB, amountPaise: 300 },
+        { userId: CAROL, amountPaise: 200 },
+      ],
+    });
+
+    const data = expenseCreate.mock.calls[0][0].data;
+    expect(data.splitType).toBe("EXACT");
+    expect(data.participants.create).toEqual([
+      { userId: ALICE, amountPaise: BigInt(500) },
+      { userId: BOB, amountPaise: BigInt(300) },
+      { userId: CAROL, amountPaise: BigInt(200) },
+    ]);
+  });
+
+  it("rejects [500, 300, 100] for total 1000 (sum 900 ≠ 1000)", async () => {
+    defaultMembership();
+
+    await expect(
+      createExpense(ACTOR, GROUP, {
+        title: "Brunch",
+        date: "2026-04-26",
+        totalAmount: 1000,
+        splitType: "EXACT",
+        payerSplits: [{ userId: ACTOR, amountPaise: 1000 }],
+        participantSplits: [
+          { userId: ALICE, amountPaise: 500 },
+          { userId: BOB, amountPaise: 300 },
+          { userId: CAROL, amountPaise: 100 },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "VALIDATION_ERROR", status: 422 });
+
+    expect(transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("createExpense — PERCENTAGE split", () => {
+  it("[50, 30, 20] of 1000 paise → [500, 300, 200]", async () => {
+    defaultMembership();
+    expenseCreate.mockResolvedValue({
+      id: "exp_pct",
+      title: "Cab",
+      totalAmount: BigInt(1000),
+      splitType: "PERCENTAGE",
+      date: new Date(),
+      createdAt: new Date(),
+      payers: [],
+      participants: [],
+    });
+
+    await createExpense(ACTOR, GROUP, {
+      title: "Cab",
+      date: "2026-04-26",
+      totalAmount: 1000,
+      splitType: "PERCENTAGE",
+      payerSplits: [{ userId: ACTOR, amountPaise: 1000 }],
+      participantSplits: [
+        { userId: ALICE, percentage: 50 },
+        { userId: BOB, percentage: 30 },
+        { userId: CAROL, percentage: 20 },
+      ],
+    });
+
+    const data = expenseCreate.mock.calls[0][0].data;
+    expect(data.splitType).toBe("PERCENTAGE");
+    expect(data.participants.create).toEqual([
+      { userId: ALICE, amountPaise: BigInt(500) },
+      { userId: BOB, amountPaise: BigInt(300) },
+      { userId: CAROL, amountPaise: BigInt(200) },
+    ]);
+  });
+
+  it("rejects [50, 30, 10] (percentages sum to 90% ≠ 100%)", async () => {
+    defaultMembership();
+
+    await expect(
+      createExpense(ACTOR, GROUP, {
+        title: "Cab",
+        date: "2026-04-26",
+        totalAmount: 1000,
+        splitType: "PERCENTAGE",
+        payerSplits: [{ userId: ACTOR, amountPaise: 1000 }],
+        participantSplits: [
+          { userId: ALICE, percentage: 50 },
+          { userId: BOB, percentage: 30 },
+          { userId: CAROL, percentage: 10 },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "VALIDATION_ERROR", status: 422 });
+
+    expect(transaction).not.toHaveBeenCalled();
+  });
+});

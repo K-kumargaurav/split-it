@@ -3,6 +3,10 @@
     {
       "path": "/api/v1/internal/cron/expire-proposals",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/v1/internal/cron/recurring-expenses",
+      "schedule": "30 18 * * *"
     }
   ]
 }

@@ -6,6 +6,7 @@ import { AppError } from "@/lib/errors";
 import { cn } from "@/lib/cn";
 import { formatPaise, formatRelativeTime } from "@/lib/format";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { GroupTabs } from "@/components/groups/group-tabs";
 import { PendingSettlementActions } from "@/components/settlements/pending-settlement-actions";
 import {
   calculateDirectBalances,
@@ -136,6 +137,8 @@ export default async function GroupPage({ params }: GroupPageProps) {
           </p>
         </div>
       </header>
+
+      <GroupTabs groupId={group.id} />
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-6">
@@ -376,8 +379,9 @@ function BalancesSection({
   const modeLabel = mode === "DIRECT" ? "Direct" : "Simplified";
   return (
     <section
+      id="balances"
       aria-labelledby="balances-heading"
-      className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8"
+      className="scroll-mt-24 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8"
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2

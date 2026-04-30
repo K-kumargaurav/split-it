@@ -6,6 +6,7 @@ import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { AddGuestForm } from "@/components/groups/add-guest-form";
+import { GroupTabs } from "@/components/groups/group-tabs";
 import {
   InviteButton,
   LeaveGroupButton,
@@ -61,6 +62,8 @@ export default async function MembersPage({ params }: MembersPageProps) {
           ← Back to {group.name}
         </Link>
       </nav>
+
+      <GroupTabs groupId={group.id} />
 
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>

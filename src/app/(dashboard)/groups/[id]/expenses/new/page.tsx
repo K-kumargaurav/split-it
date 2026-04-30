@@ -35,6 +35,16 @@ export default async function NewExpensePage({ params }: NewExpensePageProps) {
     orderBy: [{ isSystem: "desc" }, { name: "asc" }],
   });
 
+  // Ghost members live alongside real members for the purposes of choosing
+  // who to split an expense with — see SPEC §4.6. They surface as visually
+  // distinct options in the form's selectors so the user can include
+  // account-less people without rewriting the flow.
+  const ghostMembers = await prisma.ghostMember.findMany({
+    where: { groupId: params.id, status: "ACTIVE" },
+    select: { id: true, displayName: true },
+    orderBy: { createdAt: "asc" },
+  });
+
   return (
     <DashboardShell
       user={{
@@ -72,6 +82,7 @@ export default async function NewExpensePage({ params }: NewExpensePageProps) {
             displayName: m.user.displayName,
             handle: m.user.handle,
           }))}
+          ghostMembers={ghostMembers}
           categories={categories}
         />
       </section>

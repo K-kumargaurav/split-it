@@ -3,7 +3,9 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { AddGuestForm } from "@/components/groups/add-guest-form";
 import {
   InviteButton,
   LeaveGroupButton,
@@ -31,6 +33,18 @@ export default async function MembersPage({ params }: MembersPageProps) {
   }
 
   const { members, viewerRole } = await getGroupMembers(session.user.id, params.id);
+  const ghosts = await prisma.ghostMember.findMany({
+    where: { groupId: params.id, status: "ACTIVE" },
+    select: {
+      id: true,
+      displayName: true,
+      email: true,
+      phone: true,
+      guestToken: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "asc" },
+  });
   const isOwner = viewerRole === "OWNER";
 
   return (
@@ -77,7 +91,26 @@ export default async function MembersPage({ params }: MembersPageProps) {
               viewerIsOwner={isOwner}
             />
           ))}
+          {ghosts.map((g) => (
+            <GhostMemberRow key={g.id} ghost={g} />
+          ))}
         </ul>
+      </section>
+
+      <section
+        aria-labelledby="add-guest-heading"
+        className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 p-6 sm:p-8"
+      >
+        <h2 id="add-guest-heading" className="text-sm font-semibold text-slate-900">
+          Splitting with someone who doesn&apos;t use SplitEasy?
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Add them as a guest. They&apos;ll get a private link to see their balance and pay
+          you back — no signup needed.
+        </p>
+        <div className="mt-4">
+          <AddGuestForm groupId={group.id} />
+        </div>
       </section>
 
       {!isOwner ? (
@@ -86,6 +119,36 @@ export default async function MembersPage({ params }: MembersPageProps) {
         </div>
       ) : null}
     </DashboardShell>
+  );
+}
+
+function GhostMemberRow({
+  ghost,
+}: {
+  ghost: { id: string; displayName: string; email: string | null; phone: string | null; guestToken: string; createdAt: Date };
+}): React.ReactElement {
+  const initial = (ghost.displayName[0] ?? "?").toUpperCase();
+  return (
+    <li className="flex items-center gap-3 py-3">
+      <span
+        aria-hidden="true"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-300 text-sm font-semibold text-white"
+      >
+        {initial}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-slate-900">
+          {ghost.displayName}
+          <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-700">
+            Guest
+          </span>
+        </p>
+        <p className="truncate text-xs text-slate-500">
+          {ghost.email ?? ghost.phone ?? "No contact info"} · added{" "}
+          {ghost.createdAt.toLocaleDateString("en-IN")}
+        </p>
+      </div>
+    </li>
   );
 }
 

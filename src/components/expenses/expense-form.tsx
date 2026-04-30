@@ -23,6 +23,14 @@ interface MemberOption {
   handle: string;
 }
 
+// Ghost members surface in the same selectors as real members per SPEC §4.6,
+// but they're stored on a different table — distinguishing the option in the
+// UI lets the user know they're including a guest in the split.
+interface GhostMemberOption {
+  id: string;
+  displayName: string;
+}
+
 interface CategoryOption {
   id: string;
   name: string;
@@ -33,6 +41,7 @@ interface ExpenseFormProps {
   groupId: string;
   viewerId: string;
   members: MemberOption[];
+  ghostMembers?: GhostMemberOption[];
   categories: CategoryOption[];
 }
 
@@ -66,7 +75,13 @@ interface CreateExpenseErrorBody {
   error?: { code?: string; message?: string };
 }
 
-export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseFormProps) {
+export function ExpenseForm({
+  groupId,
+  viewerId,
+  members,
+  ghostMembers = [],
+  categories,
+}: ExpenseFormProps) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [splitType, setSplitType] = useState<SplitType>("EQUAL");
@@ -358,7 +373,13 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
     router.refresh();
   }
 
-  const memberById = new Map(members.map((m) => [m.id, m]));
+  const memberById = new Map<
+    string,
+    { id: string; displayName: string; isGhost: boolean }
+  >([
+    ...members.map((m) => [m.id, { id: m.id, displayName: m.displayName, isGhost: false }] as const),
+    ...ghostMembers.map((g) => [g.id, { id: g.id, displayName: g.displayName, isGhost: true }] as const),
+  ]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
@@ -483,6 +504,11 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
                 {m.id === viewerId ? " (you)" : ""}
               </option>
             ))}
+            {ghostMembers.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.displayName} (guest)
+              </option>
+            ))}
           </select>
           {errors.paidById?.message ? (
             <p className="mt-1.5 text-xs text-rose-600">{errors.paidById.message}</p>
@@ -507,6 +533,25 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
               <span className="truncate">
                 {m.displayName}
                 {m.id === viewerId ? <span className="ml-1 text-xs text-slate-400">(you)</span> : null}
+              </span>
+            </label>
+          ))}
+          {ghostMembers.map((g) => (
+            <label
+              key={g.id}
+              className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2.5 text-sm text-slate-700 hover:border-amber-300"
+            >
+              <input
+                type="checkbox"
+                value={g.id}
+                {...register("participantIds")}
+                className="h-4 w-4 rounded border-amber-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="truncate">
+                {g.displayName}
+                <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-700">
+                  Guest
+                </span>
               </span>
             </label>
           ))}

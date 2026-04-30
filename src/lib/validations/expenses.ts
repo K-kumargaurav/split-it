@@ -87,3 +87,62 @@ export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
 export type CreateExpenseEqualInput = z.infer<typeof equalExpenseSchema>;
 export type CreateExpenseExactInput = z.infer<typeof exactExpenseSchema>;
 export type CreateExpensePercentageInput = z.infer<typeof percentageExpenseSchema>;
+
+// Query-string filter shape for the search endpoint (SPEC §4.14). Every field
+// is optional and arrives as a raw string. Empty strings are treated as
+// absent so the filter UI can clear individual fields by sending `?paidBy=`
+// rather than omitting the key.
+
+const emptyToUndefined = (v: unknown): unknown =>
+  typeof v === "string" && v.trim().length === 0 ? undefined : v;
+
+const optionalDate = z.preprocess(emptyToUndefined, z.coerce.date().optional());
+
+const optionalUuid = z.preprocess(
+  emptyToUndefined,
+  z.string().uuid({ message: "Must be a valid UUID." }).optional(),
+);
+
+const optionalBigIntPaise = z.preprocess(
+  emptyToUndefined,
+  z
+    .union([z.string(), z.number()])
+    .transform((v, ctx) => {
+      try {
+        const n = typeof v === "number" ? BigInt(Math.trunc(v)) : BigInt(v);
+        if (n < BigInt(0)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Amount must be zero or more.",
+          });
+          return z.NEVER;
+        }
+        return n;
+      } catch {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Amount must be an integer (paise).",
+        });
+        return z.NEVER;
+      }
+    })
+    .optional(),
+);
+
+const optionalKeyword = z.preprocess(
+  emptyToUndefined,
+  z.string().trim().min(1).max(200).optional(),
+);
+
+export const expenseFiltersSchema = z.object({
+  dateFrom: optionalDate,
+  dateTo: optionalDate,
+  categoryId: optionalUuid,
+  paidBy: optionalUuid,
+  involves: optionalUuid,
+  minAmount: optionalBigIntPaise,
+  maxAmount: optionalBigIntPaise,
+  keyword: optionalKeyword,
+});
+
+export type ExpenseFiltersInput = z.infer<typeof expenseFiltersSchema>;

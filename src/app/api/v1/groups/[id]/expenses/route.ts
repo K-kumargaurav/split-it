@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { AppError } from "@/lib/errors";
 import { createExpense, type CreatedExpense } from "@/server/expenses/create-expense";
-import { getExpensesForGroup } from "@/server/expenses/get-expenses";
+import {
+  searchExpenses,
+  type ExpenseFilters,
+} from "@/server/expenses/search-expenses";
+import { expenseFiltersSchema } from "@/lib/validations/expenses";
 
 export const runtime = "nodejs";
 
@@ -25,8 +30,56 @@ export async function GET(
   const limitRaw = url.searchParams.get("limit");
   const limit = limitRaw ? Number.parseInt(limitRaw, 10) : 25;
 
+  // Each filter is keyed off its own param name; we only forward present keys
+  // so the schema's `optional()` branches do the right thing.
+  const filterRaw: Record<string, string> = {};
+  for (const key of [
+    "dateFrom",
+    "dateTo",
+    "categoryId",
+    "paidBy",
+    "involves",
+    "minAmount",
+    "maxAmount",
+    "keyword",
+  ]) {
+    const v = url.searchParams.get(key);
+    if (v !== null) filterRaw[key] = v;
+  }
+
+  const parsed = expenseFiltersSchema.safeParse(filterRaw);
+  if (!parsed.success) {
+    return errorFromThrown(
+      new AppError(
+        "VALIDATION_ERROR",
+        "Some filters are invalid.",
+        parsed.error.issues.map((i) => ({
+          path: i.path.map((p) => (typeof p === "number" ? p : String(p))),
+          message: i.message,
+        })),
+      ),
+    );
+  }
+
+  const filters: ExpenseFilters = {
+    dateFrom: parsed.data.dateFrom,
+    dateTo: parsed.data.dateTo,
+    categoryId: parsed.data.categoryId,
+    paidBy: parsed.data.paidBy,
+    involves: parsed.data.involves,
+    minAmount: parsed.data.minAmount,
+    maxAmount: parsed.data.maxAmount,
+    keyword: parsed.data.keyword,
+  };
+
   try {
-    const page = await getExpensesForGroup(session.user.id, params.id, cursor, limit);
+    const page = await searchExpenses(
+      session.user.id,
+      params.id,
+      filters,
+      cursor,
+      limit,
+    );
     return NextResponse.json(page);
   } catch (err) {
     console.error(`GET /api/v1/groups/${params.id}/expenses failed`, err);

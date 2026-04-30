@@ -5,8 +5,11 @@ import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { cn } from "@/lib/cn";
 import { formatPaise, formatRelativeTime } from "@/lib/format";
+import { prisma } from "@/lib/prisma";
+import { expenseFiltersSchema } from "@/lib/validations/expenses";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { GroupTabs } from "@/components/groups/group-tabs";
+import { ExpenseFilters } from "@/components/groups/expense-filters";
 import { PendingSettlementActions } from "@/components/settlements/pending-settlement-actions";
 import {
   calculateDirectBalances,
@@ -14,7 +17,11 @@ import {
   type BalanceMap,
   type SimplifiedTransfer,
 } from "@/server/balance/calculate-balances";
-import { getExpensesForGroup, type ExpenseListItem } from "@/server/expenses/get-expenses";
+import {
+  searchExpenses,
+  type ExpenseFilters as ExpenseFilterValues,
+  type SearchExpenseItem,
+} from "@/server/expenses/search-expenses";
 import {
   getSettlementsForGroup,
   type SettlementListItem,
@@ -23,9 +30,10 @@ import { getGroupById, type GroupDetail } from "@/server/groups/get-groups";
 
 interface GroupPageProps {
   params: { id: string };
+  searchParams?: Record<string, string | string[] | undefined>;
 }
 
-export default async function GroupPage({ params }: GroupPageProps) {
+export default async function GroupPage({ params, searchParams }: GroupPageProps) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
@@ -38,9 +46,16 @@ export default async function GroupPage({ params }: GroupPageProps) {
     throw err;
   }
 
-  const [{ items: expenses }, { items: settlements }] = await Promise.all([
-    getExpensesForGroup(session.user.id, params.id),
+  const { filters, hasActiveFilters } = parseFilterParams(searchParams);
+
+  const [{ items: expenses }, { items: settlements }, categories] = await Promise.all([
+    searchExpenses(session.user.id, params.id, filters),
     getSettlementsForGroup(session.user.id, params.id, undefined, 50),
+    prisma.category.findMany({
+      where: { OR: [{ groupId: params.id }, { groupId: null }] },
+      select: { id: true, name: true, emoji: true },
+      orderBy: [{ isSystem: "desc" }, { name: "asc" }],
+    }),
   ]);
 
   // Per group's own balance mode (SPEC §3.4 / §4.5). The DB always holds
@@ -142,7 +157,19 @@ export default async function GroupPage({ params }: GroupPageProps) {
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-6">
-          <ExpensesSection groupId={group.id} expenses={expenses} viewerId={session.user.id} />
+          <ExpenseFilters
+            members={group.members.map((m) => ({
+              id: m.user.id,
+              displayName: m.user.displayName,
+            }))}
+            categories={categories}
+          />
+          <ExpensesSection
+            groupId={group.id}
+            expenses={expenses}
+            viewerId={session.user.id}
+            hasActiveFilters={hasActiveFilters}
+          />
           <ActivityFeed
             settlements={confirmedSettlements}
             viewerId={session.user.id}
@@ -174,10 +201,12 @@ function ExpensesSection({
   groupId,
   expenses,
   viewerId,
+  hasActiveFilters,
 }: {
   groupId: string;
-  expenses: ExpenseListItem[];
+  expenses: SearchExpenseItem[];
   viewerId: string;
+  hasActiveFilters: boolean;
 }) {
   const hasExpenses = expenses.length > 0;
   return (
@@ -185,10 +214,17 @@ function ExpensesSection({
       aria-labelledby="expenses-heading"
       className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8"
     >
-      <div className="mb-4 flex items-center justify-between">
-        <h2 id="expenses-heading" className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
-          Expenses
-        </h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 id="expenses-heading" className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+            Expenses
+          </h2>
+          {hasActiveFilters ? (
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              {expenses.length} {expenses.length === 1 ? "expense" : "expenses"} found
+            </p>
+          ) : null}
+        </div>
         <Link
           href={`/groups/${groupId}/expenses/new`}
           className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
@@ -203,6 +239,22 @@ function ExpensesSection({
             <ExpenseRow key={e.id} expense={e} viewerId={viewerId} />
           ))}
         </ul>
+      ) : hasActiveFilters ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-5 py-10 text-center">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            No expenses match your filters
+          </p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Try adjusting your filters or clearing them to see all expenses.
+          </p>
+          <Link
+            href={`/groups/${groupId}`}
+            scroll={false}
+            className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          >
+            Clear filters
+          </Link>
+        </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-5 py-10 text-center">
           <p className="text-sm font-medium text-slate-700 dark:text-slate-200">No expenses yet</p>
@@ -225,7 +277,7 @@ function ExpenseRow({
   expense,
   viewerId,
 }: {
-  expense: ExpenseListItem;
+  expense: SearchExpenseItem;
   viewerId: string;
 }) {
   const payerLabel = formatPayerLabel(expense.payers, viewerId);
@@ -269,7 +321,7 @@ function ExpenseRow({
 }
 
 function formatPayerLabel(
-  payers: ExpenseListItem["payers"],
+  payers: SearchExpenseItem["payers"],
   viewerId: string,
 ): string {
   if (payers.length === 0) return "Unknown payer";
@@ -623,6 +675,60 @@ function toDirectLines(
     }
   }
   return lines.sort((a, b) => (a.amountPaise > b.amountPaise ? -1 : 1));
+}
+
+// SearchParams arrive as a record of string | string[] | undefined. We pick
+// only the filter keys, drop array values (filters are single-valued), and
+// run the same Zod schema the API uses so server + client never diverge on
+// what's a "valid" filter.
+function parseFilterParams(
+  searchParams: Record<string, string | string[] | undefined> | undefined,
+): { filters: ExpenseFilterValues; hasActiveFilters: boolean } {
+  if (!searchParams) {
+    return { filters: {}, hasActiveFilters: false };
+  }
+
+  const KEYS = [
+    "dateFrom",
+    "dateTo",
+    "categoryId",
+    "paidBy",
+    "involves",
+    "minAmount",
+    "maxAmount",
+    "keyword",
+  ] as const;
+
+  const raw: Record<string, string> = {};
+  let active = false;
+  for (const key of KEYS) {
+    const v = searchParams[key];
+    if (typeof v === "string" && v.trim().length > 0) {
+      raw[key] = v;
+      active = true;
+    }
+  }
+
+  const parsed = expenseFiltersSchema.safeParse(raw);
+  if (!parsed.success) {
+    // Bad URL filter values shouldn't crash the page — fall through to the
+    // unfiltered feed. The filter UI will reset itself from the URL on mount.
+    return { filters: {}, hasActiveFilters: false };
+  }
+
+  return {
+    filters: {
+      dateFrom: parsed.data.dateFrom,
+      dateTo: parsed.data.dateTo,
+      categoryId: parsed.data.categoryId,
+      paidBy: parsed.data.paidBy,
+      involves: parsed.data.involves,
+      minAmount: parsed.data.minAmount,
+      maxAmount: parsed.data.maxAmount,
+      keyword: parsed.data.keyword,
+    },
+    hasActiveFilters: active,
+  };
 }
 
 function toSimplifiedLines(

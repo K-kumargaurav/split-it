@@ -78,12 +78,22 @@ export function SettlementForm({
       return;
     }
 
-    const rupeeNum = Number(amountRupees);
-    if (!Number.isFinite(rupeeNum) || rupeeNum <= 0) {
+    const trimmed = amountRupees.trim();
+    if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) {
+      setServerError("Enter a valid amount (max 2 decimals).");
+      return;
+    }
+    let totalPaise: number;
+    try {
+      totalPaise = Number(rupeesToPaise(trimmed));
+    } catch {
+      setServerError("Enter a valid amount.");
+      return;
+    }
+    if (totalPaise <= 0) {
       setServerError("Enter an amount greater than zero.");
       return;
     }
-    const totalPaise = rupeesToPaise(rupeeNum);
     if (totalPaise > selected.amountPaise) {
       setServerError(
         `You only owe ${formatPaise(selected.amountPaise)} to ${selected.receiverDisplayName}.`,
@@ -174,7 +184,7 @@ export function SettlementForm({
     ? buildUpiLink({
         handle: selected.receiverHandle,
         displayName: selected.receiverDisplayName,
-        amountPaise: rupeesToPaise(Number(amountRupees) || 0),
+        amountPaise: safeRupeesToPaise(amountRupees),
       })
     : null;
 
@@ -307,6 +317,18 @@ export function SettlementForm({
       </div>
     </form>
   );
+}
+
+// Best-effort string→paise for the live UPI link preview. Returns 0 for any
+// not-yet-valid input so the link still renders (the user is mid-typing).
+function safeRupeesToPaise(value: string): number {
+  const trimmed = value.trim();
+  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return 0;
+  try {
+    return Number(rupeesToPaise(trimmed));
+  } catch {
+    return 0;
+  }
 }
 
 // UPI deep link per NPCI spec: upi://pay?pa=<vpa>&pn=<name>&am=<amount>&cu=INR.

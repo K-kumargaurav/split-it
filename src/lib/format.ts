@@ -50,10 +50,29 @@ export function paiseToRupees(paise: number | bigint): number {
   return Number(paise) / 100;
 }
 
-export function rupeesToPaise(rupees: number): number {
-  // Round half-away-from-zero to avoid floating-point drift on .5 boundaries
-  // (e.g. 100.005 * 100 = 10000.499999... in IEEE-754).
-  return Math.round(rupees * 100);
+// Parse a user-entered rupee string into integer paise without going through
+// IEEE-754. Multiplying floats (e.g. `7999.50 * 100`) drops paise on values
+// the binary representation can't express exactly — we have to split on the
+// decimal point and recombine with BigInt arithmetic.
+//
+// Accepts: "7999", "7999.50", "0.01", "100.9", optional leading sign,
+//          surrounding whitespace, and rejects everything else.
+// Throws on invalid input — callers must validate before submitting.
+export function rupeesToPaise(rupees: string): bigint {
+  if (typeof rupees !== "string") {
+    throw new TypeError("rupeesToPaise expects a string — multiplying floats drops paise.");
+  }
+  const trimmed = rupees.trim();
+  if (!/^-?\d+(\.\d+)?$/.test(trimmed)) {
+    throw new Error(`Invalid rupee amount: ${JSON.stringify(rupees)}`);
+  }
+  const negative = trimmed.startsWith("-");
+  const unsigned = negative ? trimmed.slice(1) : trimmed;
+  const [whole, fractionRaw = ""] = unsigned.split(".");
+  // Pad/truncate to exactly two digits so "100.9" → "90" paise (not 9 or 900).
+  const fraction = fractionRaw.padEnd(2, "0").slice(0, 2);
+  const paise = BigInt(whole) * BigInt(100) + BigInt(fraction);
+  return negative ? -paise : paise;
 }
 
 const RELATIVE = new Intl.RelativeTimeFormat("en-IN", { numeric: "auto" });

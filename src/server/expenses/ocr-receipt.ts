@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { rupeesToPaise } from "@/lib/format";
 
 // Google Cloud Vision DOCUMENT_TEXT_DETECTION via the JSON REST API. We use
 // fetch + the API-key endpoint (not the gRPC client) so the only thing this
@@ -138,17 +139,23 @@ function extractFields(text: string, confidence: number): OcrFields {
 
   const passes = confidence >= OCR_CONFIDENCE_THRESHOLD;
   return {
-    totalAmountPaise: passes && totalRupees !== null ? rupeesToPaise(totalRupees) : null,
-    taxAmountPaise: passes && taxRupees !== null ? rupeesToPaise(taxRupees) : null,
+    totalAmountPaise: passes && totalRupees !== null ? toPaise(totalRupees) : null,
+    taxAmountPaise: passes && taxRupees !== null ? toPaise(taxRupees) : null,
     merchantName: passes ? merchant : null,
     date: passes ? date : null,
   };
 }
 
-// Convert a (possibly-fractional) rupees amount to paise without float drift.
-// Strings are parsed via integer math: "1234.56" → 123456 paise.
-function rupeesToPaise(rupees: number): number {
-  return Math.round(rupees * 100);
+// OCR captures the rupee amount as a string ("1234.50") so we can route it
+// through the shared `rupeesToPaise` (BigInt path) without going through a
+// JS number. We collapse the BigInt to Number for the OcrFields shape; the
+// per-receipt cap is well under MAX_SAFE_INTEGER.
+function toPaise(rupeeString: string): number | null {
+  try {
+    return Number(rupeesToPaise(rupeeString));
+  } catch {
+    return null;
+  }
 }
 
 const TOTAL_KEYWORDS = ["grand total", "total amount", "amount due", "net payable", "total"];
@@ -158,17 +165,19 @@ const DATE_REGEXES = [
   /(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/, // 29-04-2026, 29/04/26
 ];
 
-function findTotalAmountRupees(text: string): number | null {
+function findTotalAmountRupees(text: string): string | null {
   return findKeyedAmount(text, TOTAL_KEYWORDS);
 }
-function findTaxAmountRupees(text: string): number | null {
+function findTaxAmountRupees(text: string): string | null {
   return findKeyedAmount(text, TAX_KEYWORDS);
 }
 
 // Looks for a line like "Total ₹1,234.50" — accepts the keyword anywhere on
 // the line and grabs the LAST numeric token on that line as the amount,
 // since receipts often print "Subtotal | Tax | Total" with the value at end.
-function findKeyedAmount(text: string, keywords: string[]): number | null {
+// Returns the raw rupee string (commas stripped) so the caller can convert
+// to paise via integer/BigInt math without an IEEE-754 round-trip.
+function findKeyedAmount(text: string, keywords: string[]): string | null {
   const lines = text.split(/\r?\n/);
   for (const keyword of keywords) {
     for (const line of lines) {
@@ -176,8 +185,7 @@ function findKeyedAmount(text: string, keywords: string[]): number | null {
         const matches = line.match(/[\d,]+(?:\.\d{1,2})?/g);
         if (matches && matches.length > 0) {
           const last = matches[matches.length - 1]!.replace(/,/g, "");
-          const n = Number(last);
-          if (Number.isFinite(n) && n > 0) return n;
+          if (/^\d+(\.\d{1,2})?$/.test(last) && Number(last) > 0) return last;
         }
       }
     }

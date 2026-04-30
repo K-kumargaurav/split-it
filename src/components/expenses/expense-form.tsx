@@ -13,7 +13,9 @@ import { ReceiptUploader, type OcrPrefill } from "@/components/expenses/receipt-
 
 // Form is rupees-facing — the user thinks in ₹, the wire format is paise.
 // Convert at the boundary (onSubmit) and validate the integer in `paise` as
-// the source of truth, since `1.50 * 100 = 150.00000…` can drift in IEEE-754.
+// the source of truth. We keep the raw user-entered string and pass it to
+// `rupeesToPaise` (string → BigInt) — multiplying through a Number drops
+// paise on values the binary float can't represent (e.g. 7999.50 * 100).
 
 interface MemberOption {
   id: string;
@@ -36,12 +38,20 @@ interface ExpenseFormProps {
 
 type SplitType = "EQUAL" | "EXACT" | "PERCENTAGE";
 
+// Amount lives as a string so we can defer paise conversion to BigInt math.
+// We accept "7999", "7999.5", "7999.50" and one or two decimals; anything
+// outside that shape is rejected here so onSubmit never sees garbage.
+const RUPEE_PATTERN = /^\d+(\.\d{1,2})?$/;
+
 const formSchema = z.object({
   title: z.string().trim().min(1, { message: "Title is required." }).max(120),
   amount: z
-    .number({ message: "Amount is required." })
-    .positive({ message: "Amount must be greater than zero." })
-    .max(10_000_000, { message: "Amount is too large." }),
+    .string()
+    .trim()
+    .min(1, { message: "Amount is required." })
+    .regex(RUPEE_PATTERN, { message: "Enter a valid amount (max 2 decimals)." })
+    .refine((v) => Number(v) > 0, { message: "Amount must be greater than zero." })
+    .refine((v) => Number(v) <= 10_000_000, { message: "Amount is too large." }),
   date: z.string().min(1, { message: "Date is required." }),
   categoryId: z.string().optional(),
   paidById: z.string().uuid({ message: "Choose who paid." }),
@@ -90,7 +100,7 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
     mode: "onTouched",
     defaultValues: {
       title: "",
-      amount: undefined,
+      amount: "",
       date: today,
       categoryId: "",
       paidById: viewerId,
@@ -102,9 +112,13 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
   const participantIds = watch("participantIds");
 
   const totalPaise = useMemo(() => {
-    if (!amount || amount <= 0) return 0;
-    const p = rupeesToPaise(amount);
-    return p > 0 ? p : 0;
+    if (!amount || !RUPEE_PATTERN.test(amount.trim())) return 0;
+    try {
+      const p = Number(rupeesToPaise(amount));
+      return p > 0 ? p : 0;
+    } catch {
+      return 0;
+    }
   }, [amount]);
 
   // ── EQUAL preview ─────────────────────────────────────────────────────
@@ -130,10 +144,17 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
     let sumPaise = 0;
     let allFilled = true;
     const rows = ids.map((id) => {
-      const raw = exactInputs[id] ?? "";
+      const raw = (exactInputs[id] ?? "").trim();
       if (raw === "") allFilled = false;
-      const rupees = Number(raw);
-      const paise = Number.isFinite(rupees) && rupees >= 0 ? rupeesToPaise(rupees) : 0;
+      let paise = 0;
+      if (RUPEE_PATTERN.test(raw)) {
+        try {
+          paise = Number(rupeesToPaise(raw));
+        } catch {
+          paise = 0;
+        }
+      }
+      if (paise < 0) paise = 0;
       sumPaise += paise;
       return { memberId: id, amountPaise: paise };
     });
@@ -197,8 +218,15 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
       let filledAmount = false;
       let filledDate = false;
       if (prefill.totalAmountPaise && prefill.totalAmountPaise > 0) {
-        const rupees = prefill.totalAmountPaise / 100;
-        setValue("amount", rupees, { shouldValidate: true, shouldDirty: true });
+        // Format paise → "<whole>.<dd>" with integer math so the prefilled
+        // string round-trips back through rupeesToPaise without drift.
+        const paise = Math.trunc(prefill.totalAmountPaise);
+        const whole = Math.trunc(paise / 100);
+        const fraction = String(paise % 100).padStart(2, "0");
+        setValue("amount", `${whole}.${fraction}`, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
         filledAmount = true;
       }
       if (prefill.date) {
@@ -213,7 +241,7 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
   async function onSubmit(values: FormValues) {
     setServerError(null);
 
-    const computedTotal = rupeesToPaise(values.amount);
+    const computedTotal = Number(rupeesToPaise(values.amount));
 
     type Payload =
       | {
@@ -371,14 +399,11 @@ export function ExpenseForm({ groupId, viewerId, members, categories }: ExpenseF
           </div>
           <input
             {...register("amount", {
-              valueAsNumber: true,
               onChange: () => setPrefilledFields((p) => ({ ...p, amount: false })),
             })}
             id="amount"
-            type="number"
+            type="text"
             inputMode="decimal"
-            step="0.01"
-            min="0.01"
             placeholder="0.00"
             aria-invalid={Boolean(errors.amount)}
             className={cn(

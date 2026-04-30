@@ -83,7 +83,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div>
-        <label htmlFor="new-password" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="new-password" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           New password
         </label>
         <div className="relative mt-1.5">
@@ -101,12 +101,12 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             aria-describedby={
               fieldErrors.password ? "new-password-error" : "new-password-hint"
             }
-            className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-10 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 pr-10 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 focus:outline-none focus:text-slate-700"
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none focus:text-slate-700 dark:focus:text-slate-200"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
@@ -134,7 +134,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             {fieldErrors.password}
           </p>
         ) : (
-          <p id="new-password-hint" className="mt-1 text-xs text-slate-500">
+          <p id="new-password-hint" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             At least 8 characters, with 1 uppercase letter and 1 number.
           </p>
         )}

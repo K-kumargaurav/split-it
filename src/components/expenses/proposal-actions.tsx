@@ -98,7 +98,7 @@ export function ProposalActions({
             onClick={() => vote("REJECT")}
             disabled={busy !== null}
             className={cn(
-              "rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 shadow-sm transition",
+              "rounded-xl border border-rose-200 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-rose-700 shadow-sm transition",
               "hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60",
             )}
           >
@@ -112,14 +112,14 @@ export function ProposalActions({
           type="button"
           onClick={cancel}
           disabled={busy !== null}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy === "cancel" ? "Cancelling…" : "Cancel proposal"}
         </button>
       ) : null}
 
       {hasVoted && !isProposer ? (
-        <p className="text-xs text-slate-500">You've already voted.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">You've already voted.</p>
       ) : null}
 
       {error ? (

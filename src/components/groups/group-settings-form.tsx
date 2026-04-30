@@ -84,7 +84,7 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <div>
-        <label htmlFor="g-name" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="g-name" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Group name
         </label>
         <input
@@ -93,12 +93,12 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
-          className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
       <div>
-        <label htmlFor="g-desc" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="g-desc" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Description
         </label>
         <textarea
@@ -107,12 +107,12 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
           maxLength={500}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="mt-1.5 block w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="mt-1.5 block w-full resize-y rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
       <div>
-        <label htmlFor="g-icon" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="g-icon" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Icon <span className="text-slate-400">(emoji or single character)</span>
         </label>
         <input
@@ -121,12 +121,12 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
           maxLength={8}
           value={icon}
           onChange={(e) => setIcon(e.target.value)}
-          className="mt-1.5 block w-32 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="mt-1.5 block w-32 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
       <fieldset>
-        <legend className="block text-sm font-medium text-slate-700">Color</legend>
+        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Color</legend>
         <div className="mt-2 flex flex-wrap gap-2.5">
           {COLOR_PRESETS.map((preset) => {
             const active = color === preset.hex;
@@ -149,8 +149,8 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
       </fieldset>
 
       <fieldset>
-        <legend className="block text-sm font-medium text-slate-700">Balance mode</legend>
-        <p className="mt-1 text-xs text-slate-500">
+        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Balance mode</legend>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {isOwner
             ? "Switch how balances are displayed across the group."
             : "Only the group owner can change the balance mode."}
@@ -230,12 +230,12 @@ function ModeOption({
         "flex flex-col rounded-xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
         active
           ? "border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-500"
-          : "border-slate-200 bg-white hover:border-slate-300",
+          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
-      <span className="text-sm font-semibold text-slate-900">{label}</span>
-      <span className="mt-0.5 text-xs text-slate-500">{description}</span>
+      <span className="text-sm font-semibold text-slate-900 dark:text-white">{label}</span>
+      <span className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</span>
     </button>
   );
 }

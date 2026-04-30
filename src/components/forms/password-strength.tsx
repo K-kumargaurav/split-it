@@ -23,8 +23,8 @@ function score(pw: string): Strength {
       score: 0,
       label: "Enter a password",
       hint: "8+ characters, 1 uppercase, 1 number.",
-      barClass: "bg-slate-200",
-      textClass: "text-slate-500",
+      barClass: "bg-slate-200 dark:bg-slate-700",
+      textClass: "text-slate-500 dark:text-slate-400",
     };
   }
   let s = 0;
@@ -58,14 +58,14 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
             key={i}
             className={cn(
               "h-1.5 flex-1 rounded-full transition-colors",
-              i <= filled ? s.barClass : "bg-slate-200",
+              i <= filled ? s.barClass : "bg-slate-200 dark:bg-slate-700",
             )}
           />
         ))}
       </div>
       <div className="mt-1.5 flex items-center justify-between text-xs">
         <span className={cn("font-medium", s.textClass)}>{s.label}</span>
-        <span className="text-slate-500">{s.hint}</span>
+        <span className="text-slate-500 dark:text-slate-400">{s.hint}</span>
       </div>
     </div>
   );

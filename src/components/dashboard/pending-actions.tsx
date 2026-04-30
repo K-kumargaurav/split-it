@@ -42,7 +42,7 @@ export function PendingActions({ pending }: PendingActionsProps) {
                 <span>{item.label}</span>
                 <Link
                   href={item.href}
-                  className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
+                  className="rounded-full bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
                 >
                   Review
                 </Link>

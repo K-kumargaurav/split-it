@@ -101,16 +101,16 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-slate-200" />
+          <div className="w-full border-t border-slate-200 dark:border-slate-700" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-slate-50 px-3 text-xs uppercase tracking-wider text-slate-400">
+          <span className="bg-slate-50 dark:bg-slate-800 px-3 text-xs uppercase tracking-wider text-slate-400">
             or
           </span>
         </div>
       </div>
 
-      <div role="tablist" aria-label="Sign-in method" className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
+      <div role="tablist" aria-label="Sign-in method" className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
         <ModeTab active={mode === "password"} onClick={() => setMode("password")}>
           Password
         </ModeTab>
@@ -124,7 +124,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
               Email address
             </label>
             <input
@@ -136,7 +136,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
               aria-invalid={Boolean(errors.email)}
               aria-describedby={errors.email ? "email-error" : undefined}
               className={cn(
-                "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+                "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
                 "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
                 errors.email && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
               )}
@@ -150,7 +150,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
 
           <div>
             <div className="flex items-center justify-between">
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
                 Password
               </label>
               <Link
@@ -170,7 +170,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
                 aria-invalid={Boolean(errors.password)}
                 aria-describedby={errors.password ? "password-error" : undefined}
                 className={cn(
-                  "block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 pr-10 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+                  "block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 pr-10 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
                   "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
                   errors.password && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
                 )}
@@ -179,7 +179,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-700 focus:outline-none focus:text-slate-700"
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus:outline-none focus:text-slate-700 dark:focus:text-slate-200"
               >
                 <EyeIcon hidden={showPassword} />
               </button>
@@ -251,7 +251,7 @@ function ModeTab({
       onClick={onClick}
       className={cn(
         "rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
-        active ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900",
+        active ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white",
       )}
     >
       {children}

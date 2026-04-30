@@ -57,23 +57,23 @@ export default async function NewExpensePage({ params }: NewExpensePageProps) {
       <nav className="mb-6 text-sm">
         <Link
           href={`/groups/${group.id}`}
-          className="text-slate-500 hover:text-slate-700"
+          className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
         >
           ← Back to {group.name}
         </Link>
       </nav>
 
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
           Add expense
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Drop a receipt to auto-fill amount and date, or enter the details
           manually. Choose how to split the total below.
         </p>
       </header>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8">
         <ExpenseForm
           groupId={group.id}
           viewerId={session.user.id}

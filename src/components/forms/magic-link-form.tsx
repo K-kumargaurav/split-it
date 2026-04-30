@@ -86,12 +86,12 @@ export function MagicLinkForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-slate-600 dark:text-slate-300">
         Enter your email and we&apos;ll send you a one-tap sign-in link. No password needed.
       </p>
 
       <div>
-        <label htmlFor="magic-email" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="magic-email" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Email address
         </label>
         <input
@@ -103,7 +103,7 @@ export function MagicLinkForm() {
           aria-invalid={Boolean(errors.email)}
           aria-describedby={errors.email ? "magic-email-error" : undefined}
           className={cn(
-            "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+            "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
             "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
             errors.email && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
           )}

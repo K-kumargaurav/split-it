@@ -120,12 +120,12 @@ export function ReceiptUploader({ groupId, onFileChange, onPrefill }: ReceiptUpl
   return (
     <section aria-label="Receipt upload" className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-slate-700">Receipt (optional)</label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Receipt (optional)</label>
         {file ? (
           <button
             type="button"
             onClick={clear}
-            className="text-xs font-medium text-slate-500 hover:text-rose-600"
+            className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-rose-600"
           >
             Remove
           </button>
@@ -153,13 +153,13 @@ export function ReceiptUploader({ groupId, onFileChange, onPrefill }: ReceiptUpl
             "flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-8 text-center transition",
             isDragging
               ? "border-indigo-400 bg-indigo-50/60"
-              : "border-slate-300 bg-slate-50/40 hover:border-slate-400",
+              : "border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/40 hover:border-slate-400",
           )}
         >
-          <p className="text-sm font-medium text-slate-700">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Drop a receipt here, or click to browse
           </p>
-          <p className="mt-1 text-xs text-slate-500">JPEG, PNG, WebP, or PDF up to 10 MB</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">JPEG, PNG, WebP, or PDF up to 10 MB</p>
           <input
             ref={inputRef}
             type="file"
@@ -172,7 +172,7 @@ export function ReceiptUploader({ groupId, onFileChange, onPrefill }: ReceiptUpl
           />
         </div>
       ) : (
-        <div className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-3">
+        <div className="flex items-start gap-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
           {isImage && previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -181,13 +181,13 @@ export function ReceiptUploader({ groupId, onFileChange, onPrefill }: ReceiptUpl
               className="h-24 w-24 flex-none rounded-lg object-cover"
             />
           ) : (
-            <div className="flex h-24 w-24 flex-none items-center justify-center rounded-lg bg-slate-100 text-xs font-medium text-slate-500">
+            <div className="flex h-24 w-24 flex-none items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-500 dark:text-slate-400">
               PDF
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900">{file.name}</p>
-            <p className="text-xs text-slate-500">
+            <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{file.name}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {(file.size / 1024).toFixed(0)} KB · {file.type}
             </p>
             <StatusLine status={status} />
@@ -208,13 +208,13 @@ function StatusLine({ status }: { status: Status }) {
   if (status.kind === "uploading") {
     return (
       <div className="mt-2">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
           <div
             className="h-full bg-indigo-500 transition-all"
             style={{ width: `${Math.max(5, status.progress)}%` }}
           />
         </div>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {status.progress < 100 ? "Uploading…" : "Reading receipt…"}
         </p>
       </div>

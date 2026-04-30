@@ -45,7 +45,7 @@ export function DangerZone({ groupId, groupName }: DangerZoneProps) {
   if (!confirming) {
     return (
       <div className="space-y-2">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-600 dark:text-slate-300">
           Archived groups are hidden from your dashboard. Balances and history stay readable.
         </p>
         <button
@@ -61,8 +61,8 @@ export function DangerZone({ groupId, groupName }: DangerZoneProps) {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-700">
-        Type <span className="font-semibold text-slate-900">{groupName}</span> to confirm.
+      <p className="text-sm text-slate-700 dark:text-slate-200">
+        Type <span className="font-semibold text-slate-900 dark:text-white">{groupName}</span> to confirm.
       </p>
       <input
         type="text"
@@ -70,7 +70,7 @@ export function DangerZone({ groupId, groupName }: DangerZoneProps) {
         onChange={(e) => setConfirmText(e.target.value)}
         placeholder={groupName}
         aria-label="Confirm group name"
-        className="block w-full rounded-xl border border-rose-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500"
+        className="block w-full rounded-xl border border-rose-200 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500"
       />
       {error ? (
         <p role="alert" className="text-xs text-rose-600">
@@ -98,7 +98,7 @@ export function DangerZone({ groupId, groupName }: DangerZoneProps) {
             setError(null);
           }}
           disabled={submitting}
-          className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          className="inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
         >
           Cancel
         </button>

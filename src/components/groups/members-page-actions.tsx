@@ -91,7 +91,7 @@ export function RemoveMemberButton({
         onClick={handleRemove}
         disabled={submitting}
         className={cn(
-          "rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700",
+          "rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700",
           "disabled:cursor-not-allowed disabled:opacity-60",
         )}
       >
@@ -162,7 +162,7 @@ export function LeaveGroupButton({
         onClick={handleLeave}
         disabled={submitting}
         className={cn(
-          "rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50",
+          "rounded-xl border border-rose-200 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50",
           "disabled:cursor-not-allowed disabled:opacity-60",
         )}
       >

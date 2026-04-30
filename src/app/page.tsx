@@ -32,7 +32,7 @@ export default async function HomePage() {
   const isAuthed = Boolean(session?.user);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
           <span
@@ -56,7 +56,7 @@ export default async function HomePage() {
             <>
               <Link
                 href="/login"
-                className="rounded-lg px-3 py-2 text-slate-700 transition hover:bg-slate-100"
+                className="rounded-lg px-3 py-2 text-slate-700 dark:text-slate-200 transition hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 Sign in
               </Link>
@@ -85,10 +85,10 @@ export default async function HomePage() {
               <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200">
                 Made for groups, trips & households
               </span>
-              <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-6xl">
+              <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-6xl">
                 Split bills with friends, <span className="text-indigo-600">the easy way</span>.
               </h1>
-              <p className="mt-6 text-balance text-lg leading-8 text-slate-600">
+              <p className="mt-6 text-balance text-lg leading-8 text-slate-600 dark:text-slate-300">
                 Track shared expenses, settle up in one tap, and never argue over who owes whom again. SplitEasy keeps the math
                 exact down to the paise — and the receipts safe in one place.
               </p>
@@ -110,7 +110,7 @@ export default async function HomePage() {
                     </Link>
                     <Link
                       href="/register"
-                      className="rounded-lg bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                      className="rounded-lg bg-white dark:bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     >
                       Create an account
                     </Link>
@@ -119,11 +119,11 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <dl className="mx-auto mt-20 grid max-w-4xl grid-cols-1 gap-px overflow-hidden rounded-2xl bg-slate-200 text-center sm:grid-cols-3">
+            <dl className="mx-auto mt-20 grid max-w-4xl grid-cols-1 gap-px overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-700 text-center sm:grid-cols-3">
               {STATS.map((stat) => (
-                <div key={stat.label} className="bg-white p-6">
-                  <dt className="text-sm font-medium text-slate-500">{stat.label}</dt>
-                  <dd className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{stat.value}</dd>
+                <div key={stat.label} className="bg-white dark:bg-slate-900 p-6">
+                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">{stat.label}</dt>
+                  <dd className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{stat.value}</dd>
                 </div>
               ))}
             </dl>
@@ -133,7 +133,7 @@ export default async function HomePage() {
         <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-base font-semibold text-indigo-600">Everything you need</h2>
-            <p className="mt-2 text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+            <p className="mt-2 text-balance text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
               Built for the messy reality of shared money
             </p>
           </div>
@@ -142,10 +142,10 @@ export default async function HomePage() {
             {FEATURES.map((feature) => (
               <li
                 key={feature.title}
-                className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md"
+                className="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 transition hover:shadow-md"
               >
-                <h3 className="text-base font-semibold text-slate-900">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{feature.body}</p>
+                <h3 className="text-base font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{feature.body}</p>
               </li>
             ))}
           </ul>
@@ -162,7 +162,7 @@ export default async function HomePage() {
             <div className="mt-8 flex items-center justify-center gap-4">
               <Link
                 href={isAuthed ? "/dashboard" : "/login"}
-                className="rounded-lg bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-slate-900"
+                className="rounded-lg bg-white dark:bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-900 dark:text-white shadow-sm transition hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-slate-900"
               >
                 {isAuthed ? "Open dashboard" : "Sign in"}
               </Link>
@@ -179,8 +179,8 @@ export default async function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-6 text-sm text-slate-500 sm:flex-row">
+      <footer className="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-6 text-sm text-slate-500 dark:text-slate-400 sm:flex-row">
           <p>© {new Date().getFullYear()} SplitEasy. Money math, simplified.</p>
           <p>Built with Next.js, Prisma & Tailwind.</p>
         </div>

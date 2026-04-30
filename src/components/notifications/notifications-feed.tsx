@@ -70,7 +70,7 @@ export function NotificationsFeed(): JSX.Element {
   return (
     <section>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Filter notifications" className="inline-flex rounded-full border border-slate-200 bg-white p-1 text-sm">
+        <div role="tablist" aria-label="Filter notifications" className="inline-flex rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 text-sm">
           <FilterTab
             label="All"
             active={filter === "all"}
@@ -86,29 +86,29 @@ export function NotificationsFeed(): JSX.Element {
           type="button"
           onClick={markAllRead}
           disabled={unread === 0}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:text-slate-400"
         >
           Mark all read
         </button>
       </div>
 
       {isLoading && items.length === 0 ? (
-        <p className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+        <p className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center text-sm text-slate-500 dark:text-slate-400">
           Loading notifications…
         </p>
       ) : items.length === 0 ? (
-        <p className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+        <p className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center text-sm text-slate-500 dark:text-slate-400">
           {filter === "unread"
             ? "No unread notifications."
             : "You don't have any notifications yet."}
         </p>
       ) : (
-        <ul className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <ul className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
           {items.map((n, i) => (
             <li
               key={n.id}
               className={cn(
-                "border-slate-100",
+                "border-slate-100 dark:border-slate-800",
                 i > 0 && "border-t",
               )}
             >
@@ -124,7 +124,7 @@ export function NotificationsFeed(): JSX.Element {
             type="button"
             onClick={() => setSize(size + 1)}
             disabled={isValidating}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed"
+            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed"
           >
             {isValidating ? "Loading…" : "Load more"}
           </button>
@@ -153,7 +153,7 @@ function FilterTab({
         "rounded-full px-3 py-1 transition",
         active
           ? "bg-indigo-600 text-white shadow-sm"
-          : "text-slate-600 hover:text-slate-900",
+          : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white",
       )}
     >
       {label}
@@ -172,7 +172,7 @@ function FeedRow({
   const inner = (
     <div
       className={cn(
-        "flex items-start gap-3 px-5 py-4 text-sm transition hover:bg-slate-50",
+        "flex items-start gap-3 px-5 py-4 text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800",
         !item.isRead && "bg-indigo-50/40",
       )}
     >
@@ -184,8 +184,8 @@ function FeedRow({
         )}
       />
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-slate-900">{item.title}</p>
-        <p className="mt-0.5 text-slate-600">{item.body}</p>
+        <p className="font-medium text-slate-900 dark:text-white">{item.title}</p>
+        <p className="mt-0.5 text-slate-600 dark:text-slate-300">{item.body}</p>
         <p className="mt-1 text-[11px] uppercase tracking-wider text-slate-400">
           {formatRelativeTime(item.createdAt)}
         </p>

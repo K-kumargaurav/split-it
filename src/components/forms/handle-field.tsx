@@ -89,7 +89,7 @@ export function HandleField({
 
   return (
     <div>
-      <label htmlFor="handle" className="block text-sm font-medium text-slate-700">
+      <label htmlFor="handle" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
         Handle
       </label>
       <div className="relative mt-1.5">
@@ -110,7 +110,7 @@ export function HandleField({
           aria-invalid={Boolean(message)}
           aria-describedby={message ? "handle-error" : "handle-status"}
           className={cn(
-            "block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 pl-7 pr-10 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+            "block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 pl-7 pr-10 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
             "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
             message && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
             isAvailable && "border-emerald-300 focus:border-emerald-400 focus:ring-emerald-400",
@@ -130,7 +130,7 @@ export function HandleField({
           id="handle-status"
           className={cn(
             "mt-1.5 text-xs transition-colors",
-            isAvailable ? "text-emerald-700" : "text-slate-500",
+            isAvailable ? "text-emerald-700" : "text-slate-500 dark:text-slate-400",
           )}
         >
           {state.kind === "result" && state.status === "available"

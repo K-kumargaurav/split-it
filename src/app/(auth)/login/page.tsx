@@ -32,7 +32,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
     : null;
 
   return (
-    <main className="grid min-h-screen grid-cols-1 bg-slate-50 lg:grid-cols-[1.1fr_1fr]">
+    <main className="grid min-h-screen grid-cols-1 bg-slate-50 dark:bg-slate-800 lg:grid-cols-[1.1fr_1fr]">
       <BrandSide />
 
       <section className="flex items-center justify-center px-6 py-10 sm:px-10 lg:py-16">
@@ -42,10 +42,10 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
           </div>
 
           <header className="mb-8">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
               Welcome back
             </h1>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Don&apos;t have an account?{" "}
               <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
                 Create one for free
@@ -67,13 +67,13 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
 
           <LoginForm callbackUrl={callbackUrl} />
 
-          <p className="mt-8 text-center text-xs text-slate-500">
+          <p className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
             By continuing you agree to SplitEasy&apos;s{" "}
-            <Link href="/terms" className="underline hover:text-slate-700">
+            <Link href="/terms" className="underline hover:text-slate-700 dark:hover:text-slate-200">
               Terms
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="underline hover:text-slate-700">
+            <Link href="/privacy" className="underline hover:text-slate-700 dark:hover:text-slate-200">
               Privacy Policy
             </Link>
             .
@@ -127,7 +127,7 @@ function BrandSide() {
           {HIGHLIGHTS.map((item) => (
             <div
               key={item.label}
-              className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
+              className="rounded-2xl border border-white/10 bg-white dark:bg-slate-900/5 p-4 backdrop-blur-sm"
             >
               <dt className="font-mono text-xl font-semibold tracking-tight tabular-nums text-white">
                 {item.stat}
@@ -138,7 +138,7 @@ function BrandSide() {
         </dl>
       </div>
 
-      <p className="relative z-10 text-xs text-slate-500">
+      <p className="relative z-10 text-xs text-slate-500 dark:text-slate-400">
         © {new Date().getFullYear()} SplitEasy. Money math, simplified.
       </p>
     </section>

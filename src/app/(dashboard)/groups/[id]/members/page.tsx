@@ -57,17 +57,17 @@ export default async function MembersPage({ params }: MembersPageProps) {
       }}
     >
       <nav className="mb-6 text-sm">
-        <Link href={`/groups/${group.id}`} className="text-slate-500 hover:text-slate-700">
+        <Link href={`/groups/${group.id}`} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
           ← Back to {group.name}
         </Link>
       </nav>
 
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             Members
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {members.length} {members.length === 1 ? "member" : "members"} in {group.name}
           </p>
         </div>
@@ -76,12 +76,12 @@ export default async function MembersPage({ params }: MembersPageProps) {
 
       <section
         aria-labelledby="members-heading"
-        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+        className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8"
       >
         <h2 id="members-heading" className="sr-only">
           Members list
         </h2>
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {members.map((m) => (
             <MemberRowItem
               key={m.userId}
@@ -99,12 +99,12 @@ export default async function MembersPage({ params }: MembersPageProps) {
 
       <section
         aria-labelledby="add-guest-heading"
-        className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 p-6 sm:p-8"
+        className="mt-6 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-6 sm:p-8"
       >
-        <h2 id="add-guest-heading" className="text-sm font-semibold text-slate-900">
+        <h2 id="add-guest-heading" className="text-sm font-semibold text-slate-900 dark:text-white">
           Splitting with someone who doesn&apos;t use SplitEasy?
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Add them as a guest. They&apos;ll get a private link to see their balance and pay
           you back — no signup needed.
         </p>
@@ -137,13 +137,13 @@ function GhostMemberRow({
         {initial}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-900">
+        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
           {ghost.displayName}
           <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-700">
             Guest
           </span>
         </p>
-        <p className="truncate text-xs text-slate-500">
+        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
           {ghost.email ?? ghost.phone ?? "No contact info"} · added{" "}
           {ghost.createdAt.toLocaleDateString("en-IN")}
         </p>
@@ -178,7 +178,7 @@ function MemberRowItem({
         <img
           src={member.avatarUrl}
           alt=""
-          className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
+          className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700"
         />
       ) : (
         <span
@@ -189,11 +189,11 @@ function MemberRowItem({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-900">
+        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
           {member.displayName}
           {isYou ? <span className="ml-1 text-xs text-slate-400">(you)</span> : null}
         </p>
-        <p className="truncate text-xs text-slate-500">
+        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
           @{member.handle} · joined {member.joinedAt.toLocaleDateString("en-IN")}
         </p>
       </div>

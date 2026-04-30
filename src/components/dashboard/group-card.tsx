@@ -17,7 +17,7 @@ export function GroupCard({ group }: GroupCardProps) {
   const owedToYou = group.balancePaise > 0;
 
   const tone = settled
-    ? { bar: "bg-slate-200", chip: "bg-slate-100 text-slate-600", label: "Settled", amountClass: "text-slate-500" }
+    ? { bar: "bg-slate-200 dark:bg-slate-700", chip: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300", label: "Settled", amountClass: "text-slate-500 dark:text-slate-400" }
     : owedToYou
       ? { bar: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700", label: "You're owed", amountClass: "text-emerald-700" }
       : { bar: "bg-rose-500", chip: "bg-rose-50 text-rose-700", label: "You owe", amountClass: "text-rose-700" };
@@ -28,8 +28,8 @@ export function GroupCard({ group }: GroupCardProps) {
     <Link
       href={`/groups/${group.id}`}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition",
-        "hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md",
+        "group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm transition",
+        "hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
       )}
     >
@@ -45,10 +45,10 @@ export function GroupCard({ group }: GroupCardProps) {
             {group.icon ?? group.name[0]?.toUpperCase() ?? "?"}
           </span>
           <div className="min-w-0">
-            <h3 className="truncate text-base font-semibold tracking-tight text-slate-900">
+            <h3 className="truncate text-base font-semibold tracking-tight text-slate-900 dark:text-white">
               {group.name}
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {group.memberCount} {group.memberCount === 1 ? "member" : "members"}
             </p>
           </div>
@@ -64,11 +64,11 @@ export function GroupCard({ group }: GroupCardProps) {
         </p>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500">
+      <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 text-xs text-slate-500 dark:text-slate-400">
         <span>Active {formatRelativeTime(group.lastActivityAt)}</span>
         <span
           aria-hidden="true"
-          className="text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-600"
+          className="text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-600 dark:hover:text-slate-300"
         >
           →
         </span>

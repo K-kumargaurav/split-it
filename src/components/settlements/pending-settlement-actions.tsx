@@ -70,7 +70,7 @@ export function PendingSettlementActions({
           onClick={() => send("dispute")}
           disabled={pending !== null}
           className={cn(
-            "rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700",
+            "rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700",
             "disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >

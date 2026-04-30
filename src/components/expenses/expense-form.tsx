@@ -390,7 +390,7 @@ export function ExpenseForm({
       />
 
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="title" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Title
         </label>
         <input
@@ -400,7 +400,7 @@ export function ExpenseForm({
           placeholder="Dinner at Toit"
           aria-invalid={Boolean(errors.title)}
           className={cn(
-            "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+            "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
             "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
             errors.title && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
           )}
@@ -413,7 +413,7 @@ export function ExpenseForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <div className="flex items-center justify-between">
-            <label htmlFor="amount" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="amount" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
               Amount (₹)
             </label>
             {prefilledFields.amount ? <PrefilledBadge /> : null}
@@ -428,7 +428,7 @@ export function ExpenseForm({
             placeholder="0.00"
             aria-invalid={Boolean(errors.amount)}
             className={cn(
-              "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+              "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
               "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
               errors.amount && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
             )}
@@ -440,7 +440,7 @@ export function ExpenseForm({
 
         <div>
           <div className="flex items-center justify-between">
-            <label htmlFor="date" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="date" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
               Date
             </label>
             {prefilledFields.date ? <PrefilledBadge /> : null}
@@ -453,7 +453,7 @@ export function ExpenseForm({
             type="date"
             aria-invalid={Boolean(errors.date)}
             className={cn(
-              "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition",
+              "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm transition",
               "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
               errors.date && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
             )}
@@ -466,13 +466,13 @@ export function ExpenseForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="categoryId" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="categoryId" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
             Category
           </label>
           <select
             {...register("categoryId")}
             id="categoryId"
-            className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value="">Uncategorised</option>
             {categories.map((c) => (
@@ -485,7 +485,7 @@ export function ExpenseForm({
         </div>
 
         <div>
-          <label htmlFor="paidById" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="paidById" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
             Paid by
           </label>
           <select
@@ -493,7 +493,7 @@ export function ExpenseForm({
             id="paidById"
             aria-invalid={Boolean(errors.paidById)}
             className={cn(
-              "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition",
+              "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm transition",
               "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
               errors.paidById && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
             )}
@@ -517,18 +517,18 @@ export function ExpenseForm({
       </div>
 
       <fieldset>
-        <legend className="block text-sm font-medium text-slate-700">Split among</legend>
+        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Split among</legend>
         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {members.map((m) => (
             <label
               key={m.id}
-              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 hover:border-slate-300"
+              className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600"
             >
               <input
                 type="checkbox"
                 value={m.id}
                 {...register("participantIds")}
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500"
               />
               <span className="truncate">
                 {m.displayName}
@@ -539,7 +539,7 @@ export function ExpenseForm({
           {ghostMembers.map((g) => (
             <label
               key={g.id}
-              className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2.5 text-sm text-slate-700 hover:border-amber-300"
+              className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:border-amber-300"
             >
               <input
                 type="checkbox"
@@ -562,11 +562,11 @@ export function ExpenseForm({
       </fieldset>
 
       <fieldset>
-        <legend className="block text-sm font-medium text-slate-700">Split type</legend>
+        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Split type</legend>
         <div
           role="tablist"
           aria-label="Split type"
-          className="mt-2 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1"
+          className="mt-2 inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-1"
         >
           {(["EQUAL", "EXACT", "PERCENTAGE"] as const).map((t) => (
             <button
@@ -578,8 +578,8 @@ export function ExpenseForm({
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 splitType === t
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900",
+                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
+                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white",
               )}
             >
               {t === "EQUAL" ? "Equal" : t === "EXACT" ? "Exact" : "Percentage"}
@@ -591,19 +591,19 @@ export function ExpenseForm({
       {splitType === "EQUAL" && equalPreview ? (
         <section
           aria-label="Split preview"
-          className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+          className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-4 py-3"
         >
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Each person owes
           </p>
-          <ul className="mt-2 divide-y divide-slate-200">
+          <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-700">
             {equalPreview.map((row) => {
               const member = memberById.get(row.memberId);
               if (!member) return null;
               return (
                 <li
                   key={row.memberId}
-                  className="flex items-center justify-between py-1.5 text-sm text-slate-700"
+                  className="flex items-center justify-between py-1.5 text-sm text-slate-700 dark:text-slate-200"
                 >
                   <span className="truncate">
                     {member.displayName}
@@ -611,7 +611,7 @@ export function ExpenseForm({
                       <span className="ml-1 text-xs text-slate-400">(you)</span>
                     ) : null}
                   </span>
-                  <span className="font-mono tabular-nums text-slate-900">
+                  <span className="font-mono tabular-nums text-slate-900 dark:text-white">
                     {formatPaise(row.amountPaise)}
                   </span>
                 </li>
@@ -624,22 +624,22 @@ export function ExpenseForm({
       {splitType === "EXACT" && exactState ? (
         <section
           aria-label="Exact amounts"
-          className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+          className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-4 py-3"
         >
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Enter exact amount
             </p>
             <RemainingAmount remainingPaise={exactState.remainingPaise} />
           </div>
-          <ul className="mt-2 divide-y divide-slate-200">
+          <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-700">
             {(participantIds ?? []).map((id) => {
               const member = memberById.get(id);
               if (!member) return null;
               return (
                 <li
                   key={id}
-                  className="flex items-center justify-between gap-3 py-1.5 text-sm text-slate-700"
+                  className="flex items-center justify-between gap-3 py-1.5 text-sm text-slate-700 dark:text-slate-200"
                 >
                   <span className="truncate">
                     {member.displayName}
@@ -648,7 +648,7 @@ export function ExpenseForm({
                     ) : null}
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-slate-500">₹</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">₹</span>
                     <input
                       type="number"
                       inputMode="decimal"
@@ -659,7 +659,7 @@ export function ExpenseForm({
                       onChange={(e) =>
                         setExactInputs((prev) => ({ ...prev, [id]: e.target.value }))
                       }
-                      className="w-28 rounded-lg border border-slate-300 bg-white px-2 py-1 text-right font-mono text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-28 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-right font-mono text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                   </div>
                 </li>
@@ -672,15 +672,15 @@ export function ExpenseForm({
       {splitType === "PERCENTAGE" && percentState ? (
         <section
           aria-label="Percentage shares"
-          className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+          className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-4 py-3"
         >
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Enter % per person
             </p>
             <RemainingPercentage remainingPct={percentState.remainingPct} />
           </div>
-          <ul className="mt-2 divide-y divide-slate-200">
+          <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-700">
             {(participantIds ?? []).map((id, i) => {
               const member = memberById.get(id);
               if (!member) return null;
@@ -688,7 +688,7 @@ export function ExpenseForm({
               return (
                 <li
                   key={id}
-                  className="flex items-center justify-between gap-3 py-1.5 text-sm text-slate-700"
+                  className="flex items-center justify-between gap-3 py-1.5 text-sm text-slate-700 dark:text-slate-200"
                 >
                   <span className="truncate">
                     {member.displayName}
@@ -698,7 +698,7 @@ export function ExpenseForm({
                   </span>
                   <div className="flex items-center gap-3">
                     {previewRow ? (
-                      <span className="font-mono text-xs tabular-nums text-slate-500">
+                      <span className="font-mono text-xs tabular-nums text-slate-500 dark:text-slate-400">
                         {formatPaise(previewRow.amountPaise)}
                       </span>
                     ) : null}
@@ -714,9 +714,9 @@ export function ExpenseForm({
                         onChange={(e) =>
                           setPercentInputs((prev) => ({ ...prev, [id]: e.target.value }))
                         }
-                        className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-right font-mono text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-20 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-right font-mono text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
-                      <span className="text-xs text-slate-500">%</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">%</span>
                     </div>
                   </div>
                 </li>
@@ -740,7 +740,7 @@ export function ExpenseForm({
         <button
           type="button"
           onClick={() => router.push(`/groups/${groupId}`)}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
         >
           Cancel
         </button>
@@ -768,7 +768,7 @@ function RemainingAmount({ remainingPaise }: { remainingPaise: number }) {
       ? "text-emerald-700"
       : remainingPaise < 0
       ? "text-rose-700"
-      : "text-slate-600";
+      : "text-slate-600 dark:text-slate-300";
   const label =
     remainingPaise === 0
       ? "Allocated exactly"
@@ -792,7 +792,7 @@ function RemainingPercentage({ remainingPct }: { remainingPct: number }) {
       ? "text-emerald-700"
       : remainingPct < 0
       ? "text-rose-700"
-      : "text-slate-600";
+      : "text-slate-600 dark:text-slate-300";
   const label =
     remainingPct === 0
       ? "100% allocated"

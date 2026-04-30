@@ -65,7 +65,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
   const owedToYou = group.balancePaise > 0;
 
   const balanceTone = settled
-    ? { chip: "bg-slate-100 text-slate-600", label: "Settled", amount: "text-slate-500" }
+    ? { chip: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300", label: "Settled", amount: "text-slate-500 dark:text-slate-400" }
     : owedToYou
       ? { chip: "bg-emerald-50 text-emerald-700", label: "You're owed", amount: "text-emerald-700" }
       : { chip: "bg-rose-50 text-rose-700", label: "You owe", amount: "text-rose-700" };
@@ -82,12 +82,12 @@ export default async function GroupPage({ params }: GroupPageProps) {
       }}
     >
       <nav className="mb-6 text-sm">
-        <Link href="/dashboard" className="text-slate-500 hover:text-slate-700">
+        <Link href="/dashboard" className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
           ← Back to dashboard
         </Link>
       </nav>
 
-      <header className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <header className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-4 min-w-0">
             <span
@@ -98,16 +98,16 @@ export default async function GroupPage({ params }: GroupPageProps) {
               {group.icon ?? group.name[0]?.toUpperCase() ?? "?"}
             </span>
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              <h1 className="truncate text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
                 {group.name}
               </h1>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {group.members.length} {group.members.length === 1 ? "member" : "members"} ·{" "}
                 {group.currency} · {group.balanceMode === "DIRECT" ? "Direct" : "Simplified"}{" "}
                 balances
               </p>
               {group.description ? (
-                <p className="mt-3 text-sm text-slate-600">{group.description}</p>
+                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{group.description}</p>
               ) : null}
             </div>
           </div>
@@ -115,14 +115,14 @@ export default async function GroupPage({ params }: GroupPageProps) {
           {isOwner ? (
             <Link
               href={`/groups/${group.id}/settings`}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
             >
               Settings
             </Link>
           ) : null}
         </div>
 
-        <div className="mt-6 inline-flex flex-col rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+        <div className="mt-6 inline-flex flex-col rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-4 py-3">
           <span
             className={cn(
               "inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium",
@@ -180,10 +180,10 @@ function ExpensesSection({
   return (
     <section
       aria-labelledby="expenses-heading"
-      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+      className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 id="expenses-heading" className="text-lg font-semibold tracking-tight text-slate-900">
+        <h2 id="expenses-heading" className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
           Expenses
         </h2>
         <Link
@@ -195,20 +195,20 @@ function ExpensesSection({
       </div>
 
       {hasExpenses ? (
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {expenses.map((e) => (
             <ExpenseRow key={e.id} expense={e} viewerId={viewerId} />
           ))}
         </ul>
       ) : (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-10 text-center">
-          <p className="text-sm font-medium text-slate-700">No expenses yet</p>
-          <p className="mt-1 text-sm text-slate-500">
+        <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-5 py-10 text-center">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">No expenses yet</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Add your first expense — split it equally, by exact amounts, or by percentage.
           </p>
           <Link
             href={`/groups/${groupId}/expenses/new`}
-            className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+            className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
           >
             Add the first expense
           </Link>
@@ -237,20 +237,20 @@ function ExpenseRow({
   return (
     <li className="flex items-center justify-between gap-4 py-3">
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-slate-900">{expense.title}</p>
-        <p className="mt-0.5 text-xs text-slate-500">
+        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{expense.title}</p>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
           {payerLabel} · {dateLabel}
         </p>
       </div>
       <div className="text-right">
-        <p className="font-mono text-sm font-semibold tabular-nums text-slate-900">
+        <p className="font-mono text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
           {formatPaise(expense.totalAmountPaise)}
         </p>
         {yourShare > 0 ? (
           <p
             className={cn(
               "mt-0.5 text-xs",
-              youOwe > 0 ? "text-rose-600" : youOwe < 0 ? "text-emerald-600" : "text-slate-500",
+              youOwe > 0 ? "text-rose-600" : youOwe < 0 ? "text-emerald-600" : "text-slate-500 dark:text-slate-400",
             )}
           >
             {youOwe > 0
@@ -292,12 +292,12 @@ function MembersSection({
   return (
     <section
       aria-labelledby="members-heading"
-      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+      className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8"
     >
       <div className="mb-4 flex items-center justify-between">
         <h2
           id="members-heading"
-          className="text-lg font-semibold tracking-tight text-slate-900"
+          className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white"
         >
           Members
         </h2>
@@ -337,14 +337,14 @@ function MembersSection({
         {overflow > 0 ? (
           <span
             aria-label={`${overflow} more members`}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-700 ring-2 ring-white"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-200 ring-2 ring-white"
           >
             +{overflow}
           </span>
         ) : null}
       </div>
 
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
         {members.length} {members.length === 1 ? "member" : "members"}
         {members.find((m) => m.role === "OWNER")
           ? ` · ${members.find((m) => m.role === "OWNER")!.user.displayName} is owner`
@@ -377,40 +377,40 @@ function BalancesSection({
   return (
     <section
       aria-labelledby="balances-heading"
-      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+      className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8"
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2
           id="balances-heading"
-          className="text-lg font-semibold tracking-tight text-slate-900"
+          className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white"
         >
           Balances
         </h2>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+        <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
           {modeLabel}
         </span>
       </div>
       {lines.length === 0 ? (
-        <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <p className="rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
           You&apos;re all settled up in this group.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {lines.map((line, i) => (
             <li
               key={`${line.direction}-${line.counterpartyId}-${i}`}
               className="flex items-center justify-between gap-4 py-3"
             >
-              <p className="text-sm text-slate-700">
+              <p className="text-sm text-slate-700 dark:text-slate-200">
                 {line.direction === "owed" ? (
                   <>
-                    <span className="font-medium text-slate-900">{line.counterpartyName}</span>{" "}
+                    <span className="font-medium text-slate-900 dark:text-white">{line.counterpartyName}</span>{" "}
                     owes you
                   </>
                 ) : (
                   <>
                     You owe{" "}
-                    <span className="font-medium text-slate-900">{line.counterpartyName}</span>
+                    <span className="font-medium text-slate-900 dark:text-white">{line.counterpartyName}</span>
                   </>
                 )}
               </p>
@@ -426,7 +426,7 @@ function BalancesSection({
                 {line.direction === "owes" ? (
                   <Link
                     href={`/groups/${groupId}/settlements/new?to=${line.counterpartyId}`}
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
                   >
                     Mark as paid
                   </Link>
@@ -468,25 +468,25 @@ function PendingSettlementsSection({
           return (
             <li key={s.id} className="flex items-center justify-between gap-4 py-3">
               <div className="min-w-0">
-                <p className="text-sm text-slate-800">
+                <p className="text-sm text-slate-800 dark:text-slate-100">
                   {isPayer ? (
                     <>
                       You paid{" "}
-                      <span className="font-medium text-slate-900">{s.receiver.displayName}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">{s.receiver.displayName}</span>
                     </>
                   ) : isReceiver ? (
                     <>
-                      <span className="font-medium text-slate-900">{s.payer.displayName}</span>{" "}
+                      <span className="font-medium text-slate-900 dark:text-white">{s.payer.displayName}</span>{" "}
                       paid you
                     </>
                   ) : (
                     <>
-                      <span className="font-medium text-slate-900">{s.payer.displayName}</span> →{" "}
-                      <span className="font-medium text-slate-900">{s.receiver.displayName}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">{s.payer.displayName}</span> →{" "}
+                      <span className="font-medium text-slate-900 dark:text-white">{s.receiver.displayName}</span>
                     </>
                   )}
                 </p>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   {formatPaise(s.amountPaise)} · {paymentMethodLabel(s.paymentMethod)} ·{" "}
                   {formatRelativeTime(s.createdAt)}
                 </p>
@@ -518,15 +518,15 @@ function ActivityFeed({
   return (
     <section
       aria-labelledby="activity-heading"
-      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+      className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8"
     >
       <h2
         id="activity-heading"
-        className="mb-3 text-lg font-semibold tracking-tight text-slate-900"
+        className="mb-3 text-lg font-semibold tracking-tight text-slate-900 dark:text-white"
       >
         Settlement activity
       </h2>
-      <ul className="divide-y divide-slate-100">
+      <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {recent.map((s) => {
           const isPayer = s.payer.userId === viewerId;
           const isReceiver = s.receiver.userId === viewerId;
@@ -534,29 +534,29 @@ function ActivityFeed({
           return (
             <li key={s.id} className="flex items-center justify-between gap-4 py-3">
               <div className="min-w-0">
-                <p className="truncate text-sm text-slate-700">
+                <p className="truncate text-sm text-slate-700 dark:text-slate-200">
                   {isPayer ? (
                     <>
                       You paid{" "}
-                      <span className="font-medium text-slate-900">{s.receiver.displayName}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">{s.receiver.displayName}</span>
                     </>
                   ) : isReceiver ? (
                     <>
-                      <span className="font-medium text-slate-900">{s.payer.displayName}</span>{" "}
+                      <span className="font-medium text-slate-900 dark:text-white">{s.payer.displayName}</span>{" "}
                       paid you
                     </>
                   ) : (
                     <>
-                      <span className="font-medium text-slate-900">{s.payer.displayName}</span> →{" "}
-                      <span className="font-medium text-slate-900">{s.receiver.displayName}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">{s.payer.displayName}</span> →{" "}
+                      <span className="font-medium text-slate-900 dark:text-white">{s.receiver.displayName}</span>
                     </>
                   )}
                 </p>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   {paymentMethodLabel(s.paymentMethod)} · {formatRelativeTime(when)}
                 </p>
               </div>
-              <p className="font-mono text-sm font-semibold tabular-nums text-slate-900">
+              <p className="font-mono text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
                 {formatPaise(s.amountPaise)}
               </p>
             </li>

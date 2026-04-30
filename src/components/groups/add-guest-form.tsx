@@ -74,7 +74,7 @@ export function AddGuestForm({ groupId }: AddGuestFormProps) {
           reset();
           setOpen(true);
         }}
-        className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+        className="inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
       >
         Add Guest (no account needed)
       </button>
@@ -100,7 +100,7 @@ export function AddGuestForm({ groupId }: AddGuestFormProps) {
             value={guestUrl}
             aria-label="Guest link"
             onFocus={(e) => e.currentTarget.select()}
-            className="flex-1 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-sm"
+            className="flex-1 rounded-xl border border-emerald-200 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-900 dark:text-white shadow-sm"
           />
           <button
             type="button"
@@ -122,7 +122,7 @@ export function AddGuestForm({ groupId }: AddGuestFormProps) {
           <button
             type="button"
             onClick={reset}
-            className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50"
+            className="rounded-xl border border-emerald-200 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50"
           >
             Add another guest
           </button>
@@ -132,7 +132,7 @@ export function AddGuestForm({ groupId }: AddGuestFormProps) {
               reset();
               setOpen(false);
             }}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             Done
           </button>
@@ -144,11 +144,11 @@ export function AddGuestForm({ groupId }: AddGuestFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+      className="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm"
       noValidate
     >
       <div>
-        <label htmlFor="ghost-name" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="ghost-name" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Display name
         </label>
         <input
@@ -159,13 +159,13 @@ export function AddGuestForm({ groupId }: AddGuestFormProps) {
           onChange={(e) => setDisplayName(e.target.value)}
           maxLength={80}
           placeholder="e.g. Cousin Riya"
-          className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="ghost-email" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="ghost-email" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
             Email <span className="text-slate-400">(optional)</span>
           </label>
           <input
@@ -174,11 +174,11 @@ export function AddGuestForm({ groupId }: AddGuestFormProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             maxLength={254}
-            className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>
         <div>
-          <label htmlFor="ghost-phone" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="ghost-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
             Phone <span className="text-slate-400">(optional)</span>
           </label>
           <input
@@ -187,7 +187,7 @@ export function AddGuestForm({ groupId }: AddGuestFormProps) {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             maxLength={20}
-            className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>
       </div>
@@ -205,7 +205,7 @@ export function AddGuestForm({ groupId }: AddGuestFormProps) {
             reset();
             setOpen(false);
           }}
-          className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
         >
           Cancel
         </button>

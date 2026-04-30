@@ -56,7 +56,7 @@ export function ExportSection({ groupId }: ExportSectionProps) {
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="export-start" className="block text-xs font-medium text-slate-600">
+          <label htmlFor="export-start" className="block text-xs font-medium text-slate-600 dark:text-slate-300">
             From
           </label>
           <input
@@ -64,11 +64,11 @@ export function ExportSection({ groupId }: ExportSectionProps) {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>
         <div>
-          <label htmlFor="export-end" className="block text-xs font-medium text-slate-600">
+          <label htmlFor="export-end" className="block text-xs font-medium text-slate-600 dark:text-slate-300">
             To
           </label>
           <input
@@ -76,7 +76,7 @@ export function ExportSection({ groupId }: ExportSectionProps) {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>
       </div>
@@ -99,8 +99,8 @@ export function ExportSection({ groupId }: ExportSectionProps) {
           onClick={() => download("csv")}
           disabled={busy !== null}
           className={cn(
-            "inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition",
-            "hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+            "inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition",
+            "hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >

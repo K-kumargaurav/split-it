@@ -138,15 +138,15 @@ export function SettlementForm({
 
   if (debts.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-10 text-center">
-        <p className="text-sm font-medium text-slate-700">You&apos;re all settled up</p>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-5 py-10 text-center">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">You&apos;re all settled up</p>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           You don&apos;t currently owe anyone in this group.
         </p>
         <button
           type="button"
           onClick={() => router.push(`/groups/${groupId}`)}
-          className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
         >
           Back to group
         </button>
@@ -191,14 +191,14 @@ export function SettlementForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       <div>
-        <label htmlFor="receiver" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="receiver" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Pay
         </label>
         <select
           id="receiver"
           value={receiverId}
           onChange={(e) => handleReceiverChange(e.target.value)}
-          className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         >
           {debts.map((d) => (
             <option key={d.receiverId} value={d.receiverId}>
@@ -209,7 +209,7 @@ export function SettlementForm({
       </div>
 
       <div>
-        <label htmlFor="amount" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="amount" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Amount (₹)
         </label>
         <input
@@ -220,17 +220,17 @@ export function SettlementForm({
           min="0.01"
           value={amountRupees}
           onChange={(e) => setAmountRupees(e.target.value)}
-          className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
         {selected ? (
-          <p className="mt-1.5 text-xs text-slate-500">
+          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
             Max {formatPaise(selected.amountPaise)} (your current debt).
           </p>
         ) : null}
       </div>
 
       <fieldset>
-        <legend className="block text-sm font-medium text-slate-700">Payment method</legend>
+        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Payment method</legend>
         <div className="mt-2 grid grid-cols-3 gap-2">
           {PAYMENT_METHODS.map((m) => {
             const isActive = paymentMethod === m.value;
@@ -241,7 +241,7 @@ export function SettlementForm({
                   "flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition",
                   isActive
                     ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
+                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600",
                 )}
               >
                 <input
@@ -270,7 +270,7 @@ export function SettlementForm({
 
       {paymentMethod !== "CASH" ? (
         <div>
-          <label htmlFor="paymentRef" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="paymentRef" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
             Transaction reference{" "}
             <span className="text-xs font-normal text-slate-400">(optional)</span>
           </label>
@@ -280,7 +280,7 @@ export function SettlementForm({
             value={paymentRef}
             onChange={(e) => setPaymentRef(e.target.value)}
             placeholder="UPI reference / transaction id"
-            className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>
       ) : null}
@@ -299,7 +299,7 @@ export function SettlementForm({
         <button
           type="button"
           onClick={() => router.push(`/groups/${groupId}`)}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
         >
           Cancel
         </button>

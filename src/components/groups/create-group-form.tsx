@@ -102,7 +102,7 @@ export function CreateGroupForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
       <div>
-        <label htmlFor="group-name" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="group-name" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Group name
         </label>
         <input
@@ -116,7 +116,7 @@ export function CreateGroupForm() {
           aria-describedby={errors.name ? "group-name-error" : undefined}
           placeholder="Goa trip · Roomies · Office lunch"
           className={cn(
-            "mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+            "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
             "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
             errors.name && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
           )}
@@ -129,7 +129,7 @@ export function CreateGroupForm() {
       </div>
 
       <div>
-        <label htmlFor="group-description" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="group-description" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Description <span className="text-slate-400">(optional)</span>
         </label>
         <textarea
@@ -141,7 +141,7 @@ export function CreateGroupForm() {
           aria-describedby={errors.description ? "group-description-error" : undefined}
           placeholder="What's this group for?"
           className={cn(
-            "mt-1.5 block w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+            "mt-1.5 block w-full resize-y rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
             "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
             errors.description && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
           )}
@@ -154,7 +154,7 @@ export function CreateGroupForm() {
       </div>
 
       <div>
-        <label htmlFor="group-currency" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="group-currency" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Currency
         </label>
         <input
@@ -166,12 +166,12 @@ export function CreateGroupForm() {
           aria-invalid={Boolean(errors.currency)}
           aria-describedby="group-currency-help"
           className={cn(
-            "mt-1.5 block w-32 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm uppercase tracking-wider text-slate-900 shadow-sm transition",
+            "mt-1.5 block w-32 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm uppercase tracking-wider text-slate-900 dark:text-white shadow-sm transition",
             "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
             errors.currency && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
           )}
         />
-        <p id="group-currency-help" className="mt-1.5 text-xs text-slate-500">
+        <p id="group-currency-help" className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
           Locked once the first expense is added.
         </p>
         {errors.currency ? (
@@ -180,7 +180,7 @@ export function CreateGroupForm() {
       </div>
 
       <fieldset>
-        <legend className="block text-sm font-medium text-slate-700">Color</legend>
+        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Color</legend>
         <div className="mt-2 flex flex-wrap gap-2.5">
           {COLOR_PRESETS.map((preset) => {
             const active = selectedColor === preset.hex;
@@ -205,8 +205,8 @@ export function CreateGroupForm() {
       </fieldset>
 
       <fieldset>
-        <legend className="block text-sm font-medium text-slate-700">Balance mode</legend>
-        <p className="mt-1 text-xs text-slate-500">
+        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Balance mode</legend>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           You can change this later — it only affects how balances are displayed.
         </p>
         <div role="radiogroup" className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -243,7 +243,7 @@ export function CreateGroupForm() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
         >
           Cancel
         </button>
@@ -284,11 +284,11 @@ function ModeOption({
         "flex flex-col rounded-xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
         active
           ? "border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-500"
-          : "border-slate-200 bg-white hover:border-slate-300",
+          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600",
       )}
     >
-      <span className="text-sm font-semibold text-slate-900">{label}</span>
-      <span className="mt-0.5 text-xs text-slate-500">{description}</span>
+      <span className="text-sm font-semibold text-slate-900 dark:text-white">{label}</span>
+      <span className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</span>
     </button>
   );
 }

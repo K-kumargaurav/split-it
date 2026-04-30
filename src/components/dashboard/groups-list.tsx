@@ -14,11 +14,11 @@ export function GroupsList({ groups }: GroupsListProps) {
         <div>
           <h2
             id="groups-heading"
-            className="text-lg font-semibold tracking-tight text-slate-900"
+            className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white"
           >
             Your groups
           </h2>
-          <p className="text-sm text-slate-500">Sorted by most recent activity</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Sorted by most recent activity</p>
         </div>
         <Link
           href="/groups"

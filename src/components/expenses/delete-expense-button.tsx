@@ -56,7 +56,7 @@ export function DeleteExpenseButton({
         type="button"
         onClick={onClick}
         disabled={busy}
-        className="rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 shadow-sm transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-xl border border-rose-200 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-rose-700 shadow-sm transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {busy
           ? isOwn

@@ -72,7 +72,7 @@ export default async function ExpenseDetailPage({
       <nav className="mb-6 text-sm">
         <Link
           href={`/groups/${params.id}`}
-          className="text-slate-500 hover:text-slate-700"
+          className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
         >
           ← Back to {expense.group.name}
         </Link>
@@ -80,10 +80,10 @@ export default async function ExpenseDetailPage({
 
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             {expense.title}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {totalRupeesLabel} · paid by {expense.payers.map((p) => p.user.displayName).join(", ")}
             {" · "}added {formatRelativeTime(expense.createdAt)} by {expense.creator.displayName}
             {expense.status === "DELETED" ? " · deleted" : ""}
@@ -93,7 +93,7 @@ export default async function ExpenseDetailPage({
           <div className="flex flex-col items-end gap-2">
             <Link
               href={`/groups/${params.id}/expenses/${expense.id}/edit`}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               {isOwn ? "Edit" : "Propose edit"}
             </Link>
@@ -116,15 +116,15 @@ export default async function ExpenseDetailPage({
         />
       ) : null}
 
-      <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+      <section className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           Split breakdown
         </h2>
-        <ul className="mt-3 divide-y divide-slate-200">
+        <ul className="mt-3 divide-y divide-slate-200 dark:divide-slate-700">
           {expense.participants.map((p) => (
             <li
               key={p.userId}
-              className="flex items-center justify-between py-2 text-sm text-slate-700"
+              className="flex items-center justify-between py-2 text-sm text-slate-700 dark:text-slate-200"
             >
               <span>
                 {p.user.displayName}
@@ -132,7 +132,7 @@ export default async function ExpenseDetailPage({
                   <span className="ml-1 text-xs text-slate-400">(you)</span>
                 ) : null}
               </span>
-              <span className="font-mono tabular-nums text-slate-900">
+              <span className="font-mono tabular-nums text-slate-900 dark:text-white">
                 {formatPaise(Number(p.amountPaise))}
               </span>
             </li>
@@ -141,8 +141,8 @@ export default async function ExpenseDetailPage({
       </section>
 
       {expense.receiptUrl ? (
-        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+        <section className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Receipt
           </h2>
           <a
@@ -155,7 +155,7 @@ export default async function ExpenseDetailPage({
             <img
               src={expense.receiptUrl}
               alt="Receipt"
-              className="h-40 w-40 rounded-lg border border-slate-200 object-cover"
+              className="h-40 w-40 rounded-lg border border-slate-200 dark:border-slate-700 object-cover"
             />
           </a>
         </section>

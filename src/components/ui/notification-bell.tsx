@@ -94,8 +94,8 @@ export function NotificationBell(): JSX.Element {
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition",
-          "hover:border-slate-300 hover:bg-slate-50",
+          "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 transition",
+          "hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
         )}
       >
@@ -114,10 +114,10 @@ export function NotificationBell(): JSX.Element {
         <div
           role="menu"
           aria-label="Notifications"
-          className="absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+          className="absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"
         >
-          <header className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
-            <span className="text-sm font-semibold text-slate-900">
+          <header className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-4 py-2.5">
+            <span className="text-sm font-semibold text-slate-900 dark:text-white">
               Notifications
             </span>
             <button
@@ -130,13 +130,13 @@ export function NotificationBell(): JSX.Element {
             </button>
           </header>
 
-          <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto">
+          <ul className="max-h-96 divide-y divide-slate-100 dark:divide-slate-800 overflow-y-auto">
             {isLoading && items.length === 0 ? (
-              <li className="px-4 py-6 text-center text-sm text-slate-500">
+              <li className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
                 Loading…
               </li>
             ) : items.length === 0 ? (
-              <li className="px-4 py-6 text-center text-sm text-slate-500">
+              <li className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
                 You&apos;re all caught up.
               </li>
             ) : (
@@ -154,7 +154,7 @@ export function NotificationBell(): JSX.Element {
             )}
           </ul>
 
-          <footer className="border-t border-slate-100 px-4 py-2 text-center">
+          <footer className="border-t border-slate-100 dark:border-slate-800 px-4 py-2 text-center">
             <Link
               href="/notifications"
               onClick={() => setOpen(false)}
@@ -181,7 +181,7 @@ function NotificationRow({
   const content = (
     <div
       className={cn(
-        "flex items-start gap-3 px-4 py-3 text-sm transition hover:bg-slate-50",
+        "flex items-start gap-3 px-4 py-3 text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800",
         !item.isRead && "bg-indigo-50/40",
       )}
     >
@@ -193,8 +193,8 @@ function NotificationRow({
         )}
       />
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-slate-900">{item.title}</p>
-        <p className="mt-0.5 truncate text-slate-600">{item.body}</p>
+        <p className="font-medium text-slate-900 dark:text-white">{item.title}</p>
+        <p className="mt-0.5 truncate text-slate-600 dark:text-slate-300">{item.body}</p>
         <p className="mt-1 text-[11px] uppercase tracking-wider text-slate-400">
           {formatRelativeTime(item.createdAt)}
         </p>

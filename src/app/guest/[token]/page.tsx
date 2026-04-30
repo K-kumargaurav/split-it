@@ -28,18 +28,18 @@ export default async function GuestPage({ params }: GuestPageProps) {
   const settled = view.totalOwedPaise === 0;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:py-12">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-800 px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-md space-y-6">
         <header className="text-center">
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Guest view
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Hi {view.displayName}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Here&apos;s your balance in{" "}
-            <span className="font-medium text-slate-700">{view.group.name}</span>.
+            <span className="font-medium text-slate-700 dark:text-slate-200">{view.group.name}</span>.
           </p>
         </header>
 
@@ -74,21 +74,21 @@ export default async function GuestPage({ params }: GuestPageProps) {
         {view.debts.length > 0 ? (
           <section
             aria-labelledby="debts-heading"
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm"
           >
-            <h2 id="debts-heading" className="text-sm font-semibold text-slate-900">
+            <h2 id="debts-heading" className="text-sm font-semibold text-slate-900 dark:text-white">
               Pay back
             </h2>
             <ul className="mt-3 space-y-4">
               {view.debts.map((d) => (
                 <li
                   key={d.receiverId}
-                  className="rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3"
+                  className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 px-4 py-3"
                 >
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-sm text-slate-700">
+                    <p className="text-sm text-slate-700 dark:text-slate-200">
                       You owe{" "}
-                      <span className="font-medium text-slate-900">
+                      <span className="font-medium text-slate-900 dark:text-white">
                         {d.receiverDisplayName}
                       </span>
                     </p>
@@ -112,22 +112,22 @@ export default async function GuestPage({ params }: GuestPageProps) {
         {view.expenseShares.length > 0 ? (
           <section
             aria-labelledby="shares-heading"
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm"
           >
-            <h2 id="shares-heading" className="text-sm font-semibold text-slate-900">
+            <h2 id="shares-heading" className="text-sm font-semibold text-slate-900 dark:text-white">
               Your share of each expense
             </h2>
-            <ul className="mt-3 divide-y divide-slate-100">
+            <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
               {view.expenseShares.map((s) => (
                 <li
                   key={s.expenseId}
                   className="flex items-center justify-between gap-3 py-2.5"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-900">
+                    <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
                       Your share of {s.title}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {new Date(s.date).toLocaleDateString("en-IN", {
                         day: "2-digit",
                         month: "short",
@@ -135,7 +135,7 @@ export default async function GuestPage({ params }: GuestPageProps) {
                       })}
                     </p>
                   </div>
-                  <p className="font-mono text-sm tabular-nums text-slate-900">
+                  <p className="font-mono text-sm tabular-nums text-slate-900 dark:text-white">
                     {formatPaise(s.yourSharePaise)}
                   </p>
                 </li>

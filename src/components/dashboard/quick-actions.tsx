@@ -7,8 +7,8 @@ interface QuickActionsProps {
 }
 
 const PRIMARY = cn(
-  "group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition",
-  "hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md",
+  "group flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-left shadow-sm transition",
+  "hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
 );
 
@@ -27,8 +27,8 @@ export function QuickActions({ hasGroups }: QuickActionsProps) {
             <PlusIcon />
           </span>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-slate-900">Create a group</p>
-            <p className="text-xs text-slate-500">Start splitting expenses with friends</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Create a group</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Start splitting expenses with friends</p>
           </div>
           <Arrow />
         </Link>
@@ -45,8 +45,8 @@ export function QuickActions({ hasGroups }: QuickActionsProps) {
             <ReceiptIcon />
           </span>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-slate-900">Add an expense</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Add an expense</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {hasGroups ? "Pick a group and split" : "Create a group first"}
             </p>
           </div>
@@ -81,7 +81,7 @@ function Arrow() {
   return (
     <span
       aria-hidden="true"
-      className="text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-600"
+      className="text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-600 dark:hover:text-slate-300"
     >
       →
     </span>

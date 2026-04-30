@@ -26,8 +26,8 @@ export function GoogleButton({
       disabled={pending}
       aria-label={label}
       className={cn(
-        "flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition",
-        "hover:border-slate-300 hover:bg-slate-50",
+        "flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm transition",
+        "hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-60",
       )}

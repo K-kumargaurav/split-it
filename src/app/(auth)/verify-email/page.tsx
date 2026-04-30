@@ -13,8 +13,8 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
     : ({ ok: false, reason: "invalid" as const });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-800 px-6 py-12">
+      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-8 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700">
         {result.ok ? <SuccessPanel /> : <FailurePanel />}
       </div>
     </main>
@@ -33,8 +33,8 @@ function SuccessPanel() {
           />
         </svg>
       </div>
-      <h1 className="mt-4 text-xl font-semibold text-slate-900">Email verified</h1>
-      <p className="mt-2 text-sm text-slate-600">
+      <h1 className="mt-4 text-xl font-semibold text-slate-900 dark:text-white">Email verified</h1>
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
         Your email address has been confirmed. You can now sign in.
       </p>
       <Link
@@ -59,8 +59,8 @@ function FailurePanel() {
           />
         </svg>
       </div>
-      <h1 className="mt-4 text-xl font-semibold text-slate-900">Link is invalid or expired</h1>
-      <p className="mt-2 text-sm text-slate-600">
+      <h1 className="mt-4 text-xl font-semibold text-slate-900 dark:text-white">Link is invalid or expired</h1>
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
         This verification link is no longer valid. Request a fresh one and we&apos;ll send a new link.
       </p>
       <Link
@@ -69,7 +69,7 @@ function FailurePanel() {
       >
         Request a new link
       </Link>
-      <p className="mt-4 text-xs text-slate-500">
+      <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
         Or{" "}
         <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
           back to sign in

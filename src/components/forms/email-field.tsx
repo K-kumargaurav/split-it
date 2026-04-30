@@ -106,7 +106,7 @@ export function EmailField({
 
   return (
     <div>
-      <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+      <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
         Email address
       </label>
       <div className="relative mt-1.5">
@@ -123,7 +123,7 @@ export function EmailField({
             scheduleCheck();
           }}
           className={cn(
-            "block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 pr-10 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition",
+            "block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 pr-10 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
             "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
             inputHasError && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
             showAvailable && "border-emerald-300 focus:border-emerald-400 focus:ring-emerald-400",
@@ -150,7 +150,7 @@ export function EmailField({
           id="email-status"
           className={cn(
             "mt-1.5 text-xs transition-colors",
-            showAvailable ? "text-emerald-700" : "text-slate-500",
+            showAvailable ? "text-emerald-700" : "text-slate-500 dark:text-slate-400",
           )}
         >
           {showAvailable

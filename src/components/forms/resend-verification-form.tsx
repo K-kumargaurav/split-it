@@ -47,7 +47,7 @@ export function ResendVerificationForm({ initialEmail = "" }: ResendVerification
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div>
-        <label htmlFor="resend-email" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="resend-email" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
           Email address
         </label>
         <input
@@ -59,7 +59,7 @@ export function ResendVerificationForm({ initialEmail = "" }: ResendVerification
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1.5 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="mt-1.5 block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 

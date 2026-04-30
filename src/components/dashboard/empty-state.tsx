@@ -7,7 +7,7 @@ export function EmptyState() {
   return (
     <section
       aria-labelledby="empty-heading"
-      className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+      className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm"
     >
       <div className="grid gap-0 lg:grid-cols-[1.1fr_1fr]">
         <div className="p-8 sm:p-10 lg:p-12">
@@ -16,11 +16,11 @@ export function EmptyState() {
           </p>
           <h2
             id="empty-heading"
-            className="mt-3 text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl"
+            className="mt-3 text-balance text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl"
           >
             Create your first group
           </h2>
-          <p className="mt-3 max-w-md text-base leading-7 text-slate-600">
+          <p className="mt-3 max-w-md text-base leading-7 text-slate-600 dark:text-slate-300">
             Groups are how you track shared expenses with friends, flatmates, or trip companions.
             Add an expense, pick who paid, and SplitEasy keeps the math exact to the paise.
           </p>
@@ -34,13 +34,13 @@ export function EmptyState() {
             </Link>
             <Link
               href="/groups/join"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               Join with an invite link
             </Link>
           </div>
 
-          <ul className="mt-8 grid grid-cols-1 gap-2 text-sm text-slate-600 sm:grid-cols-2">
+          <ul className="mt-8 grid grid-cols-1 gap-2 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-2">
             <Bullet>Exact splits to the paise — no rounding</Bullet>
             <Bullet>Settle up by UPI, cash, or bank</Bullet>
             <Bullet>Guest links so friends pay without signup</Bullet>
@@ -89,7 +89,7 @@ function Bullet({ children }: { children: React.ReactNode }) {
 
 function ReceiptCard({ label, amount, tag }: { label: string; amount: string; tag: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+    <div className="rounded-2xl border border-white/10 bg-white dark:bg-slate-900/5 p-4 backdrop-blur-sm">
       <div className="flex items-center justify-between text-white">
         <p className="truncate text-sm font-medium">{label}</p>
         <p className="font-mono text-sm font-semibold tabular-nums">{amount}</p>

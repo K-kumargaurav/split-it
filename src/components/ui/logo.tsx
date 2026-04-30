@@ -13,10 +13,10 @@ interface LogoProps {
 // dashboard nav, and emails.
 export function Logo({ href = "/", variant = "dark", className }: LogoProps) {
   const wordmarkClass =
-    variant === "light" ? "text-white" : "text-slate-900";
+    variant === "light" ? "text-white" : "text-slate-900 dark:text-white";
   const markClass =
     variant === "light"
-      ? "bg-white/15 text-white ring-1 ring-white/30 backdrop-blur"
+      ? "bg-white dark:bg-slate-900/15 text-white ring-1 ring-white/30 backdrop-blur"
       : "bg-indigo-600 text-white";
 
   return (

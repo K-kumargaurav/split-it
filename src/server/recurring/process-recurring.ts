@@ -285,7 +285,7 @@ function rebalanceShares(
   // EXACT — distribute the deficit equally on top of the kept amounts.
   const deficit = totalPaise - original;
   const each = Math.floor(deficit / filtered.length);
-  let remainder = deficit - each * filtered.length;
+  const remainder = deficit - each * filtered.length;
   return filtered.map((f, i) => {
     let v = f.share + each;
     if (i === filtered.length - 1) v += remainder;

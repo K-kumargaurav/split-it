@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { cn } from "@/lib/cn";
-import { formatPaise } from "@/lib/format";
+import { formatDate, formatPaise } from "@/lib/format";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { GroupTabs } from "@/components/groups/group-tabs";
 import { RecurringActions } from "@/components/recurring/recurring-actions";
@@ -126,15 +126,13 @@ export default async function RecurringPage({ params }: RecurringPageProps) {
                     <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                       Next run:{" "}
                       <span className="font-mono text-slate-900 dark:text-white">
-                        {t.nextRunDate.toISOString().slice(0, 10)}
+                        {formatDate(t.nextRunDate)}
                       </span>
                       {t.endDate ? (
                         <>
                           {" "}
                           · Ends{" "}
-                          <span className="font-mono">
-                            {t.endDate.toISOString().slice(0, 10)}
-                          </span>
+                          <span className="font-mono">{formatDate(t.endDate)}</span>
                         </>
                       ) : null}
                     </p>

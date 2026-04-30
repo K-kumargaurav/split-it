@@ -119,7 +119,7 @@ export function ProposalActions({
       ) : null}
 
       {hasVoted && !isProposer ? (
-        <p className="text-xs text-slate-500 dark:text-slate-400">You've already voted.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">You&apos;ve already voted.</p>
       ) : null}
 
       {error ? (

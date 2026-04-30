@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validations/auth";
 import { hashPassword } from "@/server/auth/password";
 import { consumeRateLimit, getClientIp } from "@/server/auth/rate-limit";
+import { upsertUser } from "@/server/auth/upsert-user";
 
 export const runtime = "nodejs";
 
@@ -95,12 +96,24 @@ export async function POST(request: Request): Promise<NextResponse> {
   const passwordHash = await hashPassword(password);
 
   try {
-    const user = await prisma.user.create({
-      data: { email, passwordHash, displayName, handle },
-      select: { id: true, email: true, handle: true, displayName: true },
+    const user = await upsertUser({
+      email,
+      name: displayName,
+      provider: "credentials",
+      emailVerified: false,
+      handle,
+      passwordHash,
     });
     return NextResponse.json(
-      { ok: true, user },
+      {
+        ok: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          handle: user.handle,
+          displayName: user.displayName,
+        },
+      },
       { status: 201 },
     );
   } catch (err) {

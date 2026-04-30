@@ -5,9 +5,9 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
 import { OTP_TTL_MS, createEmailOtp } from "@/server/auth/email-otp";
-import { allocateHandle } from "@/server/auth/handle";
 import { hashPassword } from "@/server/auth/password";
 import { consumeRateLimit, getClientIp } from "@/server/auth/rate-limit";
+import { upsertUser } from "@/server/auth/upsert-user";
 import { sendEmailOtpEmail } from "@/server/email/auth-emails";
 
 // Result shapes:
@@ -99,18 +99,16 @@ async function provisionAccount(input: ProvisionInput): Promise<RegisterResult> 
         fieldErrors: { email: "This email isn't available." },
       };
     }
-    const handle = await allocateHandle({
-      desired: input.handle,
-      fallbackEmail: input.email,
-    });
-    await prisma.user.create({
-      data: {
-        email: input.email,
-        passwordHash: newHash,
-        displayName: input.displayName,
-        handle,
-      },
-      select: { id: true },
+    // upsertUser is the single source of truth for User creation. The
+    // credentials path never sets emailVerifiedAt — the user must complete
+    // the OTP step that follows.
+    await upsertUser({
+      email: input.email,
+      name: input.displayName,
+      provider: "credentials",
+      emailVerified: false,
+      handle: input.handle,
+      passwordHash: newHash,
     });
     const code = await createEmailOtp({ email: input.email });
     await sendEmailOtpEmail({

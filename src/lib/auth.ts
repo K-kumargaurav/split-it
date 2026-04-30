@@ -5,15 +5,16 @@ import Nodemailer from "next-auth/providers/nodemailer";
 
 import authEdgeConfig from "@/lib/auth-edge";
 import { prisma } from "@/lib/prisma";
-import { loginSchema } from "@/lib/validations/auth";
+import { loginSchema, verifyEmailOtpSchema } from "@/lib/validations/auth";
 import { dummyVerifyPassword, hashPassword, verifyPassword } from "@/server/auth/password";
-import { upsertOAuthUser } from "@/server/auth/oauth";
+import { OTP_TTL_MS, verifyEmailOtp } from "@/server/auth/email-otp";
 import {
   clearRateLimit,
   consumeRateLimit,
   getClientIp,
 } from "@/server/auth/rate-limit";
 import { sendMagicLinkEmail } from "@/server/email/auth-emails";
+import { upsertUser } from "@/server/auth/upsert-user";
 import "@/types/auth";
 
 // Distinct error codes propagate to the client (via signIn result.error / URL
@@ -55,12 +56,40 @@ if (missingSmtpEnv.length > 0) {
   );
 }
 
+// PrismaAdapter is needed by the Nodemailer (magic-link) provider for the
+// VerificationToken table. We override `createUser` so the adapter funnels
+// new users through upsertUser instead of doing its own prisma.user.create —
+// otherwise the adapter would attempt to insert a row without a `handle`,
+// and the @unique handle column has no default. upsertUser is the single
+// source of truth for creating User rows (CLAUDE.md auth-rules).
+const baseAdapter = PrismaAdapter(prisma);
+const adapter: typeof baseAdapter = {
+  ...baseAdapter,
+  createUser: async (data) => {
+    const u = await upsertUser({
+      email: data.email,
+      name: data.name ?? null,
+      image: data.image ?? null,
+      // The adapter only ever runs for the magic-link path in this app
+      // (Credentials provider and Google JWT-strategy don't go through it
+      // for create). Marking the row verified is correct: the user just
+      // proved inbox ownership by clicking the link.
+      provider: "magic-link",
+      emailVerified: true,
+    });
+    return {
+      id: u.id,
+      email: u.email ?? "",
+      emailVerified: u.emailVerifiedAt,
+      name: u.displayName,
+      image: u.avatarUrl,
+    };
+  },
+};
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authEdgeConfig,
-  // The Nodemailer (magic-link) provider stores single-use tokens via the
-  // adapter. Keep this on the Node-side config — the Prisma adapter must not
-  // be bundled into the edge middleware.
-  adapter: PrismaAdapter(prisma),
+  adapter,
   providers: [
     ...authEdgeConfig.providers,
     Nodemailer({
@@ -95,12 +124,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } catch (err) {
           // Surface the underlying SMTP failure so "couldn't send" has a
           // root cause to grep for. NextAuth swallows the message otherwise.
-          console.error("[auth] sendVerificationRequest failed:", err);
+          console.error("Magic link send failed:", {
+            error: err instanceof Error ? err.message : String(err),
+            code: (err as { code?: string } | null)?.code,
+            command: (err as { command?: string } | null)?.command,
+            response: (err as { response?: string } | null)?.response,
+            host: process.env.BREVO_SMTP_HOST,
+            port: process.env.BREVO_SMTP_PORT,
+            user: process.env.BREVO_SMTP_USER,
+            hasPassword: !!process.env.BREVO_SMTP_PASS,
+            fromEmail: process.env.BREVO_FROM_EMAIL,
+            fromName: process.env.BREVO_FROM_NAME,
+          });
           throw err;
         }
       },
     }),
     Credentials({
+      id: "credentials",
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -146,6 +187,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // Mitigations elsewhere: Google sign-in still works untouched,
           // and the user can use /forgot-password to overwrite the
           // attacker-set password from their inbox.
+          //
+          // This is intentionally NOT routed through upsertUser — it's a
+          // password-attach on an EXISTING row, not a new user. upsertUser
+          // would treat it as an unrelated update.
           const newHash = await hashPassword(parsed.data.password);
           await prisma.user.update({
             where: { id: user.id },
@@ -175,19 +220,83 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
+    Credentials({
+      // Second CredentialsProvider — distinct id "otp" so it doesn't collide
+      // with the password-based one above. The OTP flow signs the user in
+      // through NextAuth so the same JWT/session machinery is shared with
+      // every other provider — no bespoke session creation.
+      id: "otp",
+      name: "OTP",
+      credentials: {
+        email: { type: "email" },
+        otp: { type: "text" },
+      },
+      async authorize(rawCredentials, request) {
+        const parsed = verifyEmailOtpSchema.safeParse({
+          email: rawCredentials?.email,
+          code: rawCredentials?.otp,
+        });
+        if (!parsed.success) return null;
+        const { email, code } = parsed.data;
+
+        // Same brute-force defense the OTP server actions enforced —
+        // per-email AND per-IP buckets sized to the 15-min OTP window so a
+        // single attacker can't share rate budget by switching one of the
+        // two. Kept at 10/15min on the email key per SPEC §2.1 ratio.
+        const ip = getClientIp(request);
+        if (!consumeRateLimit(`otp-verify:${email}`, { max: 10, windowMs: OTP_TTL_MS })) {
+          return null;
+        }
+        if (!consumeRateLimit(`otp-verify-ip:${ip}`, { max: 30, windowMs: OTP_TTL_MS })) {
+          return null;
+        }
+
+        // verifyEmailOtp handles expiry, timingSafeEqual on the salted hash,
+        // and single-use deletion atomically. No further state needs to be
+        // managed here.
+        const result = await verifyEmailOtp({ email, code });
+        if (!result.ok) return null;
+
+        const u = await upsertUser({
+          email,
+          provider: "otp",
+          emailVerified: true,
+        });
+        if (u.deletedAt) return null;
+
+        return {
+          id: u.id,
+          handle: u.handle,
+          email: u.email,
+          name: u.displayName,
+          image: u.avatarUrl,
+        };
+      },
+    }),
   ],
   callbacks: {
     ...authEdgeConfig.callbacks,
     async signIn({ user, account, profile }) {
-      if (account?.provider !== "google") return true;
+      // Both OAuth (Google) and magic-link (Nodemailer) flows pass through
+      // here AFTER the adapter has run. We re-call upsertUser as the
+      // single source of truth — it's idempotent on existing rows and
+      // backfills emailVerifiedAt / displayName / avatar when needed.
+      // Credentials and OTP flows already created/looked up the user
+      // inside their authorize() and don't need this branch.
+      const provider = account?.provider;
+      if (provider !== "google" && provider !== "nodemailer") return true;
 
       const email = user.email ?? profile?.email ?? null;
       if (!email) return false;
 
-      const dbUser = await upsertOAuthUser({
+      const upsertProvider = provider === "google" ? "google" : "magic-link";
+      const dbUser = await upsertUser({
         email,
         name: user.name ?? profile?.name ?? null,
-        image: user.image ?? (typeof profile?.picture === "string" ? profile.picture : null),
+        image:
+          user.image ?? (typeof profile?.picture === "string" ? profile.picture : null),
+        provider: upsertProvider,
+        emailVerified: true,
       });
       if (dbUser.deletedAt) return false;
 

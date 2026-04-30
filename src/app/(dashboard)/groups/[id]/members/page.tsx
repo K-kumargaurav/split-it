@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
+import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { AddGuestForm } from "@/components/groups/add-guest-form";
@@ -148,7 +149,7 @@ function GhostMemberRow({
         </p>
         <p className="truncate text-xs text-slate-500 dark:text-slate-400">
           {ghost.email ?? ghost.phone ?? "No contact info"} · added{" "}
-          {ghost.createdAt.toLocaleDateString("en-IN")}
+          {formatDate(ghost.createdAt)}
         </p>
       </div>
     </li>
@@ -197,7 +198,7 @@ function MemberRowItem({
           {isYou ? <span className="ml-1 text-xs text-slate-400">(you)</span> : null}
         </p>
         <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-          @{member.handle} · joined {member.joinedAt.toLocaleDateString("en-IN")}
+          @{member.handle} · joined {formatDate(member.joinedAt)}
         </p>
       </div>
       {isOwnerRow ? (

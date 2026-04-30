@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatPaise, formatRelativeTime } from "@/lib/format";
+import { formatDateTime, formatPaise, formatRelativeTime } from "@/lib/format";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { ProposalActions } from "@/components/expenses/proposal-actions";
 import { DeleteExpenseButton } from "@/components/expenses/delete-expense-button";
@@ -208,7 +208,7 @@ function ProposalBanner({
             {proposal.proposer.displayName}
           </p>
           <p className="mt-1 text-xs text-amber-800">
-            Vote by {proposal.expiresAt.toLocaleString()}
+            Vote by {formatDateTime(proposal.expiresAt)}
           </p>
           <p className="mt-2 text-xs text-amber-900">
             {approveCount} approved · {rejectCount} rejected · {pending} pending

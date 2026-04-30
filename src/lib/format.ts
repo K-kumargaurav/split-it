@@ -75,7 +75,58 @@ export function rupeesToPaise(rupees: string): bigint {
   return negative ? -paise : paise;
 }
 
-const RELATIVE = new Intl.RelativeTimeFormat("en-IN", { numeric: "auto" });
+// All wall-clock displays render in IST regardless of the server / browser
+// timezone. Per CLAUDE.md and SPEC §11, the app is India-first and the DB
+// stores UTC (Prisma default) — only the display layer converts. Never call
+// `toLocaleDateString` / `toLocaleString` without an explicit `timeZone`
+// option; use these helpers instead.
+const IST_LOCALE = "en-IN";
+const IST_TIMEZONE = "Asia/Kolkata";
+
+const DATE_FMT = new Intl.DateTimeFormat(IST_LOCALE, {
+  timeZone: IST_TIMEZONE,
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
+const TIME_FMT = new Intl.DateTimeFormat(IST_LOCALE, {
+  timeZone: IST_TIMEZONE,
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+});
+
+const DATE_TIME_FMT = new Intl.DateTimeFormat(IST_LOCALE, {
+  timeZone: IST_TIMEZONE,
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+});
+
+const RELATIVE = new Intl.RelativeTimeFormat(IST_LOCALE, { numeric: "auto" });
+
+function toDate(date: Date | string): Date {
+  return typeof date === "string" ? new Date(date) : date;
+}
+
+// "26 Apr 2026" — IST.
+export function formatDate(date: Date | string): string {
+  return DATE_FMT.format(toDate(date));
+}
+
+// "11:30 PM" — IST.
+export function formatTime(date: Date | string): string {
+  return TIME_FMT.format(toDate(date));
+}
+
+// "26 Apr 2026, 11:30 PM" — IST.
+export function formatDateTime(date: Date | string): string {
+  return DATE_TIME_FMT.format(toDate(date));
+}
 
 const UNITS: { unit: Intl.RelativeTimeFormatUnit; secs: number }[] = [
   { unit: "year", secs: 31_536_000 },
@@ -86,8 +137,11 @@ const UNITS: { unit: Intl.RelativeTimeFormatUnit; secs: number }[] = [
   { unit: "minute", secs: 60 },
 ];
 
+// Relative-time formatting is timezone-agnostic for periods >= 1 minute (it
+// only depends on the elapsed seconds between two instants). Locale stays
+// `en-IN` so the words match the rest of the IST-locked UI.
 export function formatRelativeTime(date: Date | string, now: Date = new Date()): string {
-  const ts = typeof date === "string" ? new Date(date) : date;
+  const ts = toDate(date);
   const diffSec = Math.round((ts.getTime() - now.getTime()) / 1000);
   if (Math.abs(diffSec) < 45) return "just now";
   for (const { unit, secs } of UNITS) {

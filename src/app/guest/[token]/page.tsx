@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { AppError } from "@/lib/errors";
-import { formatPaise } from "@/lib/format";
+import { formatDate, formatPaise } from "@/lib/format";
 import { GuestDebtActions } from "@/components/guest/guest-debt-actions";
 import { getGuestView, type GuestView } from "@/server/guest/get-guest-view";
 
@@ -128,11 +128,7 @@ export default async function GuestPage({ params }: GuestPageProps) {
                       Your share of {s.title}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                      {new Date(s.date).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {formatDate(s.date)}
                     </p>
                   </div>
                   <p className="font-mono text-sm tabular-nums text-slate-900 dark:text-white">

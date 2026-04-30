@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && sh scripts/migrate.sh && next build 2>&1",
-    "start": "next start",
+    "build": "prisma generate && next build",
+    "start": "prisma migrate deploy && next start",
     "lint": "next lint",
     "test": "jest",
     "typecheck": "tsc --noEmit",

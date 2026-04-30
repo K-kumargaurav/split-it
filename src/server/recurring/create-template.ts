@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
 import {
   createRecurringTemplateSchema,
-  type CreateRecurringTemplateInput,
+  // type CreateRecurringTemplateInput,
   type ParticipantConfig,
 } from "@/lib/validations/recurring";
 

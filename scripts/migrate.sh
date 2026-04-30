@@ -1,2 +1,2 @@
 #!/bin/sh
-prisma migrate deploy --url "$DIRECT_URL"
+npx prisma migrate deploy

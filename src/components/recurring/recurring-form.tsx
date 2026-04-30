@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/cn";
-import { formatPaise, rupeesToPaise } from "@/lib/format";
+import { formatDate, formatPaise, rupeesToPaise } from "@/lib/format";
 import { equalSplit, percentageSplit } from "@/lib/split";
 
 interface MemberOption {
@@ -334,7 +334,7 @@ export function RecurringForm({
           Upcoming runs:{" "}
           {upcomingRuns.map((d, i) => (
             <span key={i} className="ml-1 font-mono tabular-nums">
-              {d.toISOString().slice(0, 10)}
+              {formatDate(d)}
               {i < upcomingRuns.length - 1 ? " · " : ""}
             </span>
           ))}

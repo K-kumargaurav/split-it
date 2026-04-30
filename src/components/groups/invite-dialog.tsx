@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/cn";
+import { formatDateTime } from "@/lib/format";
 import { INVITE_LINK_DEFAULT_MAX_USES, INVITE_LINK_MAX_USES_CAP } from "@/lib/validations/invites";
 
 // Modal launched from the members page. Two tabs share the same dialog so
@@ -298,7 +299,7 @@ export function InviteDialog({ groupId, open, onClose }: InviteDialogProps) {
                 </div>
                 {linkExpires ? (
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Expires {linkExpires.toLocaleString("en-IN")}.
+                    Expires {formatDateTime(linkExpires)}.
                   </p>
                 ) : null}
                 <p className="text-xs text-amber-700">

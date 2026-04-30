@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { cn } from "@/lib/cn";
-import { formatPaise, formatRelativeTime } from "@/lib/format";
+import { formatDate, formatPaise, formatRelativeTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { expenseFiltersSchema } from "@/lib/validations/expenses";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
@@ -281,11 +281,7 @@ function ExpenseRow({
   viewerId: string;
 }) {
   const payerLabel = formatPayerLabel(expense.payers, viewerId);
-  const dateLabel = new Date(expense.date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const dateLabel = formatDate(expense.date);
   const yourShare = expense.yourSharePaise;
   const youOwe = yourShare - expense.yourPaidPaise;
 

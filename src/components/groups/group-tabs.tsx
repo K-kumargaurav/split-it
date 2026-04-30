@@ -15,7 +15,7 @@ interface GroupTabsProps {
   groupId: string;
 }
 
-type TabKey = "expenses" | "balances" | "recurring" | "members";
+type TabKey = "expenses" | "balances" | "recurring" | "members" | "audit";
 
 export function GroupTabs({ groupId }: GroupTabsProps) {
   const pathname = usePathname() ?? "";
@@ -30,12 +30,14 @@ export function GroupTabs({ groupId }: GroupTabsProps) {
   let active: TabKey = "expenses";
   if (segment === "recurring") active = "recurring";
   else if (segment === "members") active = "members";
+  else if (segment === "audit") active = "audit";
 
   const tabs: { key: TabKey; label: string; href: string }[] = [
     { key: "expenses", label: "Expenses", href: base },
     { key: "balances", label: "Balances", href: `${base}#balances` },
     { key: "recurring", label: "Recurring", href: `${base}/recurring` },
     { key: "members", label: "Members", href: `${base}/members` },
+    { key: "audit", label: "Audit", href: `${base}/audit` },
   ];
 
   const onBaseRoute = pathname === base || pathname === `${base}/`;

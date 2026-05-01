@@ -120,7 +120,6 @@ export function OtpInput({
     <div
       role="group"
       aria-labelledby={ariaLabelledBy}
-      aria-invalid={invalid || undefined}
       className="flex items-center justify-between gap-2 sm:gap-3"
     >
       {digits.map((d, i) => (
@@ -137,6 +136,7 @@ export function OtpInput({
           value={d}
           disabled={disabled}
           aria-label={`Digit ${i + 1} of ${length}`}
+          aria-invalid={invalid || undefined}
           onChange={(e) => handleInput(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={(e) => handlePaste(i, e)}

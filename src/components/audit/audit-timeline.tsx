@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useState } from "react";
 
 import { cn } from "@/lib/cn";
@@ -314,12 +315,14 @@ function AuditEntry({
 function Avatar({ actor }: { actor: Actor }) {
   const initial = (actor.displayName[0] ?? actor.handle[0] ?? "?").toUpperCase();
   if (actor.avatarUrl) {
-    // eslint-disable-next-line @next/next/no-img-element
     return (
-      <img
+      <Image
         src={actor.avatarUrl}
         alt={`${actor.displayName} avatar`}
+        width={36}
+        height={36}
         className="h-9 w-9 flex-shrink-0 rounded-full object-cover"
+        unoptimized
       />
     );
   }

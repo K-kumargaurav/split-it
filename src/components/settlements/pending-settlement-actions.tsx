@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/cn";
+import { fireConfetti } from "@/lib/confetti";
 
 // Confirm / dispute buttons for an incoming pending settlement. Outgoing
 // pending settlements (where the viewer is the payer) render a static
@@ -54,11 +56,19 @@ export function PendingSettlementActions({
         // fall through
       }
       setPending(null);
-      setError(body.error?.message ?? "Couldn't update settlement.");
+      const message = body.error?.message ?? "Couldn't update settlement.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
     setPending(null);
+    if (action === "confirm") {
+      toast.success("Settlement confirmed");
+      fireConfetti();
+    } else {
+      toast.success("Settlement disputed");
+    }
     router.refresh();
   }
 

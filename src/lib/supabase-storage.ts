@@ -26,3 +26,7 @@ export function getSupabaseStorageClient(): SupabaseClient {
 export function getReceiptsBucket(): string {
   return process.env.SUPABASE_RECEIPTS_BUCKET ?? "receipts";
 }
+
+export function getAvatarsBucket(): string {
+  return process.env.SUPABASE_AVATARS_BUCKET ?? "avatars";
+}

@@ -257,13 +257,35 @@ function ExpensesSection({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-5 py-10 text-center">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">No expenses yet</p>
+          <span
+            aria-hidden="true"
+            className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-7 w-7">
+              <path d="M5 2a1 1 0 0 0-1 1v14.382a.5.5 0 0 0 .724.447L7 16.618l2.276 1.211a.5.5 0 0 0 .448 0L12 16.618l2.276 1.211a.5.5 0 0 0 .724-.447V3a1 1 0 0 0-1-1H5zm2.5 4a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5h-5zm0 3a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5h-5zm0 3a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-3z" />
+            </svg>
+          </span>
+          <p className="mt-4 text-base font-semibold text-slate-900 dark:text-white">No expenses yet</p>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Add your first expense — split it equally, by exact amounts, or by percentage.
+            Track who paid, who owes, and let SplitEasy do the math.
           </p>
+          <ul className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
+            <li className="rounded-full bg-white dark:bg-slate-900 px-3 py-1 font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700">
+              ⚖️ Equal split
+            </li>
+            <li className="rounded-full bg-white dark:bg-slate-900 px-3 py-1 font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700">
+              ₹ Exact amounts
+            </li>
+            <li className="rounded-full bg-white dark:bg-slate-900 px-3 py-1 font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700">
+              % By percentage
+            </li>
+            <li className="rounded-full bg-white dark:bg-slate-900 px-3 py-1 font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700">
+              ✕ By shares
+            </li>
+          </ul>
           <Link
             href={`/groups/${groupId}/expenses/new`}
-            className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+            className="mt-5 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
           >
             Add the first expense
           </Link>

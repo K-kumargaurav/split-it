@@ -31,6 +31,17 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
           icon: true,
           updatedAt: true,
           _count: { select: { members: true } },
+          // First 4 members for the card avatar stack — joinedAt asc keeps the
+          // ordering stable across renders, so the same four faces always show
+          // up in the same slots.
+          members: {
+            take: 4,
+            orderBy: { joinedAt: "asc" },
+            select: {
+              id: true,
+              user: { select: { displayName: true, avatarUrl: true } },
+            },
+          },
         },
       },
     },
@@ -49,6 +60,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   const [
     perGroupBalances,
     lastExpenseDates,
+    lastExpensePerGroup,
     pendingSettlements,
     pendingProposals,
     votedProposalIds,
@@ -64,6 +76,19 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       },
       _max: { createdAt: true },
     }),
+    // Most recent active expense per group, for the card preview line. We
+    // fan-out one findFirst per group so each query can use a `take: 1` with
+    // an index-friendly orderBy — Prisma can't do "top-N per group" natively
+    // and this is bounded by the user's group count (small).
+    Promise.all(
+      groupIds.map((id) =>
+        prisma.expense.findFirst({
+          where: { groupId: id, status: "ACTIVE", deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          select: { groupId: true, title: true, date: true },
+        }),
+      ),
+    ),
     prisma.settlement.count({
       where: {
         receiverId: userId,
@@ -99,6 +124,16 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     if (row._max.createdAt) lastActivityByGroup.set(row.groupId, row._max.createdAt);
   }
 
+  const lastExpenseByGroup = new Map<string, { title: string; date: Date }>();
+  for (const expense of lastExpensePerGroup) {
+    if (expense) {
+      lastExpenseByGroup.set(expense.groupId, {
+        title: expense.title,
+        date: expense.date,
+      });
+    }
+  }
+
   const groups: DashboardGroupSummary[] = memberships
     .map(({ group }) => ({
       id: group.id,
@@ -108,6 +143,12 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       memberCount: group._count.members,
       balancePaise: balanceByGroup.get(group.id) ?? 0,
       lastActivityAt: lastActivityByGroup.get(group.id) ?? group.updatedAt,
+      members: group.members.map((m) => ({
+        id: m.id,
+        displayName: m.user.displayName,
+        avatarUrl: m.user.avatarUrl,
+      })),
+      lastExpense: lastExpenseByGroup.get(group.id) ?? null,
     }))
     .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
 

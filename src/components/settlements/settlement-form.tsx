@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/cn";
 import { formatPaise, paiseToRupees, rupeesToPaise } from "@/lib/format";
+import { generateUpiLink } from "@/lib/upi";
 
 // Mark-as-paid form. Receivers are limited to people the viewer *directly*
 // owes — per SPEC §3.4 the underlying ledger is direct debts, so this is the
@@ -16,6 +18,7 @@ export interface DebtOption {
   receiverId: string;
   receiverDisplayName: string;
   receiverHandle: string;
+  receiverUpiId: string | null;
   amountPaise: number;
 }
 
@@ -134,6 +137,7 @@ export function SettlementForm({
 
     setSubmitting(false);
     setPending(true);
+    toast.success("Payment recorded — waiting for confirmation");
   }
 
   if (debts.length === 0) {
@@ -180,13 +184,15 @@ export function SettlementForm({
     );
   }
 
-  const upiLink = paymentMethod === "UPI" && selected
-    ? buildUpiLink({
-        handle: selected.receiverHandle,
-        displayName: selected.receiverDisplayName,
-        amountPaise: safeRupeesToPaise(amountRupees),
-      })
-    : null;
+  const showUpiBlock = paymentMethod === "UPI" && selected !== undefined;
+  const upiLink =
+    showUpiBlock && selected!.receiverUpiId
+      ? safeBuildUpiLink({
+          vpa: selected!.receiverUpiId,
+          name: selected!.receiverDisplayName,
+          amountPaise: safeRupeesToPaise(amountRupees),
+        })
+      : null;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
@@ -259,13 +265,42 @@ export function SettlementForm({
         </div>
       </fieldset>
 
-      {upiLink ? (
-        <a
-          href={upiLink}
-          className="block rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-center text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
-        >
-          Open in UPI app to pay {selected?.receiverDisplayName}
-        </a>
+      {showUpiBlock && upiLink ? (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+          <a
+            href={upiLink}
+            className="block rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+          >
+            Pay via UPI
+          </a>
+          <p className="mt-2 text-center text-xs text-indigo-900/80">
+            Pay to <span className="font-mono font-semibold">{selected!.receiverUpiId}</span>
+          </p>
+          {/* Desktop fallback: the upi:// scheme has no handler on most desktops,
+              so surface the raw deep-link string for copy/QR-scan workflows. A
+              real QR renderer ships in a follow-up — this placeholder reserves
+              the slot in the layout. */}
+          <div className="mt-3 hidden sm:block">
+            <p className="text-xs font-medium text-indigo-900/80">
+              On desktop? Scan this with your UPI app:
+            </p>
+            <div
+              aria-hidden="true"
+              className="mt-2 flex h-32 w-32 items-center justify-center rounded-lg border-2 border-dashed border-indigo-300 bg-white text-[10px] uppercase tracking-wider text-indigo-400"
+            >
+              QR placeholder
+            </div>
+            <p className="mt-2 break-all font-mono text-[10px] text-indigo-900/70">
+              {upiLink}
+            </p>
+          </div>
+        </div>
+      ) : null}
+      {showUpiBlock && !upiLink ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {selected!.receiverDisplayName} hasn&apos;t added a UPI ID yet — pay them
+          another way and record it here.
+        </p>
       ) : null}
 
       {paymentMethod !== "CASH" ? (
@@ -331,22 +366,23 @@ function safeRupeesToPaise(value: string): number {
   }
 }
 
-// UPI deep link per NPCI spec: upi://pay?pa=<vpa>&pn=<name>&am=<amount>&cu=INR.
-// We don't store VPAs yet, so we synthesise one from the receiver's handle —
-// the user will edit it inside the UPI app before sending. The alternative
-// (hiding the button) is worse UX since most receivers do have UPI; leaving
-// the link clickable with a placeholder VPA is intentional.
-function buildUpiLink(args: {
-  handle: string;
-  displayName: string;
+// Wrap generateUpiLink so a mid-typing amount or a malformed stored VPA never
+// throws past React (the canonical generator throws on invalid input). Callers
+// only render the link when this returns non-null.
+function safeBuildUpiLink(args: {
+  vpa: string;
+  name: string;
   amountPaise: number;
-}): string {
-  const vpa = `${args.handle}@upi`;
-  const params = new URLSearchParams({
-    pa: vpa,
-    pn: args.displayName,
-    am: (args.amountPaise / 100).toFixed(2),
-    cu: "INR",
-  });
-  return `upi://pay?${params.toString()}`;
+}): string | null {
+  if (args.amountPaise <= 0) return null;
+  try {
+    return generateUpiLink({
+      vpa: args.vpa,
+      name: args.name,
+      amount: BigInt(args.amountPaise),
+      note: "SplitEasy settlement",
+    });
+  } catch {
+    return null;
+  }
 }

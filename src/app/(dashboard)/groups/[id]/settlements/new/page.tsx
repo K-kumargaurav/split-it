@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import {
   SettlementForm,
@@ -36,7 +37,18 @@ export default async function NewSettlementPage({
   }
 
   const direct = await calculateDirectBalances(group.id, session.user.id);
-  const debts = toDebtOptions(direct, session.user.id, group.members);
+  const creditorIds = Object.keys(direct).filter((id) => id !== session.user!.id);
+  // Pull the receiver's stored UPI VPA so the "Pay via UPI" CTA can deep-link
+  // to a real handle rather than synthesising one from the SplitEasy username
+  // (which almost never matches the user's actual VPA).
+  const upiRecords = creditorIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: creditorIds } },
+        select: { id: true, upiId: true },
+      })
+    : [];
+  const upiByUserId = new Map(upiRecords.map((u) => [u.id, u.upiId]));
+  const debts = toDebtOptions(direct, session.user.id, group.members, upiByUserId);
 
   return (
     <DashboardShell
@@ -82,6 +94,7 @@ function toDebtOptions(
   direct: Record<string, Record<string, bigint>>,
   viewerId: string,
   members: GroupDetail["members"],
+  upiByUserId: Map<string, string | null>,
 ): DebtOption[] {
   const options: DebtOption[] = [];
   for (const [creditorId, debts] of Object.entries(direct)) {
@@ -96,6 +109,7 @@ function toDebtOptions(
       receiverId: creditorId,
       receiverDisplayName: member.user.displayName,
       receiverHandle: member.user.handle,
+      receiverUpiId: upiByUserId.get(creditorId) ?? null,
       amountPaise: Number(owed),
     });
   }

@@ -101,11 +101,15 @@ export function NotificationBell(): JSX.Element {
       >
         <BellIcon />
         {unreadCount > 0 ? (
-          <span
-            aria-hidden="true"
-            className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold leading-none text-white"
-          >
-            {unreadCount > 99 ? "99+" : unreadCount}
+          <span aria-hidden="true" className="absolute -right-1 -top-1 inline-flex">
+            {/* Animated halo behind the count badge — communicates "new
+                stuff arrived" without making the bell itself shake. The
+                ping ring uses Tailwind's animate-ping; the badge sits on
+                top so the number stays legible. */}
+            <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-rose-500/70" />
+            <span className="relative inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold leading-none text-white">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
           </span>
         ) : null}
       </button>

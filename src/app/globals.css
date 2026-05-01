@@ -25,3 +25,36 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Global press feedback. Slightly scales any non-disabled submit button on
+   active so taps feel responsive on mobile. Skipped for users who opt out of
+   motion. We deliberately scope to type="submit" so navigation links and
+   toggle buttons aren't affected — the goal is "I committed an action," not
+   "I clicked." */
+@media (prefers-reduced-motion: no-preference) {
+  button[type="submit"]:not(:disabled) {
+    transition-property: transform, background-color, color, border-color, box-shadow, opacity;
+    transition-duration: 120ms;
+    transition-timing-function: cubic-bezier(0.2, 0.6, 0.3, 1);
+  }
+  button[type="submit"]:not(:disabled):active {
+    transform: scale(0.98);
+  }
+}
+
+/* Confetti burst used by lib/confetti.ts on settlement-confirm. Each piece
+   reads --dx / --dy / --rot from inline style so the JS can randomize the
+   trajectory without injecting per-piece keyframes. */
+@keyframes splitEasyConfettiFall {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot));
+  }
+}

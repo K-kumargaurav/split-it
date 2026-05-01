@@ -97,11 +97,28 @@ export function NotificationsFeed(): JSX.Element {
           Loading notifications…
         </p>
       ) : items.length === 0 ? (
-        <p className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center text-sm text-slate-500 dark:text-slate-400">
-          {filter === "unread"
-            ? "No unread notifications."
-            : "You don't have any notifications yet."}
-        </p>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center">
+          <span
+            aria-hidden="true"
+            className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-7 w-7">
+              <path
+                fillRule="evenodd"
+                d="M16.704 5.29a1 1 0 0 1 0 1.42l-7.5 7.5a1 1 0 0 1-1.42 0l-3.5-3.5a1 1 0 0 1 1.42-1.42l2.79 2.79 6.79-6.79a1 1 0 0 1 1.42 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </span>
+          <p className="mt-4 text-base font-semibold text-slate-900 dark:text-white">
+            {filter === "unread" ? "No unread notifications" : "You're all caught up"}
+          </p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {filter === "unread"
+              ? "Switch to All to see what's already been read."
+              : "We'll let you know when there's activity in your groups."}
+          </p>
+        </div>
       ) : (
         <ul className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
           {items.map((n, i) => (

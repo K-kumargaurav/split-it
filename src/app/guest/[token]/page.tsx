@@ -100,7 +100,7 @@ export default async function GuestPage({ params }: GuestPageProps) {
                     token={params.token}
                     receiverId={d.receiverId}
                     receiverDisplayName={d.receiverDisplayName}
-                    receiverHandle={d.receiverHandle}
+                    receiverUpiId={d.receiverUpiId}
                     amountPaise={d.amountPaise}
                   />
                 </li>

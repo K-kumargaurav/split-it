@@ -5,23 +5,26 @@ import { useState } from "react";
 
 import { cn } from "@/lib/cn";
 import { formatPaise } from "@/lib/format";
+import { generateUpiLink } from "@/lib/upi";
 
 interface GuestDebtActionsProps {
   token: string;
   receiverId: string;
   receiverDisplayName: string;
-  receiverHandle: string;
+  receiverUpiId: string | null;
   amountPaise: number;
 }
 
-// Per-debt UI: a UPI deep link (best-effort, see buildUpiLink below) and a
-// "Mark as Paid" button. Once marked, the row swaps to a pending-confirmation
-// banner — the receiver still has to confirm before balances update.
+// Per-debt UI: a UPI deep link (only when the receiver has a stored VPA — see
+// SPEC §4.7) and a "Mark as Paid" button. The UPI button is the primary CTA
+// for guests on mobile because it gets them straight into their UPI app.
+// Once "Mark as Paid" is pressed the row swaps to a pending banner — the
+// receiver still has to confirm before balances update.
 export function GuestDebtActions({
   token,
   receiverId,
   receiverDisplayName,
-  receiverHandle,
+  receiverUpiId,
   amountPaise,
 }: GuestDebtActionsProps) {
   const router = useRouter();
@@ -29,11 +32,13 @@ export function GuestDebtActions({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const upiLink = buildUpiLink({
-    handle: receiverHandle,
-    displayName: receiverDisplayName,
-    amountPaise,
-  });
+  const upiLink = receiverUpiId
+    ? safeBuildUpiLink({
+        vpa: receiverUpiId,
+        name: receiverDisplayName,
+        amountPaise,
+      })
+    : null;
 
   async function markPaid(): Promise<void> {
     setError(null);
@@ -75,19 +80,31 @@ export function GuestDebtActions({
 
   return (
     <div className="space-y-2">
-      <a
-        href={upiLink}
-        className="flex w-full items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
-      >
-        Open in UPI app
-      </a>
+      {upiLink ? (
+        <a
+          href={upiLink}
+          className="flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+        >
+          Pay via UPI
+        </a>
+      ) : null}
+      {receiverUpiId ? (
+        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+          Pay to <span className="font-mono font-medium text-slate-700 dark:text-slate-200">{receiverUpiId}</span>
+        </p>
+      ) : (
+        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+          {receiverDisplayName} hasn&apos;t added a UPI ID yet — pay them another way and tap below to record it.
+        </p>
+      )}
       <button
         type="button"
         onClick={markPaid}
         disabled={submitting}
         className={cn(
-          "block w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition",
-          "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+          "block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm transition",
+          "hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
           "disabled:cursor-not-allowed disabled:opacity-60",
         )}
       >
@@ -102,21 +119,22 @@ export function GuestDebtActions({
   );
 }
 
-// UPI deep link per NPCI spec: upi://pay?pa=<vpa>&pn=<name>&am=<amount>&cu=INR.
-// We synthesise the VPA from the receiver's handle since SplitEasy doesn't
-// store actual UPI VPAs yet; the user edits it inside their UPI app before
-// sending. Hiding the link entirely is worse UX since most receivers have UPI.
-function buildUpiLink(args: {
-  handle: string;
-  displayName: string;
+// Wrap generateUpiLink so a malformed stored VPA never throws past React; the
+// caller hides the button if this returns null.
+function safeBuildUpiLink(args: {
+  vpa: string;
+  name: string;
   amountPaise: number;
-}): string {
-  const vpa = `${args.handle}@upi`;
-  const params = new URLSearchParams({
-    pa: vpa,
-    pn: args.displayName,
-    am: (args.amountPaise / 100).toFixed(2),
-    cu: "INR",
-  });
-  return `upi://pay?${params.toString()}`;
+}): string | null {
+  if (args.amountPaise <= 0) return null;
+  try {
+    return generateUpiLink({
+      vpa: args.vpa,
+      name: args.name,
+      amount: BigInt(args.amountPaise),
+      note: "SplitEasy settlement",
+    });
+  } catch {
+    return null;
+  }
 }

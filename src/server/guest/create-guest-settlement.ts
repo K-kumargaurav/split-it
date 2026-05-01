@@ -70,27 +70,32 @@ export async function createGuestSettlement(
   // straight into the settlement.
   const ghost = await prisma.ghostMember.findUnique({
     where: { guestToken: token },
-    select: { id: true, groupId: true, displayName: true },
+    select: {
+      id: true,
+      groupId: true,
+      displayName: true,
+      linkedUserId: true,
+      group: { select: { ownerId: true } },
+    },
   });
   if (!ghost) {
     throw new AppError("NOT_FOUND", "Guest link is invalid.");
   }
 
+  // Ghost-paid: payerId is null (User-side balances ignore this row), the
+  // ghost identity lives on ghostPayerId. Audit log can't carry a null actor
+  // — actorId is `@relation User NOT NULL` — so we attribute the action to
+  // the user the ghost was eventually linked to (post-merge), and fall back
+  // to the group owner when the ghost is still unlinked. That keeps the log
+  // referentially intact and points "who did this" at a real human in either
+  // case.
+  const auditActorId = ghost.linkedUserId ?? ghost.group.ownerId;
+
   const settlement = await prisma.$transaction(async (tx) => {
-    // ghostPayerId carries the ghost identity; payerId is set to the
-    // receiver as a placeholder UUID-shaped column-fill since the schema
-    // requires both `payerId` and `ghostPayerId`. We disambiguate via
-    // the presence of `ghostPayerId` in downstream readers.
-    //
-    // NOTE: the schema's `payerId` is `@relation User`, NOT NULL. Using the
-    // receiver as a stand-in keeps referential integrity intact while still
-    // making the row unambiguously a ghost-paid settlement (because
-    // `ghostPayerId` is set and `payerId === receiverId` is a self-pair
-    // that direct-balance code already filters out).
     const created = await tx.settlement.create({
       data: {
         groupId: ghost.groupId,
-        payerId: input.receiverId,
+        payerId: null,
         ghostPayerId: ghost.id,
         receiverId: input.receiverId,
         amountPaise: BigInt(input.amountPaise),
@@ -106,12 +111,12 @@ export async function createGuestSettlement(
     await tx.auditLog.create({
       data: {
         groupId: ghost.groupId,
-        actorId: input.receiverId,
+        actorId: auditActorId,
         entityType: "SETTLEMENT",
         entityId: created.id,
         action: "CREATED",
         newValue: {
-          via: "guest-settle",
+          via: "guest",
           ghostPayerId: ghost.id,
           ghostPayerName: ghost.displayName,
           receiverId: input.receiverId,

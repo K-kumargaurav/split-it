@@ -42,3 +42,15 @@ export function errorFromThrown(err: unknown): NextResponse<ErrorEnvelope> {
   }
   return errorResponse("INTERNAL_ERROR", "Something went wrong.", 500);
 }
+
+// JSON has no native bigint, and `Number(b)` silently rounds anything
+// over 2^53 — for paise that's roughly ₹90 trillion, but the loss starts
+// well before that for numbers used in arithmetic. Always serialize paise
+// as a string at the API boundary and parse it back on the client.
+//
+// CLAUDE.md: "ALWAYS store money as integers (paise/cents) — NEVER floats".
+// This helper is the chokepoint that keeps the wire format honest about
+// that — strings are exact regardless of magnitude.
+export function serializePaise(b: bigint): string {
+  return b.toString();
+}

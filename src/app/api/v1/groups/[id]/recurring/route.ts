@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { createRecurringTemplate } from "@/server/recurring/create-template";
 import { listRecurringTemplates } from "@/server/recurring/manage-templates";
@@ -52,9 +52,9 @@ export async function POST(
       {
         template: {
           ...template,
-          amountPaise: Number(template.amountPaise),
-          taxAmountPaise: Number(template.taxAmountPaise),
-          tipAmountPaise: Number(template.tipAmountPaise),
+          amountPaise: serializePaise(template.amountPaise),
+          taxAmountPaise: serializePaise(template.taxAmountPaise),
+          tipAmountPaise: serializePaise(template.tipAmountPaise),
         },
       },
       { status: 201 },

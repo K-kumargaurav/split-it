@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { createGuestSettlement } from "@/server/guest/create-guest-settlement";
 import { getGuestView } from "@/server/guest/get-guest-view";
@@ -47,7 +47,7 @@ export async function POST(
       {
         settlement: {
           id: settlement.id,
-          amountPaise: Number(settlement.amountPaise),
+          amountPaise: serializePaise(settlement.amountPaise),
           status: settlement.status,
           receiver: {
             userId: settlement.receiver.id,

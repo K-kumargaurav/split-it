@@ -18,8 +18,25 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+let instance: PrismaClient | undefined = globalForPrisma.prisma;
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+function getClient(): PrismaClient {
+  if (!instance) {
+    instance = createPrismaClient();
+    if (process.env.NODE_ENV !== "production") {
+      globalForPrisma.prisma = instance;
+    }
+  }
+  return instance;
 }
+
+// Proxy defers client creation (and the DATABASE_URL check) until the first
+// property access. Importing this module — which happens during `next build`
+// page-data collection — no longer touches env or opens a connection.
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getClient();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});

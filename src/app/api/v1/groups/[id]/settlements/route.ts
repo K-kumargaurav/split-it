@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import {
   createSettlement,
@@ -70,13 +70,13 @@ export async function POST(
   }
 }
 
-// BigInt → number on the way out so the response is JSON-serialisable. Per-
-// settlement ceiling (1e9 paise) is well within Number.MAX_SAFE_INTEGER.
+// BigInt → string on the way out via serializePaise — exact at any
+// magnitude. Clients call Number()/BigInt() locally if needed.
 function serializeSettlement(s: CreatedSettlement) {
   return {
     id: s.id,
     groupId: s.groupId,
-    amountPaise: Number(s.amountPaise),
+    amountPaise: serializePaise(s.amountPaise),
     paymentMethod: s.paymentMethod,
     paymentRef: s.paymentRef,
     status: s.status,

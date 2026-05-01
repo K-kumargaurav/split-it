@@ -62,6 +62,10 @@ if (missingSmtpEnv.length > 0) {
 // otherwise the adapter would attempt to insert a row without a `handle`,
 // and the @unique handle column has no default. upsertUser is the single
 // source of truth for creating User rows (CLAUDE.md auth-rules).
+//
+// `prisma` is a Proxy (see src/lib/prisma.ts) so calling PrismaAdapter at
+// module load no longer triggers DB initialization or the DATABASE_URL
+// check — connection happens lazily on first query.
 const baseAdapter = PrismaAdapter(prisma);
 const adapter: typeof baseAdapter = {
   ...baseAdapter,

@@ -215,18 +215,31 @@ async function acceptInviteLink(
   }
 
   await prisma.$transaction(async (tx) => {
+    // Atomically claim a slot on the link FIRST. The pre-check above
+    // (`link.usedCount >= link.maxUses`) is racy on its own — two parallel
+    // joins could both pass the read and then both increment past the cap.
+    // The conditional updateMany acts as a compare-and-swap: only one of
+    // the two writers will see `count = 1` and the other gets `count = 0`,
+    // which we surface as CONFLICT. Also re-checks revoked/expired so a
+    // race against admin actions can't slip through either.
+    const claim = await tx.groupInviteLink.updateMany({
+      where: {
+        id: link.id,
+        usedCount: { lt: link.maxUses },
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      data: { usedCount: { increment: 1 } },
+    });
+    if (claim.count === 0) {
+      throw new AppError("CONFLICT", "Invite link is no longer valid.");
+    }
     await tx.groupMember.create({
       data: {
         groupId: link.groupId,
         userId,
         role: "MEMBER",
       },
-    });
-    // Atomic increment guards against two concurrent joins blowing past the
-    // cap — Prisma's `increment` compiles to a SQL `usedCount + 1`.
-    await tx.groupInviteLink.update({
-      where: { id: link.id },
-      data: { usedCount: { increment: 1 } },
     });
     await tx.auditLog.create({
       data: {

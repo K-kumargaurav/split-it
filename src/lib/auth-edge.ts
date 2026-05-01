@@ -13,9 +13,25 @@ import "@/types/auth";
 
 const PROTECTED_PREFIXES = ["/dashboard", "/groups", "/api/v1"];
 
+// Routes under /api/v1/* (and /api/guest/*) that must remain reachable WITHOUT
+// a session: NextAuth's own callback handlers, cron jobs (auth'd via shared
+// CRON_SECRET), invite-acceptance lookups (the user is authenticating right
+// now), and the public guest-view endpoints (auth'd via per-ghost guestToken).
+const PUBLIC_PREFIXES = [
+  "/api/v1/auth/",
+  "/api/v1/internal/cron/",
+  "/api/v1/invites/accept",
+  "/api/guest/",
+];
+
 export const authEdgeConfig = {
   pages: { signIn: "/login" },
-  session: { strategy: "jwt", maxAge: 60 * 15 },
+  // 7-day rolling JWT session. The original 15-min maxAge logged users out
+  // mid-task because there was no refresh token mechanism wired — every
+  // session was effectively single-use. NextAuth refreshes the JWT on each
+  // request automatically, so this gives a real "stay signed in for the
+  // week" experience without coupling to a separate RefreshToken table.
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 7 },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -31,6 +47,10 @@ export const authEdgeConfig = {
   callbacks: {
     authorized({ auth: session, request }) {
       const { pathname } = request.nextUrl;
+      const isPublic = PUBLIC_PREFIXES.some((prefix) =>
+        pathname.startsWith(prefix),
+      );
+      if (isPublic) return true;
       const isProtected = PROTECTED_PREFIXES.some(
         (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
       );

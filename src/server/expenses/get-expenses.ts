@@ -8,7 +8,9 @@ import { AppError } from "@/lib/errors";
 //
 // Money fields are converted from BigInt → number on the way out because
 // the JSON layer can't serialise BigInt and the per-expense ceiling
-// (1e9 paise) is well within Number.MAX_SAFE_INTEGER.
+// (1e9 paise) is well within Number.MAX_SAFE_INTEGER. For amounts that
+// could exceed 2^53, switch to serializePaise() (returns string) and
+// parse on the receiving end.
 
 export interface ExpensePayer {
   userId: string;
@@ -99,10 +101,8 @@ export async function getExpensesForGroup(
       splitType: e.splitType,
       payers,
       participants,
-      yourSharePaise:
-        participants.find((p) => p.userId === userId)?.amountPaise ?? 0,
-      yourPaidPaise:
-        payers.find((p) => p.userId === userId)?.amountPaise ?? 0,
+      yourSharePaise: participants.find((p) => p.userId === userId)?.amountPaise ?? 0,
+      yourPaidPaise: payers.find((p) => p.userId === userId)?.amountPaise ?? 0,
     };
   });
 

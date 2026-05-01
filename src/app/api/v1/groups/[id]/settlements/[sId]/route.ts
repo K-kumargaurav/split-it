@@ -81,11 +81,15 @@ function serializeSettlement(s: SettlementWithUsers) {
     status: s.status,
     createdAt: s.createdAt,
     confirmedAt: s.confirmedAt,
-    payer: {
-      userId: s.payer.id,
-      handle: s.payer.handle,
-      displayName: s.payer.displayName,
-    },
+    // Ghost-paid settlements have payer === null. Surface that so the client
+    // can render "Guest <name>" instead of treating the absence as an error.
+    payer: s.payer
+      ? {
+          userId: s.payer.id,
+          handle: s.payer.handle,
+          displayName: s.payer.displayName,
+        }
+      : null,
     receiver: {
       userId: s.receiver.id,
       handle: s.receiver.handle,

@@ -467,7 +467,10 @@ model RecurringTemplate {
 model Settlement {
   id              String           @id @default(uuid())
   groupId         String
-  payerId         String
+  // Nullable so a ghost-paid settlement (ghostPayerId set) doesn't have to
+  // store a bogus User id in this column. Exactly one of payerId or
+  // ghostPayerId must be set; downstream code keys on which is non-null.
+  payerId         String?
   receiverId      String
   amountPaise     BigInt
   paymentMethod   PaymentMethod    @default(CASH)
@@ -481,7 +484,7 @@ model Settlement {
   deletedAt       DateTime?
 
   group         Group        @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  payer         User         @relation("SettlementPayer", fields: [payerId], references: [id], onDelete: Restrict)
+  payer         User?        @relation("SettlementPayer", fields: [payerId], references: [id], onDelete: Restrict)
   receiver      User         @relation("SettlementReceiver", fields: [receiverId], references: [id], onDelete: Restrict)
   ghostPayer    GhostMember? @relation("GhostSettlementPayer", fields: [ghostPayerId], references: [id])
   ghostReceiver GhostMember? @relation("GhostSettlementReceiver", fields: [ghostReceiverId], references: [id])

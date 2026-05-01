@@ -49,31 +49,38 @@ export async function confirmSettlement(
       },
     });
 
-    await tx.notification.create({
-      data: {
-        userId: existing.payerId,
-        type: "SETTLEMENT_CONFIRMED",
-        title: "Payment confirmed",
-        body: `${row.receiver.displayName} confirmed your payment of ${formatPaise(
-          row.amountPaise,
-        )}.`,
-        entityType: "SETTLEMENT",
-        entityId: settlementId,
-      },
-    });
+    // Ghost-paid settlements have a null payerId (no user account to notify).
+    // The ghost was the one who claimed the payment so there's no inbox to
+    // ping; the receiver's confirmation only changes balance state.
+    if (existing.payerId) {
+      await tx.notification.create({
+        data: {
+          userId: existing.payerId,
+          type: "SETTLEMENT_CONFIRMED",
+          title: "Payment confirmed",
+          body: `${row.receiver.displayName} confirmed your payment of ${formatPaise(
+            row.amountPaise,
+          )}.`,
+          entityType: "SETTLEMENT",
+          entityId: settlementId,
+        },
+      });
+    }
 
     return row;
   });
 
-  void dispatchExternal([existing.payerId], {
-    type: "SETTLEMENT_CONFIRMED",
-    title: "Payment confirmed",
-    body: `${updated.receiver.displayName} confirmed your payment of ${formatPaise(
-      updated.amountPaise,
-    )}.`,
-    entityType: "SETTLEMENT",
-    entityId: settlementId,
-  });
+  if (existing.payerId) {
+    void dispatchExternal([existing.payerId], {
+      type: "SETTLEMENT_CONFIRMED",
+      title: "Payment confirmed",
+      body: `${updated.receiver.displayName} confirmed your payment of ${formatPaise(
+        updated.amountPaise,
+      )}.`,
+      entityType: "SETTLEMENT",
+      entityId: settlementId,
+    });
+  }
 
   return updated;
 }
@@ -108,31 +115,35 @@ export async function disputeSettlement(
       },
     });
 
-    await tx.notification.create({
-      data: {
-        userId: existing.payerId,
-        type: "SETTLEMENT_DISPUTED",
-        title: "Payment disputed",
-        body: `${row.receiver.displayName} disputed your payment of ${formatPaise(
-          row.amountPaise,
-        )}. The debt remains on your balance.`,
-        entityType: "SETTLEMENT",
-        entityId: settlementId,
-      },
-    });
+    if (existing.payerId) {
+      await tx.notification.create({
+        data: {
+          userId: existing.payerId,
+          type: "SETTLEMENT_DISPUTED",
+          title: "Payment disputed",
+          body: `${row.receiver.displayName} disputed your payment of ${formatPaise(
+            row.amountPaise,
+          )}. The debt remains on your balance.`,
+          entityType: "SETTLEMENT",
+          entityId: settlementId,
+        },
+      });
+    }
 
     return row;
   });
 
-  void dispatchExternal([existing.payerId], {
-    type: "SETTLEMENT_DISPUTED",
-    title: "Payment disputed",
-    body: `${updated.receiver.displayName} disputed your payment of ${formatPaise(
-      updated.amountPaise,
-    )}. The debt remains on your balance.`,
-    entityType: "SETTLEMENT",
-    entityId: settlementId,
-  });
+  if (existing.payerId) {
+    void dispatchExternal([existing.payerId], {
+      type: "SETTLEMENT_DISPUTED",
+      title: "Payment disputed",
+      body: `${updated.receiver.displayName} disputed your payment of ${formatPaise(
+        updated.amountPaise,
+      )}. The debt remains on your balance.`,
+      entityType: "SETTLEMENT",
+      entityId: settlementId,
+    });
+  }
 
   return updated;
 }

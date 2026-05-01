@@ -30,8 +30,14 @@ export interface FormatOptions {
   signed?: boolean;
 }
 
-export function formatPaise(paise: number | bigint, options: FormatOptions = {}): string {
-  const value = Number(paise);
+// Accepts string so API responses can transmit paise as exact strings via
+// serializePaise() — the formatter converts to Number for display only,
+// after the precision-sensitive transport hop is over.
+export function formatPaise(
+  paise: number | bigint | string,
+  options: FormatOptions = {},
+): string {
+  const value = typeof paise === "string" ? Number(paise) : Number(paise);
   const rupees = value / 100;
   const abs = Math.abs(rupees);
 
@@ -46,7 +52,7 @@ export function formatPaise(paise: number | bigint, options: FormatOptions = {})
   return formatted;
 }
 
-export function paiseToRupees(paise: number | bigint): number {
+export function paiseToRupees(paise: number | bigint | string): number {
   return Number(paise) / 100;
 }
 

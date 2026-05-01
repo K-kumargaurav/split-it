@@ -181,8 +181,7 @@ export async function searchExpenses(
         : null,
       payers,
       participants,
-      yourSharePaise:
-        participants.find((p) => p.userId === userId)?.amountPaise ?? 0,
+      yourSharePaise: participants.find((p) => p.userId === userId)?.amountPaise ?? 0,
       yourPaidPaise: payers.find((p) => p.userId === userId)?.amountPaise ?? 0,
     };
   });

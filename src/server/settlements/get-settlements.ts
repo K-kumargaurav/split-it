@@ -12,9 +12,17 @@ export interface SettlementParty {
   displayName: string;
 }
 
+// Ghost-paid settlements have no User-side payer (payerId is null on the
+// row). The list view still surfaces them so the receiver can confirm/dispute,
+// but the payer block reads as a ghost displayName instead of a User handle.
+export interface SettlementGhostParty {
+  ghostId: string;
+  displayName: string;
+}
+
 export interface SettlementListItem {
   id: string;
-  payer: SettlementParty;
+  payer: SettlementParty | SettlementGhostParty;
   receiver: SettlementParty;
   amountPaise: number;
   paymentMethod: "CASH" | "UPI" | "RAZORPAY" | "STRIPE" | "OTHER";
@@ -48,6 +56,7 @@ export async function getSettlementsForGroup(
     ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     include: {
       payer: { select: { id: true, handle: true, displayName: true } },
+      ghostPayer: { select: { id: true, displayName: true } },
       receiver: { select: { id: true, handle: true, displayName: true } },
     },
   });
@@ -57,11 +66,16 @@ export async function getSettlementsForGroup(
 
   const items: SettlementListItem[] = visible.map((s) => ({
     id: s.id,
-    payer: {
-      userId: s.payer.id,
-      handle: s.payer.handle,
-      displayName: s.payer.displayName,
-    },
+    payer: s.payer
+      ? {
+          userId: s.payer.id,
+          handle: s.payer.handle,
+          displayName: s.payer.displayName,
+        }
+      : {
+          ghostId: s.ghostPayer?.id ?? "",
+          displayName: s.ghostPayer?.displayName ?? "Guest",
+        },
     receiver: {
       userId: s.receiver.id,
       handle: s.receiver.handle,

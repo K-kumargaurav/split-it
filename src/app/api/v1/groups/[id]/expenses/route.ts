@@ -114,6 +114,8 @@ export async function POST(
 
 // BigInt → number on the way out so the response is JSON-serialisable. The
 // per-expense ceiling (1e9 paise) is well within Number.MAX_SAFE_INTEGER.
+// For amounts that could exceed 2^53, switch to serializePaise() (returns
+// string) and parse on the receiving end.
 function serializeExpense(e: CreatedExpense) {
   return {
     id: e.id,

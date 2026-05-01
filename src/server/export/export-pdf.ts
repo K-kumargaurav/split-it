@@ -129,6 +129,7 @@ export async function exportGroupPdf(
       orderBy: [{ createdAt: "asc" }],
       include: {
         payer: { select: { displayName: true } },
+        ghostPayer: { select: { displayName: true } },
         receiver: { select: { displayName: true } },
       },
     }),
@@ -148,7 +149,8 @@ export async function exportGroupPdf(
 
   const settlementLines: SettlementLine[] = settlements.map((s) => ({
     date: formatDate(s.confirmedAt ?? s.createdAt),
-    payer: s.payer.displayName,
+    // Ghost-paid rows: payer is null, fall back to the ghost displayName.
+    payer: s.payer?.displayName ?? s.ghostPayer?.displayName ?? "Guest",
     receiver: s.receiver.displayName,
     amount: formatMoney(s.amountPaise, group.currency),
     status: s.status,

@@ -57,12 +57,23 @@ async function loadLedger(
         participants: { select: { userId: true, amountPaise: true } },
       },
     }),
+    // payerId IS NULL ⇒ ghost-paid settlement (ghostPayerId is set instead).
+    // Those rows only affect the ghost's outstanding-debt view in
+    // get-guest-view; they have no impact on User-pair balances and would
+    // narrow to `string | null` without this filter.
     prisma.settlement.findMany({
-      where: { groupId, status: "CONFIRMED", deletedAt: null },
+      where: {
+        groupId,
+        status: "CONFIRMED",
+        deletedAt: null,
+        payerId: { not: null },
+      },
       select: { payerId: true, receiverId: true, amountPaise: true },
     }),
   ]);
-  return { expenses, settlements };
+  const userSettlements: SettlementRow[] = settlements
+    .filter((s): s is typeof s & { payerId: string } => s.payerId !== null);
+  return { expenses, settlements: userSettlements };
 }
 
 // Apply a single expense to the running net-per-pair table. For each

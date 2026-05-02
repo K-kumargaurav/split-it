@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { errorFromThrown, errorResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { getAvatarsBucket, getSupabaseStorageClient } from "@/lib/supabase-storage";
+import { consumeRateLimit } from "@/server/auth/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -25,6 +26,13 @@ export async function POST(request: Request): Promise<NextResponse> {
   const session = await auth();
   if (!session?.user?.id) {
     return errorResponse("UNAUTHORIZED", "You must be signed in.", 401);
+  }
+
+  // 5 uploads per minute per user — prevents DoS on sharp re-encode and
+  // Supabase storage egress. Keyed on userId so one user can't exhaust
+  // another's quota.
+  if (!consumeRateLimit(`avatar:${session.user.id}`, { max: 5, windowMs: 60_000 })) {
+    return errorResponse("RATE_LIMITED", "Too many uploads. Please wait a minute.", 429);
   }
 
   let formData: FormData;

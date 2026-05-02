@@ -17,9 +17,11 @@ export const upiIdSchema = z
   });
 
 // Avatars must be HTTPS URLs that point to our Supabase Storage bucket — never
-// arbitrary user-supplied URLs (XSS / phishing risk in <img> tags). The exact
-// bucket prefix is enforced at a higher level; here we only require https + a
-// reasonable length cap.
+// arbitrary user-supplied URLs (XSS / phishing risk in <img> tags). We
+// enforce the exact Supabase origin at runtime so an attacker cannot PATCH
+// their avatarUrl to an attacker-controlled server and have it rendered under
+// our origin. Falls back to https-only check when SUPABASE_URL is unset (local
+// dev without Supabase configured).
 export const avatarUrlSchema = z
   .string()
   .trim()
@@ -27,7 +29,15 @@ export const avatarUrlSchema = z
   .max(2048, { message: "Avatar URL is too long." })
   .refine((v) => v.startsWith("https://"), {
     message: "Avatar URL must use HTTPS.",
-  });
+  })
+  .refine(
+    (v) => {
+      const base = process.env.SUPABASE_URL;
+      if (!base) return true; // skip in envs without Supabase configured
+      return v.startsWith(`${base}/storage/v1/object/sign/`);
+    },
+    { message: "Avatar URL must be hosted on SplitEasy's storage." },
+  );
 
 // PATCH body: every field is optional, but the request must update at least
 // one field. Empty strings are normalised to `null` for the nullable columns

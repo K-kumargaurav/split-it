@@ -151,7 +151,6 @@ model User {
   notifications         Notification[]
   notificationPrefs     NotificationPref[]
   pushSubscriptions     PushSubscription[]
-  refreshTokens         RefreshToken[]
   mergedGhostMembers    GhostMember[]        @relation("GhostMergedUser")
   accounts              Account[]
   groupInvitesSent      GroupInvite[]        @relation("GroupInviteInviter")
@@ -566,15 +565,3 @@ model PushSubscription {
   @@map("push_subscriptions")
 }
 
-model RefreshToken {
-  id        String    @id @default(uuid())
-  userId    String
-  tokenHash String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("refresh_tokens")
-}

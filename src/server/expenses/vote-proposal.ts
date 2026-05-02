@@ -67,9 +67,24 @@ export async function voteOnProposal(
   }
 
   const result = await prisma.$transaction(async (tx) => {
-    await tx.proposalVote.create({
-      data: { proposalId, voterId: userId, vote },
-    });
+    try {
+      await tx.proposalVote.create({
+        data: { proposalId, voterId: userId, vote },
+      });
+    } catch (err) {
+      // P2002 = unique constraint violation on @@unique([proposalId, voterId]).
+      // Two concurrent requests both passed the findUnique check above (TOCTOU)
+      // and raced to insert — the second writer loses cleanly as a 409.
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        (err as { code?: string }).code === "P2002"
+      ) {
+        throw new AppError("CONFLICT", "You've already voted on this proposal.");
+      }
+      throw err;
+    }
 
     return tallyAndDecide(tx, proposalId);
   });

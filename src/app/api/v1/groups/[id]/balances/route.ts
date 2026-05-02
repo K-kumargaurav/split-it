@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
 import {
@@ -16,16 +16,19 @@ interface RouteContext {
   params: { id: string };
 }
 
+// amountPaise is serialized as a string (via serializePaise) on the wire to
+// preserve exact values for large groups — Number() silently loses precision
+// past 2^53 and balance aggregates across many expenses can exceed that.
 interface DirectBalanceEntry {
   creditor: { userId: string; displayName: string; handle: string };
   debtor: { userId: string; displayName: string; handle: string };
-  amountPaise: number;
+  amountPaise: string;
 }
 
 interface SimplifiedBalanceEntry {
   from: { userId: string; displayName: string; handle: string };
   to: { userId: string; displayName: string; handle: string };
-  amountPaise: number;
+  amountPaise: string;
 }
 
 export async function GET(
@@ -66,13 +69,13 @@ export async function GET(
           entries.push({
             creditor,
             debtor,
-            amountPaise: Number(amount),
+            amountPaise: serializePaise(amount),
           });
         }
       }
       return NextResponse.json({
         mode: "direct",
-        netBalancePaise: Number(netBalance),
+        netBalancePaise: serializePaise(netBalance),
         balances: entries,
       });
     }
@@ -89,13 +92,13 @@ export async function GET(
         const from = userMap.get(t.from);
         const to = userMap.get(t.to);
         if (!from || !to) return null;
-        return { from, to, amountPaise: Number(t.amount) };
+        return { from, to, amountPaise: serializePaise(t.amount) };
       })
       .filter((e): e is SimplifiedBalanceEntry => e !== null);
 
     return NextResponse.json({
       mode: "simplified",
-      netBalancePaise: Number(netBalance),
+      netBalancePaise: serializePaise(netBalance),
       balances: entries,
     });
   } catch (err) {

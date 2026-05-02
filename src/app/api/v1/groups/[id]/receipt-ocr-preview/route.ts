@@ -6,6 +6,7 @@ import { errorFromThrown, errorResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { extractReceiptData } from "@/server/expenses/ocr-receipt";
 import { RECEIPT_MAX_BYTES } from "@/server/expenses/upload-receipt";
+import { consumeRateLimit } from "@/server/auth/rate-limit";
 
 // OCR-only preview for the "new expense" form. The user hasn't created the
 // expense yet, so we can't write to storage; we just OCR the bytes in
@@ -41,6 +42,12 @@ export async function POST(
   });
   if (!membership) {
     return errorResponse("FORBIDDEN", "You don't have access to this group.", 403);
+  }
+
+  // 10 OCR requests per minute per user — caps Google Vision API spend and
+  // prevents memory exhaustion from concurrent sharp re-encodes.
+  if (!consumeRateLimit(`ocr:${session.user.id}`, { max: 10, windowMs: 60_000 })) {
+    return errorResponse("RATE_LIMITED", "Too many OCR requests. Please wait a minute.", 429);
   }
 
   let formData: FormData;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { errorResponse } from "@/lib/api-response";
 import { emailSchema } from "@/lib/validations/auth";
 import { checkEmailExists } from "@/server/auth/check-email";
 import { consumeRateLimit, getClientIp } from "@/server/auth/rate-limit";
@@ -14,10 +15,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     raw = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: { code: "VALIDATION_FAILED", message: "Invalid JSON body." } },
-      { status: 400 },
-    );
+    return errorResponse("VALIDATION_ERROR", "Invalid JSON body.", 400);
   }
 
   const parsed = requestSchema.safeParse(raw);
@@ -31,15 +29,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // 10 req/min per IP, separate bucket from handle-check.
   const ip = getClientIp(request);
   if (!consumeRateLimit(`check-email:${ip}`, { max: 10, windowMs: 60_000 })) {
-    return NextResponse.json(
-      {
-        error: {
-          code: "RATE_LIMITED",
-          message: "Too many checks. Please wait a moment.",
-        },
-      },
-      { status: 429 },
-    );
+    return errorResponse("RATE_LIMITED", "Too many checks. Please wait a moment.", 429);
   }
 
   const result = await checkEmailExists(parsed.data.email);

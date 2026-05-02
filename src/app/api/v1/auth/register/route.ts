@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { errorFromThrown, errorResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validations/auth";
 import { hashPassword } from "@/server/auth/password";
@@ -8,63 +9,36 @@ import { upsertUser } from "@/server/auth/upsert-user";
 
 export const runtime = "nodejs";
 
-type ErrorCode =
-  | "VALIDATION_FAILED"
-  | "EMAIL_EXISTS"
-  | "HANDLE_EXISTS"
-  | "RATE_LIMITED"
-  | "INTERNAL";
-
-interface ErrorBody {
-  error: {
-    code: ErrorCode;
-    message: string;
-    fieldErrors?: Record<string, string>;
-  };
-}
-
-function errorResponse(
-  status: number,
-  code: ErrorCode,
-  message: string,
-  fieldErrors?: Record<string, string>,
-): NextResponse<ErrorBody> {
-  return NextResponse.json({ error: { code, message, fieldErrors } }, { status });
-}
-
 export async function POST(request: Request): Promise<NextResponse> {
   let raw: unknown;
   try {
     raw = await request.json();
   } catch {
-    return errorResponse(400, "VALIDATION_FAILED", "Invalid JSON body.");
+    return errorResponse("VALIDATION_ERROR", "Invalid JSON body.", 400);
   }
 
   const parsed = registerSchema.safeParse(raw);
   if (!parsed.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) {
-      const key = issue.path[0];
-      if (typeof key === "string" && !(key in fieldErrors)) {
-        fieldErrors[key] = issue.message;
-      }
-    }
-    // 422 Unprocessable Entity is the more accurate status for Zod-level
-    // failures — the JSON parsed fine, the shape is just wrong.
+    // Convert Zod issues → AppErrorIssue[] (SPEC §6.0 `details` shape).
+    // We preserve all issues (not just first-per-field) so the client can
+    // render every inline error in a single round-trip.
     return errorResponse(
-      422,
-      "VALIDATION_FAILED",
+      "VALIDATION_ERROR",
       "Some fields are invalid.",
-      fieldErrors,
+      422,
+      parsed.error.issues.map((i) => ({
+        path: i.path.map((p) => (typeof p === "number" ? p : String(p))),
+        message: i.message,
+      })),
     );
   }
 
   const ip = getClientIp(request);
   if (!consumeRateLimit(`register:${ip}`)) {
     return errorResponse(
-      429,
       "RATE_LIMITED",
       "Too many attempts. Please wait a minute and try again.",
+      429,
     );
   }
 
@@ -79,9 +53,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   if (emailOwner && !emailOwner.deletedAt) {
     return errorResponse(
-      409,
-      "EMAIL_EXISTS",
+      "CONFLICT",
       "An account with this email already exists.",
+      409,
+      [{ path: ["email"], message: "An account with this email already exists." }],
     );
   }
 
@@ -90,7 +65,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     select: { id: true, deletedAt: true },
   });
   if (handleOwner && !handleOwner.deletedAt) {
-    return errorResponse(409, "HANDLE_EXISTS", "This handle is already taken.");
+    return errorResponse(
+      "CONFLICT",
+      "This handle is already taken.",
+      409,
+      [{ path: ["handle"], message: "This handle is already taken." }],
+    );
   }
 
   const passwordHash = await hashPassword(password);
@@ -129,16 +109,22 @@ export async function POST(request: Request): Promise<NextResponse> {
       const targets = Array.isArray(target) ? target : target ? [target] : [];
       if (targets.includes("email")) {
         return errorResponse(
-          409,
-          "EMAIL_EXISTS",
+          "CONFLICT",
           "An account with this email already exists.",
+          409,
+          [{ path: ["email"], message: "An account with this email already exists." }],
         );
       }
       if (targets.includes("handle")) {
-        return errorResponse(409, "HANDLE_EXISTS", "This handle is already taken.");
+        return errorResponse(
+          "CONFLICT",
+          "This handle is already taken.",
+          409,
+          [{ path: ["handle"], message: "This handle is already taken." }],
+        );
       }
     }
     console.error("POST /api/v1/auth/register failed", err);
-    return errorResponse(500, "INTERNAL", "Something went wrong. Please try again.");
+    return errorFromThrown(err);
   }
 }

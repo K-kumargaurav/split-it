@@ -159,6 +159,21 @@ async function addExistingUser(args: AddExistingArgs): Promise<InviteByEmailResu
   }
 
   await prisma.$transaction(async (tx) => {
+    // Re-count inside the transaction to close the TOCTOU window between the
+    // pre-read in `loadGroupForInvite` and the actual insert. Two concurrent
+    // invitations could both see memberCount = 49 and both succeed, pushing
+    // the group to 51. The re-count here is serialized within the transaction
+    // so only one writer can increment past the cap.
+    const currentCount = await tx.groupMember.count({
+      where: { groupId: args.groupId },
+    });
+    if (currentCount >= MAX_GROUP_MEMBERS) {
+      throw new AppError(
+        "CONFLICT",
+        `This group is full (${MAX_GROUP_MEMBERS} members).`,
+      );
+    }
+
     await tx.groupMember.create({
       data: {
         groupId: args.groupId,

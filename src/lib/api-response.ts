@@ -20,15 +20,38 @@ function makeRequestId(): string {
   return `req_${randomUUID().replace(/-/g, "").slice(0, 18)}`;
 }
 
+// Exported so route handlers can generate one ID at the top of each handler
+// and pass it to every errorResponse / errorFromThrown call in that request.
+// This binds all error envelopes from the same request to a single traceable
+// ID, making it possible to correlate the client-visible requestId with logs.
+//
+// Usage pattern in a route:
+//   const reqId = generateRequestId(request);
+//   ...
+//   return errorResponse("NOT_FOUND", "Not found.", 404, undefined, reqId);
+//   return errorFromThrown(err, reqId);
+export function generateRequestId(source?: Request | string): string {
+  if (typeof source === "string") return source;
+  if (source instanceof Request) {
+    // Prefer platform-injected headers so the ID matches what the edge logged.
+    const vercelId = source.headers.get("x-vercel-id");
+    if (vercelId) return vercelId;
+    const existingId = source.headers.get("x-request-id");
+    if (existingId) return existingId;
+  }
+  return makeRequestId();
+}
+
 export function errorResponse(
   code: AppErrorCode,
   message: string,
   status: number,
   details?: AppErrorIssue[],
+  requestId?: string,
 ): NextResponse<ErrorEnvelope> {
   const body: ErrorEnvelope = {
     error: { code, message, ...(details ? { details } : {}) },
-    requestId: makeRequestId(),
+    requestId: requestId ?? makeRequestId(),
   };
   return NextResponse.json(body, { status });
 }
@@ -36,11 +59,11 @@ export function errorResponse(
 // Maps any thrown value to the standard envelope. AppError carries code +
 // status; everything else collapses to a generic 500 with a request-traceable
 // id (the underlying error is logged by the caller).
-export function errorFromThrown(err: unknown): NextResponse<ErrorEnvelope> {
+export function errorFromThrown(err: unknown, requestId?: string): NextResponse<ErrorEnvelope> {
   if (err instanceof AppError) {
-    return errorResponse(err.code, err.message, err.status, err.details);
+    return errorResponse(err.code, err.message, err.status, err.details, requestId);
   }
-  return errorResponse("INTERNAL_ERROR", "Something went wrong.", 500);
+  return errorResponse("INTERNAL_ERROR", "Something went wrong.", 500, undefined, requestId);
 }
 
 // JSON has no native bigint, and `Number(b)` silently rounds anything

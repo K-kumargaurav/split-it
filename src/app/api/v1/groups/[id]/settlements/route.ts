@@ -27,7 +27,8 @@ export async function GET(
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor") ?? undefined;
   const limitRaw = url.searchParams.get("limit");
-  const limit = limitRaw ? Number.parseInt(limitRaw, 10) : 25;
+  const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : NaN;
+  const limit = Number.isFinite(limitParsed) && limitParsed > 0 ? limitParsed : 25;
 
   try {
     const page = await getSettlementsForGroup(session.user.id, params.id, cursor, limit);

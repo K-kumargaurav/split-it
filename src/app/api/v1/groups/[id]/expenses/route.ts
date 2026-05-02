@@ -28,7 +28,10 @@ export async function GET(
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor") ?? undefined;
   const limitRaw = url.searchParams.get("limit");
-  const limit = limitRaw ? Number.parseInt(limitRaw, 10) : 25;
+  // parseInt("foo") → NaN; passing NaN to Prisma's `take` produces
+  // unpredictable behaviour. Fall back to the default when parsing fails.
+  const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : NaN;
+  const limit = Number.isFinite(limitParsed) && limitParsed > 0 ? limitParsed : 25;
 
   // Each filter is keyed off its own param name; we only forward present keys
   // so the schema's `optional()` branches do the right thing.

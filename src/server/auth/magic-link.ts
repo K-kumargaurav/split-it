@@ -27,7 +27,25 @@ export async function requestMagicLink(rawInput: unknown): Promise<MagicLinkResu
   }
 
   const ip = getClientIp(await headers());
-  if (!consumeRateLimit(`magic-link:${parsed.data.email}:${ip}`)) {
+
+  // Layer 1: per-IP cap regardless of email — prevents an attacker from
+  // rotating the target address to get a fresh bucket on every request.
+  if (!consumeRateLimit(`magic-link-ip:${ip}`, { max: 5, windowMs: 60_000 })) {
+    return {
+      ok: false,
+      formError: "Too many sign-in link requests. Please wait a minute and try again.",
+    };
+  }
+
+  // Layer 2: per-recipient cap — limits how many magic-link emails any single
+  // inbox can receive per hour, regardless of which IP is sending them.
+  // Prevents mail-bombing a victim address from many IPs.
+  if (
+    !consumeRateLimit(`magic-link-victim:${parsed.data.email}`, {
+      max: 3,
+      windowMs: 60 * 60_000,
+    })
+  ) {
     return {
       ok: false,
       formError: "Too many sign-in link requests. Please wait a minute and try again.",

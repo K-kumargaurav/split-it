@@ -1,0 +1,144 @@
+diff --git a/next.config.mjs b/next.config.mjs
+index 770b211..f1f21dc 100644
+--- a/next.config.mjs
++++ b/next.config.mjs
+@@ -1,8 +1,18 @@
+ /** @type {import('next').NextConfig} */
+ const nextConfig = {
+   output: "standalone",
++  // serverComponentsExternalPackages tells Next.js not to bundle these on the
++  // server — they must be resolved from node_modules at runtime. We list the
++  // Prisma query engine packages that contain native binaries; the generated
++  // client at src/generated/prisma is a regular TS import and doesn't need
++  // externalizing. sharp is listed so it uses the platform binary instead of
++  // a bundled WASM fallback.
+   experimental: {
+-    serverComponentsExternalPackages: ["@prisma/client"],
++    serverComponentsExternalPackages: [
++      "@prisma/client",
++      "@prisma/adapter-pg",
++      "sharp",
++    ],
+   },
+   async headers() {
+     return [
+diff --git a/src/app/api/v1/groups/[id]/expenses/route.ts b/src/app/api/v1/groups/[id]/expenses/route.ts
+index 99f041c..f1765ff 100644
+--- a/src/app/api/v1/groups/[id]/expenses/route.ts
++++ b/src/app/api/v1/groups/[id]/expenses/route.ts
+@@ -28,7 +28,10 @@ export async function GET(
+   const url = new URL(request.url);
+   const cursor = url.searchParams.get("cursor") ?? undefined;
+   const limitRaw = url.searchParams.get("limit");
+-  const limit = limitRaw ? Number.parseInt(limitRaw, 10) : 25;
++  // parseInt("foo") → NaN; passing NaN to Prisma's `take` produces
++  // unpredictable behaviour. Fall back to the default when parsing fails.
++  const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : NaN;
++  const limit = Number.isFinite(limitParsed) && limitParsed > 0 ? limitParsed : 25;
+ 
+   // Each filter is keyed off its own param name; we only forward present keys
+   // so the schema's `optional()` branches do the right thing.
+diff --git a/src/app/api/v1/groups/[id]/settlements/route.ts b/src/app/api/v1/groups/[id]/settlements/route.ts
+index f91f4ef..2ee8112 100644
+--- a/src/app/api/v1/groups/[id]/settlements/route.ts
++++ b/src/app/api/v1/groups/[id]/settlements/route.ts
+@@ -27,7 +27,8 @@ export async function GET(
+   const url = new URL(request.url);
+   const cursor = url.searchParams.get("cursor") ?? undefined;
+   const limitRaw = url.searchParams.get("limit");
+-  const limit = limitRaw ? Number.parseInt(limitRaw, 10) : 25;
++  const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : NaN;
++  const limit = Number.isFinite(limitParsed) && limitParsed > 0 ? limitParsed : 25;
+ 
+   try {
+     const page = await getSettlementsForGroup(session.user.id, params.id, cursor, limit);
+diff --git a/src/lib/api-response.ts b/src/lib/api-response.ts
+index 6722745..d0b1728 100644
+--- a/src/lib/api-response.ts
++++ b/src/lib/api-response.ts
+@@ -20,15 +20,38 @@ function makeRequestId(): string {
+   return `req_${randomUUID().replace(/-/g, "").slice(0, 18)}`;
+ }
+ 
++// Exported so route handlers can generate one ID at the top of each handler
++// and pass it to every errorResponse / errorFromThrown call in that request.
++// This binds all error envelopes from the same request to a single traceable
++// ID, making it possible to correlate the client-visible requestId with logs.
++//
++// Usage pattern in a route:
++//   const reqId = generateRequestId(request);
++//   ...
++//   return errorResponse("NOT_FOUND", "Not found.", 404, undefined, reqId);
++//   return errorFromThrown(err, reqId);
++export function generateRequestId(source?: Request | string): string {
++  if (typeof source === "string") return source;
++  if (source instanceof Request) {
++    // Prefer platform-injected headers so the ID matches what the edge logged.
++    const vercelId = source.headers.get("x-vercel-id");
++    if (vercelId) return vercelId;
++    const existingId = source.headers.get("x-request-id");
++    if (existingId) return existingId;
++  }
++  return makeRequestId();
++}
++
+ export function errorResponse(
+   code: AppErrorCode,
+   message: string,
+   status: number,
+   details?: AppErrorIssue[],
++  requestId?: string,
+ ): NextResponse<ErrorEnvelope> {
+   const body: ErrorEnvelope = {
+     error: { code, message, ...(details ? { details } : {}) },
+-    requestId: makeRequestId(),
++    requestId: requestId ?? makeRequestId(),
+   };
+   return NextResponse.json(body, { status });
+ }
+@@ -36,11 +59,11 @@ export function errorResponse(
+ // Maps any thrown value to the standard envelope. AppError carries code +
+ // status; everything else collapses to a generic 500 with a request-traceable
+ // id (the underlying error is logged by the caller).
+-export function errorFromThrown(err: unknown): NextResponse<ErrorEnvelope> {
++export function errorFromThrown(err: unknown, requestId?: string): NextResponse<ErrorEnvelope> {
+   if (err instanceof AppError) {
+-    return errorResponse(err.code, err.message, err.status, err.details);
++    return errorResponse(err.code, err.message, err.status, err.details, requestId);
+   }
+-  return errorResponse("INTERNAL_ERROR", "Something went wrong.", 500);
++  return errorResponse("INTERNAL_ERROR", "Something went wrong.", 500, undefined, requestId);
+ }
+ 
+ // JSON has no native bigint, and `Number(b)` silently rounds anything
+diff --git a/src/server/auth/magic-link.ts b/src/server/auth/magic-link.ts
+index 368c599..c72342b 100644
+--- a/src/server/auth/magic-link.ts
++++ b/src/server/auth/magic-link.ts
+@@ -27,7 +27,25 @@ export async function requestMagicLink(rawInput: unknown): Promise<MagicLinkResu
+   }
+ 
+   const ip = getClientIp(await headers());
+-  if (!consumeRateLimit(`magic-link:${parsed.data.email}:${ip}`)) {
++
++  // Layer 1: per-IP cap regardless of email — prevents an attacker from
++  // rotating the target address to get a fresh bucket on every request.
++  if (!consumeRateLimit(`magic-link-ip:${ip}`, { max: 5, windowMs: 60_000 })) {
++    return {
++      ok: false,
++      formError: "Too many sign-in link requests. Please wait a minute and try again.",
++    };
++  }
++
++  // Layer 2: per-recipient cap — limits how many magic-link emails any single
++  // inbox can receive per hour, regardless of which IP is sending them.
++  // Prevents mail-bombing a victim address from many IPs.
++  if (
++    !consumeRateLimit(`magic-link-victim:${parsed.data.email}`, {
++      max: 3,
++      windowMs: 60 * 60_000,
++    })
++  ) {
+     return {
+       ok: false,
+       formError: "Too many sign-in link requests. Please wait a minute and try again.",

@@ -116,13 +116,44 @@ async function acceptEmailInvite(
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.groupMember.create({
-      data: {
-        groupId: invite.groupId,
-        userId,
-        role: "MEMBER",
-      },
+    // Re-count inside the transaction to close the TOCTOU window — two
+    // concurrent acceptances of different invites both saw memberCount=49
+    // outside the tx and would both succeed, pushing the group to 51.
+    // The serialized re-count here ensures only one writer crosses the cap.
+    const currentCount = await tx.groupMember.count({
+      where: { groupId: invite.groupId },
     });
+    if (currentCount >= MAX_GROUP_MEMBERS) {
+      throw new AppError(
+        "CONFLICT",
+        `This group is full (${MAX_GROUP_MEMBERS} members).`,
+      );
+    }
+
+    try {
+      await tx.groupMember.create({
+        data: {
+          groupId: invite.groupId,
+          userId,
+          role: "MEMBER",
+        },
+      });
+    } catch (err) {
+      // P2002 = unique constraint on @@unique([groupId, userId]). Two
+      // concurrent acceptances (same user, same invite) both passed the
+      // pre-check and raced to insert — surface a clean 409 rather than
+      // letting the raw Prisma error bubble as a 500.
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        (err as { code?: string }).code === "P2002"
+      ) {
+        throw new AppError("CONFLICT", "You're already a member of this group.");
+      }
+      throw err;
+    }
+
     await tx.groupInvite.update({
       where: { id: invite.id },
       data: {

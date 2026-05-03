@@ -28,9 +28,26 @@ export async function confirmSettlement(
   assertPending(existing);
 
   const updated = await prisma.$transaction(async (tx) => {
-    const row = await tx.settlement.update({
+    // Re-check status inside the transaction via a conditional update
+    // (optimistic lock). Without this, concurrent confirm+dispute requests
+    // both pass assertPending on the stale pre-tx snapshot, then race to
+    // write conflicting statuses — the final state becomes a coin flip.
+    // The updateMany only fires if status is still PENDING_CONFIRMATION;
+    // count=0 means a concurrent writer already advanced the state.
+    const confirmedAt = new Date();
+    const claim = await tx.settlement.updateMany({
+      where: { id: settlementId, status: "PENDING_CONFIRMATION" },
+      data: { status: "CONFIRMED", confirmedAt },
+    });
+    if (claim.count === 0) {
+      throw new AppError(
+        "CONFLICT",
+        "This settlement is no longer awaiting confirmation.",
+      );
+    }
+
+    const row = await tx.settlement.findUniqueOrThrow({
       where: { id: settlementId },
-      data: { status: "CONFIRMED", confirmedAt: new Date() },
       include: {
         payer: { select: { id: true, handle: true, displayName: true } },
         receiver: { select: { id: true, handle: true, displayName: true } },
@@ -45,7 +62,7 @@ export async function confirmSettlement(
         entityId: settlementId,
         action: "CONFIRMED",
         oldValue: { status: existing.status },
-        newValue: { status: "CONFIRMED", confirmedAt: row.confirmedAt },
+        newValue: { status: "CONFIRMED", confirmedAt },
       },
     });
 
@@ -94,9 +111,22 @@ export async function disputeSettlement(
   assertPending(existing);
 
   const updated = await prisma.$transaction(async (tx) => {
-    const row = await tx.settlement.update({
-      where: { id: settlementId },
+    // Same optimistic-lock pattern as confirmSettlement — conditional update
+    // prevents a concurrent confirm+dispute pair from both advancing past the
+    // PENDING_CONFIRMATION guard on the stale pre-tx snapshot.
+    const claim = await tx.settlement.updateMany({
+      where: { id: settlementId, status: "PENDING_CONFIRMATION" },
       data: { status: "DISPUTED" },
+    });
+    if (claim.count === 0) {
+      throw new AppError(
+        "CONFLICT",
+        "This settlement is no longer awaiting confirmation.",
+      );
+    }
+
+    const row = await tx.settlement.findUniqueOrThrow({
+      where: { id: settlementId },
       include: {
         payer: { select: { id: true, handle: true, displayName: true } },
         receiver: { select: { id: true, handle: true, displayName: true } },

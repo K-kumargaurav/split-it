@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { errorFromThrown, errorResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validations/auth";
+import { OTP_TTL_MS, createEmailOtp } from "@/server/auth/email-otp";
 import { hashPassword } from "@/server/auth/password";
 import { consumeRateLimit, getClientIp } from "@/server/auth/rate-limit";
+import { sendEmailOtpEmail } from "@/server/email/auth-emails";
 import { upsertUser } from "@/server/auth/upsert-user";
 
 export const runtime = "nodejs";
@@ -84,9 +86,24 @@ export async function POST(request: Request): Promise<NextResponse> {
       handle,
       passwordHash,
     });
+
+    // Send OTP for email verification. The user must verify before they can
+    // sign in — the credentials provider throws EmailNotVerifiedError when
+    // emailVerifiedAt is null. The form transitions to an OTP step on
+    // otpSent:true and calls signIn("otp", { email, otp }) on success, which
+    // sets emailVerifiedAt via upsertUser.
+    const code = await createEmailOtp({ email });
+    await sendEmailOtpEmail({
+      to: email,
+      displayName,
+      code,
+      ttlMinutes: Math.round(OTP_TTL_MS / 60_000),
+    });
+
     return NextResponse.json(
       {
         ok: true,
+        otpSent: true,
         user: {
           id: user.id,
           email: user.email,

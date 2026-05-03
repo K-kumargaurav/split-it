@@ -11,6 +11,7 @@ import { cn } from "@/lib/cn";
 import { EmailField, type AvailabilityState } from "@/components/forms/email-field";
 import { GoogleButton } from "@/components/forms/google-button";
 import { HandleField } from "@/components/forms/handle-field";
+import { OtpInput } from "@/components/ui/otp-input";
 import { PasswordStrength } from "@/components/forms/password-strength";
 
 const formSchema = z.object({
@@ -47,6 +48,13 @@ interface RegisterErrorBody {
   };
 }
 
+// Returned by the API on success.
+interface RegisterSuccessBody {
+  ok: true;
+  otpSent: boolean;
+  user: { id: string; email: string; handle: string; displayName: string };
+}
+
 export function RegisterForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -54,8 +62,9 @@ export function RegisterForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [serverFieldErrors, setServerFieldErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [emailTaken, setEmailTaken] = useState(false);
-  // Tracked outside React state because we read it synchronously inside
-  // onSubmit to short-circuit before the API call.
+  // After a successful register API call with otpSent:true, we stash the
+  // email here and render the OTP step instead of the form.
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const emailAvailabilityRef = useRef<AvailabilityState["kind"]>("idle");
 
   const {
@@ -147,9 +156,17 @@ export function RegisterForm() {
       return;
     }
 
-    // 201: account created. Sign the user in via Credentials. We drive the
-    // redirect ourselves so the failure path (rare — credentials we just
-    // hashed) can be surfaced as a form error instead of the URL ?error= flow.
+    // 201: account created. The API also sent a verification OTP.
+    // Transition to the OTP step — the user signs in there via signIn("otp").
+    const body = (await response.json()) as RegisterSuccessBody;
+    if (body.otpSent) {
+      setPendingEmail(values.email);
+      setPhase("idle");
+      return;
+    }
+
+    // otpSent:false means the email was already verified (OAuth-linked account
+    // that just added a password). Sign in directly with credentials.
     setPhase("signing-in");
     const result = await signIn("credentials", {
       email: values.email,
@@ -166,6 +183,16 @@ export function RegisterForm() {
   }
 
   const submitting = phase !== "idle" || isSubmitting;
+
+  // Show OTP verification step after successful account creation.
+  if (pendingEmail) {
+    return (
+      <RegistrationOtpStep
+        email={pendingEmail}
+        onBack={() => setPendingEmail(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -294,6 +321,153 @@ export function RegisterForm() {
               : "Create account"}
         </button>
       </form>
+    </div>
+  );
+}
+
+// ─── OTP verification step ────────────────────────────────────────────────────
+
+function RegistrationOtpStep({
+  email,
+  onBack,
+}: {
+  email: string;
+  onBack: () => void;
+}) {
+  const router = useRouter();
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+
+  async function verify(code: string) {
+    if (code.length !== 6 || isVerifying) return;
+    setIsVerifying(true);
+    setError(null);
+
+    // The "otp" credentials provider in auth.ts verifies the code, sets
+    // emailVerifiedAt via upsertUser, and creates the NextAuth session in
+    // one step. No separate "mark verified" call is needed.
+    const result = await signIn("otp", {
+      email,
+      otp: code,
+      redirect: false,
+    });
+
+    if (!result || result.error) {
+      setError("That code is incorrect or has expired. Check your email and try again.");
+      setOtp("");
+      setIsVerifying(false);
+      return;
+    }
+
+    router.push(result.url ?? "/dashboard");
+    router.refresh();
+  }
+
+  async function resend() {
+    setIsResending(true);
+    setResendMessage(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/v1/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = (await res.json()) as { ok: boolean; formError?: string };
+      setResendMessage(
+        data.ok
+          ? "New code sent — check your inbox."
+          : (data.formError ?? "Couldn't resend the code. Please try again."),
+      );
+      if (data.ok) setOtp("");
+    } catch {
+      setResendMessage("Network error. Please try again.");
+    } finally {
+      setIsResending(false);
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          Verify your email
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          We sent a 6-digit code to{" "}
+          <span className="font-medium text-slate-900 dark:text-white">{email}</span>. Enter
+          it below to activate your account — it expires in 15 minutes.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <label
+          id="reg-otp-label"
+          className="block text-sm font-medium text-slate-700 dark:text-slate-200"
+        >
+          Verification code
+        </label>
+        <OtpInput
+          value={otp}
+          onChange={setOtp}
+          onComplete={verify}
+          disabled={isVerifying}
+          invalid={Boolean(error)}
+          ariaLabelledBy="reg-otp-label"
+          autoFocus
+        />
+      </div>
+
+      {error ? (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700"
+        >
+          {error}
+        </div>
+      ) : null}
+
+      {resendMessage ? (
+        <p role="status" aria-live="polite" className="text-xs text-slate-600 dark:text-slate-400">
+          {resendMessage}
+        </p>
+      ) : null}
+
+      <button
+        type="button"
+        disabled={isVerifying || otp.length !== 6}
+        onClick={() => verify(otp)}
+        className={cn(
+          "flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
+          "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-60",
+        )}
+      >
+        {isVerifying ? "Verifying…" : "Verify and sign in"}
+      </button>
+
+      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={isVerifying}
+          className="font-medium underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-50"
+        >
+          Back to registration
+        </button>
+        <button
+          type="button"
+          onClick={resend}
+          disabled={isResending || isVerifying}
+          className="font-medium underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-50"
+        >
+          {isResending ? "Sending…" : "Resend code"}
+        </button>
+      </div>
     </div>
   );
 }

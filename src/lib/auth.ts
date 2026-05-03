@@ -14,6 +14,7 @@ import {
   getClientIp,
 } from "@/server/auth/rate-limit";
 import { sendMagicLinkEmail } from "@/server/email/auth-emails";
+import { hashToken } from "@/server/auth/tokens";
 import { upsertUser } from "@/server/auth/upsert-user";
 import "@/types/auth";
 
@@ -88,6 +89,46 @@ const adapter: typeof baseAdapter = {
       name: u.displayName,
       image: u.avatarUrl,
     };
+  },
+
+  // NextAuth's PrismaAdapter passes { identifier, token, expires } but our
+  // VerificationToken schema stores only tokenHash (SHA-256 of the raw token
+  // so a DB snapshot doesn't yield active links) and requires a purpose field.
+  // Magic-link is the only NextAuth flow that calls this method, so we
+  // hardcode EMAIL_VERIFICATION. Upsert so re-sending a link supersedes the
+  // previous one without leaving a dangling row.
+  createVerificationToken: async ({ identifier, token, expires }) => {
+    const tokenHash = hashToken(token);
+    await prisma.verificationToken.upsert({
+      where: {
+        identifier_purpose: { identifier, purpose: "EMAIL_VERIFICATION" },
+      },
+      create: { identifier, tokenHash, purpose: "EMAIL_VERIFICATION", expires },
+      update: { tokenHash, expires, createdAt: new Date() },
+    });
+    // Return the raw token — NextAuth embeds it in the sign-in URL, not the hash.
+    return { identifier, token, expires };
+  },
+
+  // Called when the user clicks the magic-link. Look up by hash (the raw token
+  // is in the URL), delete on first use (single-use guarantee), and return the
+  // shape NextAuth expects. Returns null if the token is missing, expired, or
+  // already consumed — NextAuth surfaces these as a generic "link invalid" page.
+  useVerificationToken: async ({ identifier, token }) => {
+    const tokenHash = hashToken(token);
+    const record = await prisma.verificationToken.findUnique({
+      where: { tokenHash },
+      select: { identifier: true, expires: true },
+    });
+    if (!record || record.identifier !== identifier) return null;
+    // Best-effort delete — if a concurrent click already consumed it, treat as
+    // already used (return null) rather than crashing.
+    try {
+      await prisma.verificationToken.delete({ where: { tokenHash } });
+    } catch {
+      return null;
+    }
+    return { identifier, token, expires: record.expires };
   },
 };
 

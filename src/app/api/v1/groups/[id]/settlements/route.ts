@@ -83,11 +83,16 @@ function serializeSettlement(s: CreatedSettlement) {
     status: s.status,
     createdAt: s.createdAt,
     confirmedAt: s.confirmedAt,
-    payer: {
-      userId: s.payer.id,
-      handle: s.payer.handle,
-      displayName: s.payer.displayName,
-    },
+    // payer is null for ghost payments (payerId is nullable on the schema).
+    // Serialize as a ghost shape so the client can distinguish without a
+    // separate flag field.
+    payer: s.payer
+      ? {
+          userId: s.payer.id,
+          handle: s.payer.handle,
+          displayName: s.payer.displayName,
+        }
+      : { userId: null, handle: null, displayName: "Guest" },
     receiver: {
       userId: s.receiver.id,
       handle: s.receiver.handle,

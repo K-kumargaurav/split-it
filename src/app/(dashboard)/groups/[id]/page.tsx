@@ -538,7 +538,9 @@ function PendingSettlementsSection({
       <ul className="divide-y divide-amber-200/70">
         {pending.map((s) => {
           const isReceiver = s.receiver.userId === viewerId;
-          const isPayer = s.payer.userId === viewerId;
+          // payer is SettlementParty | SettlementGhostParty — ghost payers
+          // have no userId, so narrow before comparing.
+          const isPayer = "userId" in s.payer && s.payer.userId === viewerId;
           return (
             <li key={s.id} className="flex items-center justify-between gap-4 py-3">
               <div className="min-w-0">
@@ -602,7 +604,7 @@ function ActivityFeed({
       </h2>
       <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {recent.map((s) => {
-          const isPayer = s.payer.userId === viewerId;
+          const isPayer = "userId" in s.payer && s.payer.userId === viewerId;
           const isReceiver = s.receiver.userId === viewerId;
           const when = s.confirmedAt ?? s.createdAt;
           return (

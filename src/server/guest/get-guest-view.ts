@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
+import { serializePaise } from "@/lib/api-response";
 
 // SPEC §4.6 — public guest view, returned for ghost members presenting their
 // guestToken. The shape is deliberately minimal: only what the ghost needs to
@@ -16,8 +17,8 @@ export interface GuestExpenseShare {
   expenseId: string;
   title: string;
   date: Date;
-  totalAmountPaise: number;
-  yourSharePaise: number;
+  totalAmountPaise: string;
+  yourSharePaise: string;
 }
 
 export interface GuestDebt {
@@ -25,7 +26,7 @@ export interface GuestDebt {
   receiverDisplayName: string;
   receiverHandle: string;
   receiverUpiId: string | null;
-  amountPaise: number;
+  amountPaise: string;
 }
 
 export interface GuestView {
@@ -36,7 +37,7 @@ export interface GuestView {
     name: string;
     currency: string;
   };
-  totalOwedPaise: number;
+  totalOwedPaise: string;
   expenseShares: GuestExpenseShare[];
   debts: GuestDebt[];
 }
@@ -118,8 +119,8 @@ export async function getGuestView(token: string): Promise<GuestView> {
     expenseId: p.expense.id,
     title: p.expense.title,
     date: p.expense.date,
-    totalAmountPaise: Number(p.expense.totalAmount),
-    yourSharePaise: Number(p.amountPaise),
+    totalAmountPaise: serializePaise(p.expense.totalAmount),
+    yourSharePaise: serializePaise(p.amountPaise),
   }));
 
   // Per-creditor outstanding debt: for each expense the ghost participated
@@ -179,11 +180,14 @@ export async function getGuestView(token: string): Promise<GuestView> {
       receiverDisplayName: info.displayName,
       receiverHandle: info.handle,
       receiverUpiId: info.upiId,
-      amountPaise: Number(info.amount),
+      amountPaise: serializePaise(info.amount),
     });
     totalOwed += info.amount;
   });
-  debts.sort((a, b) => b.amountPaise - a.amountPaise);
+  debts.sort((a, b) => {
+    const diff = BigInt(b.amountPaise) - BigInt(a.amountPaise);
+    return diff > BigInt(0) ? 1 : diff < BigInt(0) ? -1 : 0;
+  });
 
   return {
     ghostMemberId: ghost.id,
@@ -193,7 +197,7 @@ export async function getGuestView(token: string): Promise<GuestView> {
       name: ghost.group.name,
       currency: ghost.group.currency,
     },
-    totalOwedPaise: Number(totalOwed),
+    totalOwedPaise: serializePaise(totalOwed),
     expenseShares,
     debts,
   };

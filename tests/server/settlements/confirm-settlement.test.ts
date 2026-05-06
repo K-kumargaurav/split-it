@@ -1,5 +1,6 @@
 const settlementFindUnique = jest.fn();
-const settlementUpdate = jest.fn();
+const settlementUpdateMany = jest.fn();
+const settlementFindUniqueOrThrow = jest.fn();
 const auditLogCreate = jest.fn();
 const notificationCreate = jest.fn();
 const transaction = jest.fn();
@@ -29,7 +30,10 @@ const p = (n: number): bigint => BigInt(n);
 function wireTransaction(): void {
   transaction.mockImplementation(async (cb: (tx: unknown) => unknown) =>
     cb({
-      settlement: { update: settlementUpdate },
+      settlement: {
+        updateMany: settlementUpdateMany,
+        findUniqueOrThrow: settlementFindUniqueOrThrow,
+      },
       auditLog: { create: auditLogCreate },
       notification: { create: notificationCreate },
     }),
@@ -55,7 +59,8 @@ function pendingSettlement(): unknown {
 }
 
 function defaultUpdateResult(status: "CONFIRMED" | "DISPUTED"): void {
-  settlementUpdate.mockResolvedValue({
+  settlementUpdateMany.mockResolvedValue({ count: 1 });
+  settlementFindUniqueOrThrow.mockResolvedValue({
     ...(pendingSettlement() as Record<string, unknown>),
     status,
     confirmedAt: status === "CONFIRMED" ? new Date() : null,
@@ -76,7 +81,7 @@ describe("confirmSettlement", () => {
     expect(result.status).toBe("CONFIRMED");
 
     // Update writes status + confirmedAt timestamp.
-    const updateArgs = settlementUpdate.mock.calls[0]![0];
+    const updateArgs = settlementUpdateMany.mock.calls[0]![0];
     expect(updateArgs.data.status).toBe("CONFIRMED");
     expect(updateArgs.data.confirmedAt).toBeInstanceOf(Date);
 
@@ -143,7 +148,7 @@ describe("disputeSettlement", () => {
     const result = await disputeSettlement(RECEIVER, SETTLEMENT_ID);
     expect(result.status).toBe("DISPUTED");
 
-    const updateArgs = settlementUpdate.mock.calls[0]![0];
+    const updateArgs = settlementUpdateMany.mock.calls[0]![0];
     expect(updateArgs.data.status).toBe("DISPUTED");
     // Disputing must NOT stamp confirmedAt — that field is the marker for
     // "debt cleared" and a disputed settlement leaves the debt in place.

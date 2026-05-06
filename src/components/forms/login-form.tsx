@@ -10,6 +10,7 @@ import { z } from "zod";
 import { cn } from "@/lib/cn";
 import { GoogleButton } from "@/components/forms/google-button";
 import { MagicLinkForm } from "@/components/forms/magic-link-form";
+import { OtpForm } from "@/components/forms/otp-form";
 
 // Client-side schema. Server re-validates with the canonical `loginSchema`
 // (including trim + lowercase normalization on email).
@@ -43,7 +44,7 @@ function safeInternalPath(candidate: string, fallback: string): string {
   return fallback;
 }
 
-type Mode = "password" | "magic";
+type Mode = "password" | "magic" | "otp";
 
 export function LoginForm({ callbackUrl }: LoginFormProps) {
   const [mode, setMode] = useState<Mode>("password");
@@ -110,17 +111,22 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
         </div>
       </div>
 
-      <div role="tablist" aria-label="Sign-in method" className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+      <div role="tablist" aria-label="Sign-in method" className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
         <ModeTab active={mode === "password"} onClick={() => setMode("password")}>
           Password
         </ModeTab>
         <ModeTab active={mode === "magic"} onClick={() => setMode("magic")}>
-          Magic link
+          Magic Link
+        </ModeTab>
+        <ModeTab active={mode === "otp"} onClick={() => setMode("otp")}>
+          OTP
         </ModeTab>
       </div>
 
       {mode === "magic" ? (
         <MagicLinkForm />
+      ) : mode === "otp" ? (
+        <OtpForm />
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div>

@@ -33,8 +33,3 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 }
 
-// GET handler so the route is reachable from a browser for manual ping with
-// the same auth — matches the expire-proposals route's pattern.
-export async function GET(request: Request): Promise<NextResponse> {
-  return POST(request);
-}

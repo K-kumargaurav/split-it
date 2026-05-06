@@ -14,6 +14,7 @@ const expensePayerFindMany = jest.fn();
 const auditLogCreate = jest.fn();
 const notificationCreate = jest.fn();
 const notificationCreateMany = jest.fn();
+const notificationPrefFindMany = jest.fn();
 const transaction = jest.fn();
 
 jest.mock("@/lib/prisma", () => ({
@@ -80,12 +81,15 @@ function wireTx(votes: VoteRow[]): void {
         create: notificationCreate,
         createMany: notificationCreateMany,
       },
+      notificationPref: { findMany: notificationPrefFindMany },
     });
   });
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
+  notificationPrefFindMany.mockResolvedValue([]);
+  notificationCreate.mockResolvedValue({ id: "notif_1" });
   groupMemberFindUnique.mockResolvedValue({ id: "gm_self" });
   groupMemberFindMany.mockResolvedValue([
     { userId: PROPOSER },
@@ -203,6 +207,7 @@ describe("finaliseExpired — ties resolve to REJECTED", () => {
           create: notificationCreate,
           createMany: notificationCreateMany,
         },
+        notificationPref: { findMany: notificationPrefFindMany },
       }),
     );
 

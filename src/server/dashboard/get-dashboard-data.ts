@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getUserNetBalance } from "@/server/balance/calculate-balances";
+import { serializePaise } from "@/lib/api-response";
 import type { DashboardData, DashboardGroupSummary } from "@/server/dashboard/types";
 
 // Aggregates a user's view of the home dashboard:
@@ -49,7 +50,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
 
   if (memberships.length === 0) {
     return {
-      netBalancePaise: 0,
+      netBalancePaise: "0",
       groups: [],
       pending: { settlementsAwaitingConfirmation: 0, expenseEditVotesPending: 0 },
     };
@@ -114,10 +115,10 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     }),
   ]);
 
-  const balanceByGroup = new Map<string, number>();
+  const balanceByGroup = new Map<string, string>();
   const lastActivityByGroup = new Map<string, Date>();
   groupIds.forEach((id, i) => {
-    balanceByGroup.set(id, Number(perGroupBalances[i] ?? BigInt(0)));
+    balanceByGroup.set(id, serializePaise(perGroupBalances[i] ?? BigInt(0)));
   });
 
   for (const row of lastExpenseDates) {
@@ -141,7 +142,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       color: group.color,
       icon: group.icon,
       memberCount: group._count.members,
-      balancePaise: balanceByGroup.get(group.id) ?? 0,
+      balancePaise: balanceByGroup.get(group.id) ?? "0",
       lastActivityAt: lastActivityByGroup.get(group.id) ?? group.updatedAt,
       members: group.members.map((m) => ({
         id: m.id,
@@ -152,7 +153,9 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     }))
     .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
 
-  const netBalancePaise = groups.reduce((s, g) => s + g.balancePaise, 0);
+  const netBalancePaise = serializePaise(
+    groups.reduce((s, g) => s + BigInt(g.balancePaise), BigInt(0)),
+  );
 
   const votedSet = new Set(votedProposalIds.map((v) => v.proposalId));
   const expenseEditVotesPending = pendingProposals.filter((p) => !votedSet.has(p.id)).length;

@@ -25,7 +25,7 @@ export default async function GuestPage({ params }: GuestPageProps) {
     throw err;
   }
 
-  const settled = view.totalOwedPaise === 0;
+  const settled = Number(view.totalOwedPaise) === 0;
 
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-800 px-4 py-8 sm:py-12">
@@ -101,7 +101,7 @@ export default async function GuestPage({ params }: GuestPageProps) {
                     receiverId={d.receiverId}
                     receiverDisplayName={d.receiverDisplayName}
                     receiverUpiId={d.receiverUpiId}
-                    amountPaise={d.amountPaise}
+                    amountPaise={Number(d.amountPaise)}
                   />
                 </li>
               ))}

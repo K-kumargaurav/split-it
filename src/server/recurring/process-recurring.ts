@@ -60,6 +60,23 @@ export async function processRecurringExpenses(
     select: TEMPLATE_SELECT,
   });
 
+  // Advance any template whose nextRunDate is more than one frequency cycle
+  // in the past without creating backfill expenses — we only ever create one
+  // expense per run to avoid flooding the group with stale history.
+  for (const tpl of due) {
+    const staleDate = startOfDayUtc(tpl.nextRunDate);
+    let nextDate = staleDate;
+    // Advance until nextDate is today or in the future.
+    while (nextDate < today) {
+      nextDate = advanceNextRunDate(nextDate, tpl.frequency);
+    }
+    if (nextDate > staleDate) {
+      // The template was skipped for one or more cycles; fast-forward so we
+      // create exactly one expense (for today) rather than N backfill entries.
+      tpl.nextRunDate = today;
+    }
+  }
+
   let created = 0;
   const failures: { templateId: string; reason: string }[] = [];
 

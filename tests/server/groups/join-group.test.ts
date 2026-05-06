@@ -7,6 +7,7 @@ const groupInviteFindUnique = jest.fn();
 const groupInviteUpdate = jest.fn();
 const groupInviteLinkFindUnique = jest.fn();
 const groupInviteLinkUpdate = jest.fn();
+const groupInviteLinkUpdateMany = jest.fn();
 const groupMemberFindUnique = jest.fn();
 const groupMemberCreate = jest.fn();
 const groupMemberCount = jest.fn();
@@ -22,6 +23,7 @@ jest.mock("@/lib/prisma", () => ({
     groupInviteLink: {
       findUnique: (...a: unknown[]) => groupInviteLinkFindUnique(...a),
       update: (...a: unknown[]) => groupInviteLinkUpdate(...a),
+      updateMany: (...a: unknown[]) => groupInviteLinkUpdateMany(...a),
     },
     groupMember: {
       findUnique: (...a: unknown[]) => groupMemberFindUnique(...a),
@@ -46,9 +48,9 @@ const TOKEN_HASH = hashInviteToken(RAW_TOKEN);
 function wireTransaction(): void {
   transaction.mockImplementation(async (cb: (tx: unknown) => unknown) =>
     cb({
-      groupMember: { create: groupMemberCreate },
+      groupMember: { create: groupMemberCreate, count: groupMemberCount },
       groupInvite: { update: groupInviteUpdate },
-      groupInviteLink: { update: groupInviteLinkUpdate },
+      groupInviteLink: { update: groupInviteLinkUpdate, updateMany: groupInviteLinkUpdateMany },
       auditLog: { create: auditLogCreate },
     }),
   );
@@ -85,6 +87,7 @@ beforeEach(() => {
   rateLimitTesting.reset();
   groupMemberCount.mockResolvedValue(3);
   groupMemberFindUnique.mockResolvedValue(null);
+  groupInviteLinkUpdateMany.mockResolvedValue({ count: 1 });
 });
 
 describe("joinViaInviteLink — token resolution", () => {
@@ -111,7 +114,7 @@ describe("joinViaInviteLink — email invite branch", () => {
   it("adds the user, marks invite ACCEPTED, and writes audit log", async () => {
     groupInviteFindUnique.mockResolvedValueOnce(pendingEmailInvite());
 
-    const result = await joinViaInviteLink(USER, RAW_TOKEN);
+    const result = await joinViaInviteLink(USER, RAW_TOKEN, "alice@example.com");
     expect(result).toMatchObject({ groupId: GROUP, via: "email-invite" });
 
     expect(groupMemberCreate).toHaveBeenCalledTimes(1);
@@ -150,7 +153,7 @@ describe("joinViaInviteLink — email invite branch", () => {
   it("rejects CONFLICT when group is at the 50-member cap", async () => {
     groupInviteFindUnique.mockResolvedValueOnce(pendingEmailInvite());
     groupMemberCount.mockResolvedValueOnce(50);
-    await expect(joinViaInviteLink(USER, RAW_TOKEN)).rejects.toMatchObject({
+    await expect(joinViaInviteLink(USER, RAW_TOKEN, "alice@example.com")).rejects.toMatchObject({
       code: "CONFLICT",
       message: expect.stringContaining("50"),
     });
@@ -160,7 +163,7 @@ describe("joinViaInviteLink — email invite branch", () => {
     groupInviteFindUnique.mockResolvedValueOnce(pendingEmailInvite());
     groupMemberFindUnique.mockResolvedValueOnce({ id: "gm_existing" });
     groupInviteUpdate.mockResolvedValueOnce({});
-    await expect(joinViaInviteLink(USER, RAW_TOKEN)).rejects.toMatchObject({
+    await expect(joinViaInviteLink(USER, RAW_TOKEN, "alice@example.com")).rejects.toMatchObject({
       code: "CONFLICT",
     });
     // The invite is still consumed so the orphan link doesn't dangle.
@@ -180,7 +183,7 @@ describe("joinViaInviteLink — shareable link branch", () => {
     expect(result).toMatchObject({ groupId: GROUP, via: "invite-link" });
 
     expect(groupMemberCreate).toHaveBeenCalledTimes(1);
-    const incArgs = groupInviteLinkUpdate.mock.calls[0]![0];
+    const incArgs = groupInviteLinkUpdateMany.mock.calls[0]![0];
     expect(incArgs.data.usedCount).toEqual({ increment: 1 });
   });
 

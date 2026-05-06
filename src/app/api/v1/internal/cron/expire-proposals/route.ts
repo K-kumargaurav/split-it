@@ -49,7 +49,3 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 }
 
-// GET handler for manual ping / health check from a browser. Same auth.
-export async function GET(request: Request): Promise<NextResponse> {
-  return POST(request);
-}

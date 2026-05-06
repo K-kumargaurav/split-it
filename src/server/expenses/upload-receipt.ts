@@ -76,23 +76,16 @@ export async function uploadReceipt(
     throw new AppError("INTERNAL_ERROR", `Failed to upload receipt: ${uploadError.message}`);
   }
 
-  const { data: signed, error: signError } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(storagePath, RECEIPT_SIGNED_URL_TTL_SECONDS);
-  if (signError || !signed?.signedUrl) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      `Failed to sign receipt URL: ${signError?.message ?? "unknown error"}`,
-    );
-  }
-
+  // Store the storage PATH (not a signed URL) on the expense row so the
+  // record never expires. Fresh signed URLs are generated on-demand by
+  // getReceiptSignedUrl() via the dedicated GET …/receipt/url endpoint.
   await prisma.expense.update({
     where: { id: expenseId },
-    data: { receiptUrl: signed.signedUrl },
+    data: { receiptUrl: storagePath },
   });
 
   return {
-    receiptUrl: signed.signedUrl,
+    receiptUrl: storagePath,
     storagePath,
     processedBuffer,
     processedMimeType,

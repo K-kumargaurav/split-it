@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import {
   confirmSettlement,
@@ -75,7 +75,7 @@ function serializeSettlement(s: SettlementWithUsers) {
   return {
     id: s.id,
     groupId: s.groupId,
-    amountPaise: Number(s.amountPaise),
+    amountPaise: serializePaise(s.amountPaise),
     paymentMethod: s.paymentMethod,
     paymentRef: s.paymentRef,
     status: s.status,

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
+import { serializePaise } from "@/lib/api-response";
 
 // Paginated read of a group's settlements for the current user. Mirrors the
 // expense list pattern: cursor on settlement.id, ordering by createdAt DESC
@@ -24,7 +25,7 @@ export interface SettlementListItem {
   id: string;
   payer: SettlementParty | SettlementGhostParty;
   receiver: SettlementParty;
-  amountPaise: number;
+  amountPaise: string;
   paymentMethod: "CASH" | "UPI" | "RAZORPAY" | "STRIPE" | "OTHER";
   paymentRef: string | null;
   status: "PENDING_CONFIRMATION" | "CONFIRMED" | "DISPUTED" | "CANCELLED";
@@ -81,7 +82,7 @@ export async function getSettlementsForGroup(
       handle: s.receiver.handle,
       displayName: s.receiver.displayName,
     },
-    amountPaise: Number(s.amountPaise),
+    amountPaise: serializePaise(s.amountPaise),
     paymentMethod: s.paymentMethod,
     paymentRef: s.paymentRef,
     status: s.status,

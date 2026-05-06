@@ -6,6 +6,7 @@
 const groupFindFirst = jest.fn();
 const groupMemberFindUnique = jest.fn();
 const groupMemberCreate = jest.fn();
+const groupMemberCount = jest.fn();
 const userFindFirst = jest.fn();
 const userFindUnique = jest.fn();
 const groupInviteFindFirst = jest.fn();
@@ -49,7 +50,7 @@ const GROUP = "00000000-0000-4000-8000-000000000099";
 function wireTransaction(): void {
   transaction.mockImplementation(async (cb: (tx: unknown) => unknown) =>
     cb({
-      groupMember: { create: groupMemberCreate },
+      groupMember: { create: groupMemberCreate, count: groupMemberCount },
       groupInvite: { create: groupInviteCreate },
       auditLog: { create: auditLogCreate },
       notification: { create: notificationCreate },
@@ -75,6 +76,7 @@ beforeEach(() => {
   groupInviteFindFirst.mockResolvedValue(null);
   // No prior membership for the invitee by default.
   userFindUnique.mockResolvedValue({ displayName: "Alice", handle: "alice" });
+  groupMemberCount.mockResolvedValue(3);
   sendGroupInviteEmail.mockResolvedValue(undefined);
 });
 

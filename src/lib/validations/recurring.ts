@@ -75,6 +75,13 @@ export type ParticipantConfig = z.infer<typeof participantConfigSchema>;
 // comparisons work regardless of the server's timezone.
 const isoDateSchema = z.coerce.date({ message: "Date must be a valid ISO date." });
 
+// nextRunDate must not be in the past. Compared against today's date (UTC
+// midnight) so a date of "today" is always accepted regardless of time-of-day.
+const futureOrTodayDateSchema = isoDateSchema.refine(
+  (d) => d >= new Date(new Date().toDateString()),
+  { message: "First run date cannot be in the past." },
+);
+
 export const createRecurringTemplateSchema = z.object({
   title: z
     .string()
@@ -86,7 +93,7 @@ export const createRecurringTemplateSchema = z.object({
   taxAmountPaise: paiseAmountSchema.or(z.literal(0)).default(0),
   tipAmountPaise: paiseAmountSchema.or(z.literal(0)).default(0),
   frequency: recurringFrequencySchema,
-  nextRunDate: isoDateSchema,
+  nextRunDate: futureOrTodayDateSchema,
   endDate: isoDateSchema.nullable().optional(),
   participantConfig: participantConfigSchema,
 });
@@ -111,7 +118,7 @@ export const updateRecurringTemplateSchema = z
     taxAmountPaise: paiseAmountSchema.or(z.literal(0)).optional(),
     tipAmountPaise: paiseAmountSchema.or(z.literal(0)).optional(),
     frequency: recurringFrequencySchema.optional(),
-    nextRunDate: isoDateSchema.optional(),
+    nextRunDate: futureOrTodayDateSchema.optional(),
     endDate: isoDateSchema.nullable().optional(),
     participantConfig: participantConfigSchema.optional(),
     isActive: z.boolean().optional(),

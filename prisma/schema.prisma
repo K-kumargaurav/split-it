@@ -130,6 +130,7 @@ model User {
   avatarUrl       String?
   upiId           String?
   passwordHash    String?
+  emailVerified   DateTime?
   emailVerifiedAt DateTime?
   locale          String    @default("en-IN")
   currency        String    @default("INR")

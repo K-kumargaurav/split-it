@@ -8,7 +8,8 @@ const expenseUpdate = jest.fn();
 const proposalFindFirst = jest.fn();
 const proposalCreate = jest.fn();
 const auditLogCreate = jest.fn();
-const notificationCreateMany = jest.fn();
+const notificationCreate = jest.fn();
+const notificationPrefFindMany = jest.fn();
 const transaction = jest.fn();
 
 jest.mock("@/lib/prisma", () => ({
@@ -39,13 +40,16 @@ beforeEach(() => {
     { userId: ACTOR },
     { userId: OTHER },
   ]);
+  notificationPrefFindMany.mockResolvedValue([]);
+  notificationCreate.mockResolvedValue({ id: "notif_1" });
   transaction.mockImplementation(async (cb: (tx: unknown) => unknown) =>
     cb({
       expense: { update: expenseUpdate },
       expenseProposal: { create: proposalCreate, findFirst: proposalFindFirst },
       auditLog: { create: auditLogCreate },
       groupMember: { findMany: groupMemberFindMany },
-      notification: { createMany: notificationCreateMany },
+      notification: { create: notificationCreate },
+      notificationPref: { findMany: notificationPrefFindMany },
     }),
   );
 });

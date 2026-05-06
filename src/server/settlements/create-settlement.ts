@@ -95,7 +95,7 @@ export async function createSettlement(
   void dispatchExternal([input.receiverId], {
     type: "SETTLEMENT_PENDING_CONFIRMATION",
     title: "Confirm payment",
-    body: `${settlement.payer.displayName} says they paid you ${formatPaise(
+    body: `${settlement.payer?.displayName ?? "Someone"} says they paid you ${formatPaise(
       input.amountPaise,
     )} — confirm?`,
     entityType: "SETTLEMENT",
@@ -175,7 +175,7 @@ async function runCreateTransaction(
         userId: input.receiverId,
         type: "SETTLEMENT_PENDING_CONFIRMATION",
         title: "Confirm payment",
-        body: `${settlement.payer.displayName} says they paid you ${formatPaise(
+        body: `${settlement.payer?.displayName ?? "Someone"} says they paid you ${formatPaise(
           input.amountPaise,
         )} — confirm?`,
         entityType: "SETTLEMENT",

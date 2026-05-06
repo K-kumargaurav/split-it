@@ -16,8 +16,9 @@ interface GroupCardProps {
 // The whole card is the link target so a tap anywhere navigates — no inner
 // links inside the <Link> (would nest <a>s and trip a11y/HTML validity).
 export function GroupCard({ group }: GroupCardProps) {
-  const settled = group.balancePaise === 0;
-  const owedToYou = group.balancePaise > 0;
+  const balance = Number(group.balancePaise);
+  const settled = balance === 0;
+  const owedToYou = balance > 0;
 
   const tone = settled
     ? {
@@ -80,7 +81,7 @@ export function GroupCard({ group }: GroupCardProps) {
           {tone.label}
         </span>
         <p className={cn("mt-2 font-mono text-xl font-semibold tabular-nums", tone.amountClass)}>
-          {settled ? "₹0.00" : formatPaise(Math.abs(group.balancePaise))}
+          {settled ? "₹0.00" : formatPaise(Math.abs(balance))}
         </p>
       </div>
 

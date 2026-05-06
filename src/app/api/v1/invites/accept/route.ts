@@ -39,7 +39,11 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const result = await joinViaInviteLink(session.user.id, parsed.data.token);
+    const result = await joinViaInviteLink(
+      session.user.id,
+      parsed.data.token,
+      session.user.email ?? undefined,
+    );
     return NextResponse.json(result);
   } catch (err) {
     if (!(err instanceof AppError)) {

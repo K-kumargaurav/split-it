@@ -75,6 +75,7 @@ export async function upsertUser(input: UpsertUserInput): Promise<UpsertedUser> 
     const data: {
       displayName?: string;
       avatarUrl?: string | null;
+      emailVerified?: Date;
       emailVerifiedAt?: Date;
     } = {};
 
@@ -86,7 +87,9 @@ export async function upsertUser(input: UpsertUserInput): Promise<UpsertedUser> 
       data.avatarUrl = input.image;
     }
     if (shouldVerify && !existing.emailVerifiedAt && !existing.deletedAt) {
-      data.emailVerifiedAt = new Date();
+      const now = new Date();
+      data.emailVerified = now;
+      data.emailVerifiedAt = now;
     }
 
     if (Object.keys(data).length === 0) {
@@ -125,6 +128,7 @@ export async function upsertUser(input: UpsertUserInput): Promise<UpsertedUser> 
       displayName,
       avatarUrl: input.image ?? null,
       passwordHash: input.passwordHash ?? null,
+      emailVerified: shouldVerify ? new Date() : null,
       emailVerifiedAt: shouldVerify ? new Date() : null,
     },
     select: {

@@ -8,7 +8,8 @@ const expenseProposalFindFirst = jest.fn();
 const expenseProposalCreate = jest.fn();
 const expensePayerFindMany = jest.fn();
 const auditLogCreate = jest.fn();
-const notificationCreateMany = jest.fn();
+const notificationCreate = jest.fn();
+const notificationPrefFindMany = jest.fn();
 const transaction = jest.fn();
 
 jest.mock("@/lib/prisma", () => ({
@@ -46,7 +47,8 @@ function wireTx(): void {
       },
       auditLog: { create: auditLogCreate },
       groupMember: { findMany: groupMemberFindMany },
-      notification: { createMany: notificationCreateMany },
+      notification: { create: notificationCreate },
+      notificationPref: { findMany: notificationPrefFindMany },
     }),
   );
 }
@@ -61,6 +63,8 @@ beforeEach(() => {
     { userId: "u3" },
     { userId: "u4" },
   ]);
+  notificationPrefFindMany.mockResolvedValue([]);
+  notificationCreate.mockResolvedValue({ id: "notif_1" });
 });
 
 describe("proposeExpenseEdit — own expense applies immediately", () => {

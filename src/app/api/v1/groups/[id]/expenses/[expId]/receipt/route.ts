@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { consumeRateLimit } from "@/server/auth/rate-limit";
 import { extractReceiptData, persistOcrData } from "@/server/expenses/ocr-receipt";
 import {
   RECEIPT_MAX_BYTES,
@@ -24,6 +25,11 @@ export async function POST(
   const session = await auth();
   if (!session?.user?.id) {
     return errorResponse("UNAUTHORIZED", "You must be signed in.", 401);
+  }
+
+  const userId = session.user.id;
+  if (!consumeRateLimit(`receipt:${userId}`, { max: 5, windowMs: 60_000 })) {
+    return errorResponse("RATE_LIMITED", "Too many receipt uploads. Try again later.", 429);
   }
 
   let formData: FormData;
@@ -57,7 +63,7 @@ export async function POST(
 
   try {
     const upload = await uploadReceipt(
-      session.user.id,
+      userId,
       params.id,
       params.expId,
       buffer,

@@ -1,4 +1,4 @@
-import type { ExpenseProposal } from "@/generated/prisma";
+import type { ExpenseProposal, Prisma } from "@/generated/prisma";
 
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
@@ -9,7 +9,7 @@ import {
 } from "@/lib/validations/proposals";
 
 import { applyExpensePatch } from "./apply-patch";
-import { dispatchExternal } from "@/server/notifications/create-notification";
+import { dispatchExternal, notifyManyInTx } from "@/server/notifications/create-notification";
 
 // SPEC §4.9 case 1+2: edits to your own expense are applied immediately;
 // edits to someone else's go through a proposal + 48h voting window. Only
@@ -76,7 +76,11 @@ async function applyImmediately(
   title: string,
   patch: ExpensePatch,
 ): Promise<ProposeEditResult> {
-  const out = await prisma.$transaction(async (tx) => {
+  // Fetch recipients before the transaction so the pref-filtered
+  // notifyManyInTx can run atomically with the patch + audit log.
+  const recipientIds = await getRecipientIds(groupId, [userId]);
+
+  await prisma.$transaction(async (tx) => {
     const result = await applyExpensePatch(tx, expenseId, patch);
 
     await tx.auditLog.create({
@@ -92,17 +96,16 @@ async function applyImmediately(
       },
     });
 
-    const recipients = await notifyMembers(tx, groupId, [userId], {
+    await notifyManyInTx(tx, recipientIds, {
       type: "EXPENSE_EDITED",
       title: "Expense updated",
       body: `${title} was edited`,
+      entityType: "EXPENSE",
       entityId: expenseId,
     });
-
-    return { recipients };
   });
 
-  void dispatchExternal(out.recipients, {
+  void dispatchExternal(recipientIds, {
     type: "EXPENSE_EDITED",
     title: "Expense updated",
     body: `${title} was edited`,
@@ -131,6 +134,8 @@ async function openProposal(
     );
   }
 
+  const recipientIds = await getRecipientIds(groupId, [proposerId]);
+
   const expiresAt = new Date(Date.now() + PROPOSAL_VOTING_WINDOW_MS);
   const proposedChanges: ProposedChanges = { kind: "EDIT", patch };
 
@@ -153,17 +158,18 @@ async function openProposal(
       throw asConflict(err);
     }
 
-    const recipients = await notifyMembers(tx, groupId, [proposerId], {
+    await notifyManyInTx(tx, recipientIds, {
       type: "EXPENSE_EDIT_PROPOSAL",
       title: "Vote on expense edit",
       body: `${title} — proposed change needs your vote`,
+      entityType: "EXPENSE",
       entityId: proposal.id,
     });
 
-    return { proposal, recipients };
+    return { proposal };
   });
 
-  void dispatchExternal(out.recipients, {
+  void dispatchExternal(recipientIds, {
     type: "EXPENSE_EDIT_PROPOSAL",
     title: "Vote on expense edit",
     body: `${title} — proposed change needs your vote`,
@@ -190,6 +196,17 @@ async function assertViewerIsMember(userId: string, groupId: string): Promise<vo
   if (!m) throw new AppError("FORBIDDEN", "You don't have access to this group.");
 }
 
+// Fetch all group member user IDs, excluding the given set. Used to build
+// the recipient list for notifications before entering a transaction.
+async function getRecipientIds(groupId: string, excludeUserIds: string[]): Promise<string[]> {
+  const members = await prisma.groupMember.findMany({
+    where: { groupId },
+    select: { userId: true },
+  });
+  const exclude = new Set(excludeUserIds);
+  return members.map((m) => m.userId).filter((uid) => !exclude.has(uid));
+}
+
 interface NotifyOpts {
   type:
     | "EXPENSE_ADDED"
@@ -202,11 +219,11 @@ interface NotifyOpts {
 }
 
 // Re-exported for the vote/delete modules so notification fan-out is
-// consistent. `excludeUserIds` lets callers skip the actor (proposer or
-// editor) so they don't notify themselves. Returns the recipient userIds
-// so the caller can dispatch push/WhatsApp after the transaction commits.
+// consistent. Wraps notifyManyInTx (which filters by notification prefs)
+// and returns recipient userIds so callers can dispatch external channels
+// after the transaction commits.
 export async function notifyMembers(
-  tx: { groupMember: { findMany: typeof prisma.groupMember.findMany }; notification: { createMany: typeof prisma.notification.createMany } },
+  tx: Prisma.TransactionClient,
   groupId: string,
   excludeUserIds: string[],
   opts: NotifyOpts,
@@ -221,15 +238,12 @@ export async function notifyMembers(
     .filter((uid) => !exclude.has(uid));
   if (recipients.length === 0) return [];
 
-  await tx.notification.createMany({
-    data: recipients.map((userId) => ({
-      userId,
-      type: opts.type,
-      title: opts.title,
-      body: opts.body,
-      entityType: "EXPENSE" as const,
-      entityId: opts.entityId,
-    })),
+  await notifyManyInTx(tx, recipients, {
+    type: opts.type,
+    title: opts.title,
+    body: opts.body,
+    entityType: "EXPENSE",
+    entityId: opts.entityId,
   });
   return recipients;
 }

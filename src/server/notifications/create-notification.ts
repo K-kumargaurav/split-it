@@ -211,6 +211,23 @@ export async function dispatchExternal(
     const byId = new Map(prefs.map((p) => [p.userId, p]));
     const eventDefaults = defaultsFor(opts.type);
 
+    // Batch-load phone numbers for all recipients who want WhatsApp so we
+    // don't fire N separate queries (one per user) inside the parallel map.
+    const whatsappUserIds = userIds.filter((uid) => {
+      const p = byId.get(uid) ?? eventDefaults;
+      return p.whatsappSms;
+    });
+    const phoneByUser = new Map<string, string>();
+    if (whatsappUserIds.length > 0) {
+      const users = await prisma.user.findMany({
+        where: { id: { in: whatsappUserIds } },
+        select: { id: true, phone: true },
+      });
+      for (const u of users) {
+        if (u.phone) phoneByUser.set(u.id, u.phone);
+      }
+    }
+
     await Promise.all(
       userIds.map(async (uid) => {
         const p = byId.get(uid) ?? {
@@ -226,15 +243,9 @@ export async function dispatchExternal(
             });
           }
           if (p.whatsappSms) {
-            const user = await prisma.user.findUnique({
-              where: { id: uid },
-              select: { phone: true },
-            });
-            if (user?.phone) {
-              await sendWhatsApp(
-                user.phone,
-                `${opts.title}: ${opts.body}`,
-              );
+            const phone = phoneByUser.get(uid);
+            if (phone) {
+              await sendWhatsApp(phone, `${opts.title}: ${opts.body}`);
             }
           }
         } catch (err) {

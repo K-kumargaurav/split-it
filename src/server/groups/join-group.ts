@@ -18,9 +18,13 @@ export interface JoinResult {
   via: "email-invite" | "invite-link";
 }
 
+// userEmail is the authenticated caller's email — required for email-invite
+// recipient validation. Pass undefined only in tests that don't exercise that
+// branch; in production the route handler always provides it.
 export async function joinViaInviteLink(
   userId: string,
   rawToken: string,
+  userEmail?: string,
 ): Promise<JoinResult> {
   if (!rawToken || rawToken.length < 10) {
     throw new AppError("VALIDATION_ERROR", "Invalid invite token.");
@@ -40,7 +44,7 @@ export async function joinViaInviteLink(
     },
   });
   if (emailInvite) {
-    return acceptEmailInvite(userId, emailInvite);
+    return acceptEmailInvite(userId, emailInvite, userEmail);
   }
 
   const linkInvite = await prisma.groupInviteLink.findUnique({
@@ -74,6 +78,7 @@ interface EmailInviteRow {
 async function acceptEmailInvite(
   userId: string,
   invite: EmailInviteRow,
+  userEmail?: string,
 ): Promise<JoinResult> {
   if (!invite.group || invite.group.deletedAt) {
     throw new AppError("NOT_FOUND", "This invite's group is no longer available.");
@@ -86,6 +91,19 @@ async function acceptEmailInvite(
       .update({ where: { id: invite.id }, data: { status: "EXPIRED" } })
       .catch(() => undefined);
     throw new AppError("CONFLICT", "This invite has expired.");
+  }
+
+  // Verify the caller's email matches the invite recipient — prevent a
+  // different logged-in user from accepting an invite sent to someone else.
+  // userEmail is provided by the route handler from the authenticated session.
+  if (!userEmail) {
+    throw new AppError("UNAUTHORIZED", "Sign in first.");
+  }
+  if (invite.invitedEmail.toLowerCase() !== userEmail.toLowerCase()) {
+    throw new AppError(
+      "FORBIDDEN",
+      "This invite was sent to a different email address.",
+    );
   }
 
   const memberCount = await prisma.groupMember.count({
@@ -103,8 +121,8 @@ async function acceptEmailInvite(
     select: { id: true },
   });
   if (existing) {
-    // Mark the invite consumed so the link doesn't dangle, but tell the
-    // caller they were already in.
+    // Email validation already passed above, so the caller IS the intended
+    // recipient — safe to mark the invite consumed and report already-member.
     await prisma.groupInvite.update({
       where: { id: invite.id },
       data: { status: "ACCEPTED", acceptedAt: new Date(), acceptedByUserId: userId },

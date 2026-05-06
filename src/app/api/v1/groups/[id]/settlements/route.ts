@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
@@ -25,10 +26,15 @@ export async function GET(
   }
 
   const url = new URL(request.url);
-  const cursor = url.searchParams.get("cursor") ?? undefined;
-  const limitRaw = url.searchParams.get("limit");
-  const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : NaN;
-  const limit = Number.isFinite(limitParsed) && limitParsed > 0 ? limitParsed : 25;
+  const { limit, cursor } = z
+    .object({
+      limit: z.coerce.number().int().min(1).max(100).default(25),
+      cursor: z.string().optional(),
+    })
+    .parse({
+      limit: url.searchParams.get("limit"),
+      cursor: url.searchParams.get("cursor") ?? undefined,
+    });
 
   try {
     const page = await getSettlementsForGroup(session.user.id, params.id, cursor, limit);

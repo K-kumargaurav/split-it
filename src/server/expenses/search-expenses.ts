@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
+import { serializePaise } from "@/lib/api-response";
 
 // Filtered + paginated expense feed for SPEC §4.14. Mirrors the shape of
 // getExpensesForGroup but accepts an `ExpenseFilters` bag and orders by
@@ -27,13 +28,13 @@ export interface ExpenseFilters {
 export interface SearchPayer {
   userId: string;
   displayName: string;
-  amountPaise: number;
+  amountPaise: string;
 }
 
 export interface SearchParticipant {
   userId: string;
   displayName: string;
-  amountPaise: number;
+  amountPaise: string;
 }
 
 export interface SearchCategory {
@@ -47,15 +48,15 @@ export interface SearchExpenseItem {
   id: string;
   title: string;
   notes: string | null;
-  totalAmountPaise: number;
+  totalAmountPaise: string;
   date: Date;
   createdAt: Date;
   splitType: "EQUAL" | "EXACT" | "PERCENTAGE";
   category: SearchCategory | null;
   payers: SearchPayer[];
   participants: SearchParticipant[];
-  yourSharePaise: number;
-  yourPaidPaise: number;
+  yourSharePaise: string;
+  yourPaidPaise: string;
 }
 
 export interface SearchExpensePage {
@@ -156,18 +157,18 @@ export async function searchExpenses(
     const payers: SearchPayer[] = e.payers.map((p) => ({
       userId: p.userId,
       displayName: p.user.displayName,
-      amountPaise: Number(p.amountPaise),
+      amountPaise: serializePaise(p.amountPaise),
     }));
     const participants: SearchParticipant[] = e.participants.map((p) => ({
       userId: p.userId,
       displayName: p.user.displayName,
-      amountPaise: Number(p.amountPaise),
+      amountPaise: serializePaise(p.amountPaise),
     }));
     return {
       id: e.id,
       title: e.title,
       notes: e.notes,
-      totalAmountPaise: Number(e.totalAmount),
+      totalAmountPaise: serializePaise(e.totalAmount),
       date: e.date,
       createdAt: e.createdAt,
       splitType: e.splitType,
@@ -181,8 +182,8 @@ export async function searchExpenses(
         : null,
       payers,
       participants,
-      yourSharePaise: participants.find((p) => p.userId === userId)?.amountPaise ?? 0,
-      yourPaidPaise: payers.find((p) => p.userId === userId)?.amountPaise ?? 0,
+      yourSharePaise: participants.find((p) => p.userId === userId)?.amountPaise ?? "0",
+      yourPaidPaise: payers.find((p) => p.userId === userId)?.amountPaise ?? "0",
     };
   });
 

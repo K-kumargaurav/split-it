@@ -52,7 +52,7 @@ export async function createGuestSettlement(
       [{ path: ["receiverId"], message: "You don't owe this member anything." }],
     );
   }
-  if (input.amountPaise > debt.amountPaise) {
+  if (BigInt(input.amountPaise) > BigInt(debt.amountPaise)) {
     throw new AppError(
       "VALIDATION_ERROR",
       "Amount exceeds your outstanding debt to this member.",
@@ -117,6 +117,7 @@ export async function createGuestSettlement(
         action: "CREATED",
         newValue: {
           via: "guest",
+          ghostName: ghost.displayName,
           ghostPayerId: ghost.id,
           ghostPayerName: ghost.displayName,
           receiverId: input.receiverId,

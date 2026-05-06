@@ -320,7 +320,7 @@ describe("searchExpenses — output mapping", () => {
 
     const page = await searchExpenses(VIEWER, GROUP, {});
 
-    expect(page.items[0]!.yourPaidPaise).toBe(15000);
-    expect(page.items[0]!.yourSharePaise).toBe(7500);
+    expect(page.items[0]!.yourPaidPaise).toBe("15000");
+    expect(page.items[0]!.yourSharePaise).toBe("7500");
   });
 });

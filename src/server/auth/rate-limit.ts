@@ -51,21 +51,32 @@ export function clearRateLimit(key: string): void {
 export function getClientIp(source: Request | Headers | undefined): string {
   if (!source) return "unknown";
   const headers = source instanceof Headers ? source : source.headers;
-  // X-Forwarded-For is "client, proxy1, proxy2, ...". The CLIENT-supplied left
-  // entries are spoofable — only the rightmost hop (the one our trusted edge
-  // proxy added) can be trusted. Picking the last entry prevents an attacker
-  // from rotating the apparent IP on every request to bypass per-IP buckets.
-  const xff = headers.get("x-forwarded-for");
-  if (xff) {
-    const last = xff
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .at(-1);
-    if (last) return last;
-  }
+
+  // Read platform-injected single-IP headers first — these are set by the
+  // trusted edge and cannot be spoofed by the client.
+  //   fly-client-ip    — Fly.io (set by the Fly proxy, always a single IP)
+  //   cf-connecting-ip — Cloudflare (always a single real client IP)
+  //   x-real-ip        — Railway and nginx reverse proxies (single IP)
+  const flyIp = headers.get("fly-client-ip");
+  if (flyIp) return flyIp.trim();
+
+  const cfIp = headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+
+  // Railway passes x-real-ip as the real client IP (not XFF).
   const xri = headers.get("x-real-ip");
   if (xri) return xri.trim();
+
+  // X-Forwarded-For fallback: "client, proxy1, proxy2, ...". We take the
+  // FIRST entry because on generic setups the left-most non-private address
+  // is the originating client. When none of the platform headers above were
+  // set this is a best-effort heuristic.
+  const xff = headers.get("x-forwarded-for");
+  if (xff) {
+    const first = xff.split(",")[0]?.trim();
+    if (first) return first;
+  }
+
   return "unknown";
 }
 

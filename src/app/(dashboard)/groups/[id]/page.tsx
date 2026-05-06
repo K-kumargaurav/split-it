@@ -304,8 +304,8 @@ function ExpenseRow({
 }) {
   const payerLabel = formatPayerLabel(expense.payers, viewerId);
   const dateLabel = formatDate(expense.date);
-  const yourShare = expense.yourSharePaise;
-  const youOwe = yourShare - expense.yourPaidPaise;
+  const yourShare = Number(expense.yourSharePaise);
+  const youOwe = yourShare - Number(expense.yourPaidPaise);
 
   return (
     <li className="flex items-center justify-between gap-4 py-3">

@@ -1,6 +1,7 @@
 import type { Prisma, RecurringFrequency, SplitType } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
+import { serializePaise } from "@/lib/api-response";
 import {
   updateRecurringTemplateSchema,
   type UpdateRecurringTemplateInput,
@@ -13,15 +14,15 @@ import {
 export interface RecurringTemplateRow {
   id: string;
   title: string;
-  amountPaise: number;
+  amountPaise: string;
   splitType: SplitType;
   frequency: RecurringFrequency;
   nextRunDate: Date;
   endDate: Date | null;
   isActive: boolean;
   participantConfig: Prisma.JsonValue;
-  taxAmountPaise: number;
-  tipAmountPaise: number;
+  taxAmountPaise: string;
+  tipAmountPaise: string;
   categoryId: string | null;
   createdAt: Date;
   createdBy: string;
@@ -55,15 +56,15 @@ export async function listRecurringTemplates(
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
-    amountPaise: Number(r.amountPaise),
+    amountPaise: serializePaise(r.amountPaise),
     splitType: r.splitType,
     frequency: r.frequency,
     nextRunDate: r.nextRunDate,
     endDate: r.endDate,
     isActive: r.isActive,
     participantConfig: r.participantConfig,
-    taxAmountPaise: Number(r.taxAmountPaise),
-    tipAmountPaise: Number(r.tipAmountPaise),
+    taxAmountPaise: serializePaise(r.taxAmountPaise),
+    tipAmountPaise: serializePaise(r.tipAmountPaise),
     categoryId: r.categoryId,
     createdAt: r.createdAt,
     createdBy: r.createdBy,
@@ -154,15 +155,15 @@ export async function updateRecurringTemplate(
   return {
     id: updated.id,
     title: updated.title,
-    amountPaise: Number(updated.amountPaise),
+    amountPaise: serializePaise(updated.amountPaise),
     splitType: updated.splitType,
     frequency: updated.frequency,
     nextRunDate: updated.nextRunDate,
     endDate: updated.endDate,
     isActive: updated.isActive,
     participantConfig: updated.participantConfig,
-    taxAmountPaise: Number(updated.taxAmountPaise),
-    tipAmountPaise: Number(updated.tipAmountPaise),
+    taxAmountPaise: serializePaise(updated.taxAmountPaise),
+    tipAmountPaise: serializePaise(updated.tipAmountPaise),
     categoryId: updated.categoryId,
     createdAt: updated.createdAt,
     createdBy: updated.createdBy,

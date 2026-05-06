@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 
 import { cn } from "@/lib/cn";
 import { formatPaise } from "@/lib/format";
 
 interface BalanceSummaryProps {
-  netBalancePaise: number;
+  netBalancePaise: number | string;
   groupCount: number;
   displayName: string;
 }
@@ -20,9 +20,20 @@ interface BalanceSummaryProps {
 // dashboard feels responsive on first paint without overdoing motion. We
 // respect prefers-reduced-motion and skip the animation entirely there.
 export function BalanceSummary({ netBalancePaise, groupCount, displayName }: BalanceSummaryProps) {
-  const settled = netBalancePaise === 0;
-  const owedToYou = netBalancePaise > 0;
-  const absPaise = Math.abs(netBalancePaise);
+  const [greeting, setGreeting] = useState("Welcome");
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 5) setGreeting("Good evening");
+    else if (hour < 12) setGreeting("Good morning");
+    else if (hour < 17) setGreeting("Good afternoon");
+    else setGreeting("Good evening");
+  }, []);
+
+  const net = Number(netBalancePaise);
+  const settled = net === 0;
+  const owedToYou = net > 0;
+  const absPaise = Math.abs(net);
 
   const accent = settled
     ? "from-slate-700 to-slate-900"
@@ -54,7 +65,7 @@ export function BalanceSummary({ netBalancePaise, groupCount, displayName }: Bal
       />
 
       <p className="text-sm font-medium text-white/80">
-        {greet()}, {firstName(displayName)}
+        {greeting}, {firstName(displayName)}
       </p>
 
       <p className="mt-6 font-mono text-xs uppercase tracking-widest text-white/70">
@@ -133,13 +144,6 @@ function CountUpAmount({ targetPaise }: { targetPaise: number }) {
   return <span aria-live="polite">{formatPaise(valueRef.current)}</span>;
 }
 
-function greet(): string {
-  const hour = new Date().getHours();
-  if (hour < 5) return "Good evening";
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
 
 function firstName(name: string): string {
   return name.split(/\s+/)[0] || name;

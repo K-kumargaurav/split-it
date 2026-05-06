@@ -1,40 +1,39 @@
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
+import { serializePaise } from "@/lib/api-response";
 
 // Paginated read of a group's expenses for the current user. Cursor is the
 // id of the last item from the previous page; ordering is `createdAt DESC`
 // with id-tiebreak so the cursor remains stable when two expenses share a
 // timestamp.
 //
-// Money fields are converted from BigInt → number on the way out because
-// the JSON layer can't serialise BigInt and the per-expense ceiling
-// (1e9 paise) is well within Number.MAX_SAFE_INTEGER. For amounts that
-// could exceed 2^53, switch to serializePaise() (returns string) and
-// parse on the receiving end.
+// Money fields are serialised as strings via serializePaise so the wire
+// format is exact at any magnitude — BigInt → string avoids silent rounding
+// for amounts above 2^53 paise.
 
 export interface ExpensePayer {
   userId: string;
   displayName: string;
-  amountPaise: number;
+  amountPaise: string;
 }
 
 export interface ExpenseParticipantView {
   userId: string;
   displayName: string;
-  amountPaise: number;
+  amountPaise: string;
 }
 
 export interface ExpenseListItem {
   id: string;
   title: string;
-  totalAmountPaise: number;
+  totalAmountPaise: string;
   date: Date;
   createdAt: Date;
   splitType: "EQUAL" | "EXACT" | "PERCENTAGE";
   payers: ExpensePayer[];
   participants: ExpenseParticipantView[];
-  yourSharePaise: number;
-  yourPaidPaise: number;
+  yourSharePaise: string;
+  yourPaidPaise: string;
 }
 
 export interface ExpensePage {
@@ -85,24 +84,24 @@ export async function getExpensesForGroup(
     const payers: ExpensePayer[] = e.payers.map((p) => ({
       userId: p.userId,
       displayName: p.user.displayName,
-      amountPaise: Number(p.amountPaise),
+      amountPaise: serializePaise(p.amountPaise),
     }));
     const participants: ExpenseParticipantView[] = e.participants.map((p) => ({
       userId: p.userId,
       displayName: p.user.displayName,
-      amountPaise: Number(p.amountPaise),
+      amountPaise: serializePaise(p.amountPaise),
     }));
     return {
       id: e.id,
       title: e.title,
-      totalAmountPaise: Number(e.totalAmount),
+      totalAmountPaise: serializePaise(e.totalAmount),
       date: e.date,
       createdAt: e.createdAt,
       splitType: e.splitType,
       payers,
       participants,
-      yourSharePaise: participants.find((p) => p.userId === userId)?.amountPaise ?? 0,
-      yourPaidPaise: payers.find((p) => p.userId === userId)?.amountPaise ?? 0,
+      yourSharePaise: participants.find((p) => p.userId === userId)?.amountPaise ?? "0",
+      yourPaidPaise: payers.find((p) => p.userId === userId)?.amountPaise ?? "0",
     };
   });
 

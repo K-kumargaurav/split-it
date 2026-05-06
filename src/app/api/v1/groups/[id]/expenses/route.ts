@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { createExpense, type CreatedExpense } from "@/server/expenses/create-expense";
 import {
@@ -26,12 +27,15 @@ export async function GET(
   }
 
   const url = new URL(request.url);
-  const cursor = url.searchParams.get("cursor") ?? undefined;
-  const limitRaw = url.searchParams.get("limit");
-  // parseInt("foo") → NaN; passing NaN to Prisma's `take` produces
-  // unpredictable behaviour. Fall back to the default when parsing fails.
-  const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : NaN;
-  const limit = Number.isFinite(limitParsed) && limitParsed > 0 ? limitParsed : 25;
+  const { limit, cursor } = z
+    .object({
+      limit: z.coerce.number().int().min(1).max(100).default(25),
+      cursor: z.string().optional(),
+    })
+    .parse({
+      limit: url.searchParams.get("limit"),
+      cursor: url.searchParams.get("cursor") ?? undefined,
+    });
 
   // Each filter is keyed off its own param name; we only forward present keys
   // so the schema's `optional()` branches do the right thing.
@@ -115,15 +119,11 @@ export async function POST(
   }
 }
 
-// BigInt → number on the way out so the response is JSON-serialisable. The
-// per-expense ceiling (1e9 paise) is well within Number.MAX_SAFE_INTEGER.
-// For amounts that could exceed 2^53, switch to serializePaise() (returns
-// string) and parse on the receiving end.
 function serializeExpense(e: CreatedExpense) {
   return {
     id: e.id,
     title: e.title,
-    totalAmountPaise: Number(e.totalAmount),
+    totalAmountPaise: serializePaise(e.totalAmount),
     splitType: e.splitType,
     date: e.date,
     createdAt: e.createdAt,
@@ -131,13 +131,13 @@ function serializeExpense(e: CreatedExpense) {
       userId: p.userId,
       handle: p.user.handle,
       displayName: p.user.displayName,
-      amountPaise: Number(p.amountPaise),
+      amountPaise: serializePaise(p.amountPaise),
     })),
     participants: e.participants.map((p) => ({
       userId: p.userId,
       handle: p.user.handle,
       displayName: p.user.displayName,
-      amountPaise: Number(p.amountPaise),
+      amountPaise: serializePaise(p.amountPaise),
     })),
   };
 }

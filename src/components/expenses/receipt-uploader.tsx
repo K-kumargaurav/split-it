@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Upload } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 
@@ -119,19 +120,6 @@ export function ReceiptUploader({ groupId, onFileChange, onPrefill }: ReceiptUpl
 
   return (
     <section aria-label="Receipt upload" className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Receipt (optional)</label>
-        {file ? (
-          <button
-            type="button"
-            onClick={clear}
-            className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-rose-600"
-          >
-            Remove
-          </button>
-        ) : null}
-      </div>
-
       {!file ? (
         <div
           onDragOver={(e) => {
@@ -150,16 +138,22 @@ export function ReceiptUploader({ groupId, onFileChange, onPrefill }: ReceiptUpl
             }
           }}
           className={cn(
-            "flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-8 text-center transition",
+            "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-7 text-center transition",
             isDragging
-              ? "border-indigo-400 bg-indigo-50/60"
-              : "border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/40 hover:border-slate-400",
+              ? "border-accent bg-accent-muted"
+              : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.03]",
           )}
         >
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            Drop a receipt here, or click to browse
+          <Upload
+            size={20}
+            className={isDragging ? "text-accent" : "text-text-secondary"}
+          />
+          <p className="text-[13px] text-text-secondary">
+            Drop receipt or tap to scan
           </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">JPEG, PNG, WebP, or PDF up to 10 MB</p>
+          <p className="text-[11px] text-text-secondary/60">
+            JPEG, PNG, WebP, or PDF up to 10 MB
+          </p>
           <input
             ref={inputRef}
             type="file"
@@ -172,31 +166,47 @@ export function ReceiptUploader({ groupId, onFileChange, onPrefill }: ReceiptUpl
           />
         </div>
       ) : (
-        <div className="flex items-start gap-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
+        <div
+          className="flex items-start gap-4 rounded-2xl p-3"
+          style={{
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
           {isImage && previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={previewUrl}
               alt="Receipt thumbnail"
-              className="h-24 w-24 flex-none rounded-lg object-cover"
+              className="h-24 w-24 flex-none rounded-xl object-cover"
             />
           ) : (
-            <div className="flex h-24 w-24 flex-none items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <div
+              className="flex h-24 w-24 flex-none items-center justify-center rounded-xl text-xs font-semibold text-text-secondary"
+              style={{ background: "rgba(255,255,255,0.04)" }}
+            >
               PDF
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{file.name}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {(file.size / 1024).toFixed(0)} KB · {file.type}
+          <div className="min-w-0 flex-1 py-1">
+            <p className="truncate text-sm font-medium text-text-primary">{file.name}</p>
+            <p className="mt-0.5 text-xs text-text-secondary">
+              {(file.size / 1024).toFixed(0)} KB
             </p>
             <StatusLine status={status} />
           </div>
+          <button
+            type="button"
+            onClick={clear}
+            className="mt-0.5 text-xs font-medium text-text-secondary transition hover:text-error"
+          >
+            Remove
+          </button>
         </div>
       )}
 
       {error ? (
-        <p className="text-xs text-rose-600" role="alert">
+        <p className="text-[12px] text-error" role="alert">
           {error}
         </p>
       ) : null}
@@ -208,13 +218,19 @@ function StatusLine({ status }: { status: Status }) {
   if (status.kind === "uploading") {
     return (
       <div className="mt-2">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+        <div
+          className="h-1 w-full overflow-hidden rounded-full"
+          style={{ background: "rgba(255,255,255,0.06)" }}
+        >
           <div
-            className="h-full bg-indigo-500 transition-all"
-            style={{ width: `${Math.max(5, status.progress)}%` }}
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${Math.max(5, status.progress)}%`,
+              background: "#00C896",
+            }}
           />
         </div>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-[11px] text-text-secondary">
           {status.progress < 100 ? "Uploading…" : "Reading receipt…"}
         </p>
       </div>
@@ -222,15 +238,21 @@ function StatusLine({ status }: { status: Status }) {
   }
   if (status.kind === "done") {
     return (
-      <p className="mt-2 text-xs font-medium text-emerald-700">
-        Pre-filled fields from receipt
-      </p>
+      <span
+        className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+        style={{
+          background: "rgba(0,200,150,0.1)",
+          color: "#00C896",
+        }}
+      >
+        OCR pre-filled ✓
+      </span>
     );
   }
   if (status.kind === "ocr-failed") {
     return (
-      <p className="mt-2 text-xs text-amber-700">
-        Couldn’t read receipt — please fill manually
+      <p className="mt-2 text-[11px]" style={{ color: "#FFB020" }}>
+        Couldn&apos;t read receipt — fill manually
       </p>
     );
   }

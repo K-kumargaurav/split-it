@@ -11,6 +11,11 @@ import { cn } from "@/lib/cn";
 import { formatPaise, rupeesToPaise } from "@/lib/format";
 import { equalSplit, percentageSplit } from "@/lib/split";
 import { ReceiptUploader, type OcrPrefill } from "@/components/expenses/receipt-uploader";
+import { AmountInput } from "@/components/ui/amount-input";
+import { MemberSelector, type SelectorMember } from "@/components/ui/member-selector";
+import { PremiumCard } from "@/components/ui/premium-card";
+import { PremiumInput } from "@/components/ui/premium-input";
+import { PremiumSelect } from "@/components/ui/premium-select";
 
 // Form is rupees-facing — the user thinks in ₹, the wire format is paise.
 // Convert at the boundary (onSubmit) and validate the integer in `paise` as
@@ -125,6 +130,7 @@ export function ExpenseForm({
   });
 
   const amount = watch("amount");
+  const paidById = watch("paidById");
   const participantIds = watch("participantIds");
 
   const totalPaise = useMemo(() => {
@@ -383,98 +389,102 @@ export function ExpenseForm({
     ...ghostMembers.map((g) => [g.id, { id: g.id, displayName: g.displayName, isGhost: true }] as const),
   ]);
 
+  const allMembersForSelector: SelectorMember[] = useMemo(
+    () => [
+      ...members.map((m) => ({
+        id: m.id,
+        displayName: m.displayName,
+        handle: m.handle,
+        isGhost: false,
+      })),
+      ...ghostMembers.map((g) => ({
+        id: g.id,
+        displayName: g.displayName,
+        handle: "",
+        isGhost: true,
+      })),
+    ],
+    [members, ghostMembers],
+  );
+
+  const perPersonPaise =
+    splitType === "EQUAL" && equalPreview && equalPreview.length > 0
+      ? (equalPreview[0]?.amountPaise ?? null)
+      : null;
+
+  const submitLabel = useMemo(() => {
+    if (isSubmitting) return "Saving…";
+    const count = participantIds?.length ?? 0;
+    if (totalPaise > 0 && count > 0) {
+      return `Save ${formatPaise(totalPaise, { hidePaiseIfZero: true })} · Split ${count} ${count === 1 ? "way" : "ways"}`;
+    }
+    return "Save Expense";
+  }, [isSubmitting, totalPaise, participantIds]);
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      {/* Receipt upload zone */}
       <ReceiptUploader
         groupId={groupId}
         onFileChange={setReceiptFile}
         onPrefill={handleOcrPrefill}
       />
 
-      <div>
-        <label htmlFor="title" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-          Title
-        </label>
-        <input
-          {...register("title")}
-          id="title"
-          type="text"
-          placeholder="Dinner at Toit"
-          aria-invalid={Boolean(errors.title)}
-          className={cn(
-            "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
-            "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-            errors.title && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
-          )}
+      {/* Amount — most prominent */}
+      <div className="py-6 text-center">
+        <AmountInput
+          id="amount"
+          value={amount}
+          onChange={(v) => {
+            void setValue("amount", v, { shouldValidate: true, shouldDirty: true });
+            setPrefilledFields((p) => ({ ...p, amount: false }));
+          }}
+          error={errors.amount?.message}
         />
-        {errors.title?.message ? (
-          <p className="mt-1.5 text-xs text-rose-600">{errors.title.message}</p>
+        {perPersonPaise !== null ? (
+          <p className="mt-3 text-[14px] text-text-secondary">
+            = {formatPaise(perPersonPaise, { hidePaiseIfZero: true })} per person
+          </p>
         ) : null}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <div className="flex items-center justify-between">
-            <label htmlFor="amount" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-              Amount (₹)
-            </label>
-            {prefilledFields.amount ? <PrefilledBadge /> : null}
-          </div>
-          <input
-            {...register("amount", {
-              onChange: () => setPrefilledFields((p) => ({ ...p, amount: false })),
-            })}
-            id="amount"
-            type="text"
-            inputMode="decimal"
-            placeholder="0.00"
-            aria-invalid={Boolean(errors.amount)}
-            className={cn(
-              "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
-              "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-              errors.amount && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
-            )}
+      {/* Section 1 — Details */}
+      <PremiumCard className="p-5">
+        <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+          Details
+        </p>
+        <div className="space-y-4">
+          <PremiumInput
+            label="Title"
+            placeholder="Dinner at Toit"
+            aria-invalid={Boolean(errors.title)}
+            error={errors.title?.message}
+            {...register("title")}
           />
-          {errors.amount?.message ? (
-            <p className="mt-1.5 text-xs text-rose-600">{errors.amount.message}</p>
-          ) : null}
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between">
-            <label htmlFor="date" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-              Date
-            </label>
-            {prefilledFields.date ? <PrefilledBadge /> : null}
-          </div>
-          <input
+          <PremiumInput
+            label="Date"
+            type="date"
+            aria-invalid={Boolean(errors.date)}
+            error={errors.date?.message}
+            {...(prefilledFields.date
+              ? {
+                  rightIcon: (
+                    <span
+                      className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                      style={{ background: "rgba(0,200,150,0.1)", color: "#00C896" }}
+                    >
+                      OCR
+                    </span>
+                  ),
+                }
+              : {})}
             {...register("date", {
               onChange: () => setPrefilledFields((p) => ({ ...p, date: false })),
             })}
-            id="date"
-            type="date"
-            aria-invalid={Boolean(errors.date)}
-            className={cn(
-              "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm transition",
-              "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-              errors.date && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
-            )}
           />
-          {errors.date?.message ? (
-            <p className="mt-1.5 text-xs text-rose-600">{errors.date.message}</p>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="categoryId" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-            Category
-          </label>
-          <select
+          <PremiumSelect
+            label="Category"
             {...register("categoryId")}
-            id="categoryId"
-            className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value="">Uncategorised</option>
             {categories.map((c) => (
@@ -483,92 +493,48 @@ export function ExpenseForm({
                 {c.name}
               </option>
             ))}
-          </select>
+          </PremiumSelect>
         </div>
+      </PremiumCard>
 
-        <div>
-          <label htmlFor="paidById" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-            Paid by
-          </label>
-          <select
-            {...register("paidById")}
-            id="paidById"
-            aria-invalid={Boolean(errors.paidById)}
-            className={cn(
-              "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm transition",
-              "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-              errors.paidById && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
-            )}
-          >
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.displayName}
-                {m.id === viewerId ? " (you)" : ""}
-              </option>
-            ))}
-            {ghostMembers.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.displayName} (guest)
-              </option>
-            ))}
-          </select>
-          {errors.paidById?.message ? (
-            <p className="mt-1.5 text-xs text-rose-600">{errors.paidById.message}</p>
-          ) : null}
-        </div>
-      </div>
+      {/* Section 2 — Paid by */}
+      <PremiumCard className="p-5">
+        <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+          Paid by
+        </p>
+        <MemberSelector
+          members={allMembersForSelector}
+          selected={paidById ?? ""}
+          onToggle={(id) => setValue("paidById", id, { shouldValidate: true })}
+          mode="single"
+          error={errors.paidById?.message}
+        />
+      </PremiumCard>
 
-      <fieldset>
-        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Split among</legend>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {members.map((m) => (
-            <label
-              key={m.id}
-              className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600"
-            >
-              <input
-                type="checkbox"
-                value={m.id}
-                {...register("participantIds")}
-                className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span className="truncate">
-                {m.displayName}
-                {m.id === viewerId ? <span className="ml-1 text-xs text-slate-400">(you)</span> : null}
-              </span>
-            </label>
-          ))}
-          {ghostMembers.map((g) => (
-            <label
-              key={g.id}
-              className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:border-amber-300"
-            >
-              <input
-                type="checkbox"
-                value={g.id}
-                {...register("participantIds")}
-                className="h-4 w-4 rounded border-amber-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span className="truncate">
-                {g.displayName}
-                <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-700">
-                  Guest
-                </span>
-              </span>
-            </label>
-          ))}
-        </div>
-        {errors.participantIds?.message ? (
-          <p className="mt-1.5 text-xs text-rose-600">{errors.participantIds.message}</p>
-        ) : null}
-      </fieldset>
+      {/* Section 3 — Split among */}
+      <PremiumCard className="p-5">
+        <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+          Split among
+        </p>
+        <MemberSelector
+          members={allMembersForSelector}
+          selected={participantIds ?? []}
+          onToggle={(id) => {
+            const current = participantIds ?? [];
+            const next = current.includes(id)
+              ? current.filter((x) => x !== id)
+              : [...current, id];
+            setValue("participantIds", next, { shouldValidate: true, shouldDirty: true });
+          }}
+          mode="multi"
+          error={errors.participantIds?.message}
+        />
 
-      <fieldset>
-        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Split type</legend>
+        {/* Split type toggle — same tab style as auth pages */}
         <div
           role="tablist"
           aria-label="Split type"
-          className="mt-2 inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-1"
+          className="mt-5 grid grid-cols-3 gap-1 rounded-2xl bg-card p-1"
         >
           {(["EQUAL", "EXACT", "PERCENTAGE"] as const).map((t) => (
             <button
@@ -578,228 +544,256 @@ export function ExpenseForm({
               aria-selected={splitType === t}
               onClick={() => setSplitType(t)}
               className={cn(
-                "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                "rounded-xl px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
                 splitType === t
-                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
-                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white",
+                  ? "bg-bg text-text-primary shadow-sm"
+                  : "text-text-secondary hover:text-text-primary",
               )}
             >
               {t === "EQUAL" ? "Equal" : t === "EXACT" ? "Exact" : "Percentage"}
             </button>
           ))}
         </div>
-      </fieldset>
 
-      {splitType === "EQUAL" && equalPreview ? (
-        <section
-          aria-label="Split preview"
-          className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-4 py-3"
-        >
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Each person owes
-          </p>
-          <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-700">
+        {/* Live split preview */}
+        {splitType === "EQUAL" && equalPreview ? (
+          <ul
+            aria-label="Split preview"
+            className="mt-4 divide-y"
+            style={{ borderColor: "rgba(255,255,255,0.04)" }}
+          >
             {equalPreview.map((row) => {
               const member = memberById.get(row.memberId);
               if (!member) return null;
               return (
                 <li
                   key={row.memberId}
-                  className="flex items-center justify-between py-1.5 text-sm text-slate-700 dark:text-slate-200"
+                  className="flex items-center justify-between py-2.5"
                 >
-                  <span className="truncate">
-                    {member.displayName}
-                    {member.id === viewerId ? (
-                      <span className="ml-1 text-xs text-slate-400">(you)</span>
-                    ) : null}
-                  </span>
-                  <span className="font-mono tabular-nums text-slate-900 dark:text-white">
+                  <div className="flex items-center gap-2">
+                    <MemberAvatar name={member.displayName} />
+                    <span className="text-sm text-text-primary">
+                      {member.displayName}
+                      {member.id === viewerId ? (
+                        <span className="ml-1 text-xs text-text-secondary">(you)</span>
+                      ) : null}
+                    </span>
+                  </div>
+                  <span className="font-mono text-sm tabular-nums text-text-primary">
                     {formatPaise(row.amountPaise)}
                   </span>
                 </li>
               );
             })}
           </ul>
-        </section>
-      ) : null}
+        ) : null}
 
-      {splitType === "EXACT" && exactState ? (
-        <section
-          aria-label="Exact amounts"
-          className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-4 py-3"
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Enter exact amount
-            </p>
-            <RemainingAmount remainingPaise={exactState.remainingPaise} />
-          </div>
-          <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-700">
-            {(participantIds ?? []).map((id) => {
-              const member = memberById.get(id);
-              if (!member) return null;
-              return (
-                <li
-                  key={id}
-                  className="flex items-center justify-between gap-3 py-1.5 text-sm text-slate-700 dark:text-slate-200"
-                >
-                  <span className="truncate">
-                    {member.displayName}
-                    {member.id === viewerId ? (
-                      <span className="ml-1 text-xs text-slate-400">(you)</span>
-                    ) : null}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-slate-500 dark:text-slate-400">₹</span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={exactInputs[id] ?? ""}
-                      onChange={(e) =>
-                        setExactInputs((prev) => ({ ...prev, [id]: e.target.value }))
-                      }
-                      className="w-28 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-right font-mono text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
-
-      {splitType === "PERCENTAGE" && percentState ? (
-        <section
-          aria-label="Percentage shares"
-          className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-4 py-3"
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Enter % per person
-            </p>
-            <RemainingPercentage remainingPct={percentState.remainingPct} />
-          </div>
-          <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-700">
-            {(participantIds ?? []).map((id, i) => {
-              const member = memberById.get(id);
-              if (!member) return null;
-              const previewRow = percentState.preview?.[i];
-              return (
-                <li
-                  key={id}
-                  className="flex items-center justify-between gap-3 py-1.5 text-sm text-slate-700 dark:text-slate-200"
-                >
-                  <span className="truncate">
-                    {member.displayName}
-                    {member.id === viewerId ? (
-                      <span className="ml-1 text-xs text-slate-400">(you)</span>
-                    ) : null}
-                  </span>
-                  <div className="flex items-center gap-3">
-                    {previewRow ? (
-                      <span className="font-mono text-xs tabular-nums text-slate-500 dark:text-slate-400">
-                        {formatPaise(previewRow.amountPaise)}
+        {splitType === "EXACT" && exactState ? (
+          <div className="mt-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                Enter exact amount
+              </span>
+              <RemainingAmount remainingPaise={exactState.remainingPaise} />
+            </div>
+            <ul
+              className="divide-y"
+              style={{ borderColor: "rgba(255,255,255,0.04)" }}
+            >
+              {(participantIds ?? []).map((id) => {
+                const member = memberById.get(id);
+                if (!member) return null;
+                return (
+                  <li
+                    key={id}
+                    className="flex items-center justify-between gap-3 py-2.5"
+                  >
+                    <div className="flex items-center gap-2">
+                      <MemberAvatar name={member.displayName} />
+                      <span className="text-sm text-text-primary">
+                        {member.displayName}
+                        {member.id === viewerId ? (
+                          <span className="ml-1 text-xs text-text-secondary">(you)</span>
+                        ) : null}
                       </span>
-                    ) : null}
+                    </div>
                     <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-text-secondary">₹</span>
                       <input
                         type="number"
                         inputMode="decimal"
                         step="0.01"
                         min="0"
-                        max="100"
-                        placeholder="0"
-                        value={percentInputs[id] ?? ""}
+                        placeholder="0.00"
+                        value={exactInputs[id] ?? ""}
                         onChange={(e) =>
-                          setPercentInputs((prev) => ({ ...prev, [id]: e.target.value }))
+                          setExactInputs((prev) => ({ ...prev, [id]: e.target.value }))
                         }
-                        className="w-20 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-right font-mono text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-28 rounded-xl border px-2 py-1 text-right font-mono text-sm text-text-primary outline-none focus:border-accent"
+                        style={{
+                          background: "rgba(255,255,255,0.04)",
+                          borderColor: "rgba(255,255,255,0.08)",
+                        }}
                       />
-                      <span className="text-xs text-slate-500 dark:text-slate-400">%</span>
                     </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
 
+        {splitType === "PERCENTAGE" && percentState ? (
+          <div className="mt-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                Enter % per person
+              </span>
+              <RemainingPercentage remainingPct={percentState.remainingPct} />
+            </div>
+            <ul
+              className="divide-y"
+              style={{ borderColor: "rgba(255,255,255,0.04)" }}
+            >
+              {(participantIds ?? []).map((id, i) => {
+                const member = memberById.get(id);
+                if (!member) return null;
+                const previewRow = percentState.preview?.[i];
+                return (
+                  <li
+                    key={id}
+                    className="flex items-center justify-between gap-3 py-2.5"
+                  >
+                    <div className="flex items-center gap-2">
+                      <MemberAvatar name={member.displayName} />
+                      <span className="text-sm text-text-primary">
+                        {member.displayName}
+                        {member.id === viewerId ? (
+                          <span className="ml-1 text-xs text-text-secondary">(you)</span>
+                        ) : null}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {previewRow ? (
+                        <span className="font-mono text-xs tabular-nums text-text-secondary">
+                          {formatPaise(previewRow.amountPaise)}
+                        </span>
+                      ) : null}
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          placeholder="0"
+                          value={percentInputs[id] ?? ""}
+                          onChange={(e) =>
+                            setPercentInputs((prev) => ({ ...prev, [id]: e.target.value }))
+                          }
+                          className="w-20 rounded-xl border px-2 py-1 text-right font-mono text-sm text-text-primary outline-none focus:border-accent"
+                          style={{
+                            background: "rgba(255,255,255,0.04)",
+                            borderColor: "rgba(255,255,255,0.08)",
+                          }}
+                        />
+                        <span className="text-xs text-text-secondary">%</span>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
+      </PremiumCard>
+
+      {/* Server error */}
       {serverError ? (
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700"
+          className="rounded-2xl border px-4 py-3 text-sm text-error"
+          style={{
+            borderColor: "rgba(255,71,87,0.2)",
+            backgroundColor: "rgba(255,71,87,0.08)",
+          }}
         >
           {serverError}
         </div>
       ) : null}
 
-      <div className="flex items-center justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => router.push(`/groups/${groupId}`)}
-          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting || !splitValid}
-          className={cn(
-            "rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
-            "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-60",
-          )}
-        >
-          {isSubmitting ? "Saving…" : "Save expense"}
-        </button>
-      </div>
+      {/* Submit */}
+      <button
+        type="submit"
+        disabled={isSubmitting || !splitValid}
+        className={cn(
+          "flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition",
+          "bg-accent text-bg hover:opacity-90",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+          "active:scale-[0.98]",
+          "disabled:cursor-not-allowed disabled:opacity-40",
+        )}
+      >
+        {submitLabel}
+      </button>
     </form>
   );
 }
 
+function MemberAvatar({ name }: { name: string }) {
+  const initials = name
+    .split(" ")
+    .map((n) => n[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  return (
+    <span
+      className="flex h-6 w-6 flex-none items-center justify-center rounded-full text-[10px] font-semibold text-text-secondary"
+      style={{ background: "rgba(255,255,255,0.06)" }}
+    >
+      {initials}
+    </span>
+  );
+}
+
 function RemainingAmount({ remainingPaise }: { remainingPaise: number }) {
-  // Green when exactly zero — the split adds up. Red when over (more
-  // allocated than the total). Slate when there's still room to allocate.
-  const tone =
+  const color =
     remainingPaise === 0
-      ? "text-emerald-700"
+      ? "#00C896"
       : remainingPaise < 0
-      ? "text-rose-700"
-      : "text-slate-600 dark:text-slate-300";
+      ? "#FF4757"
+      : "#8B93A7";
   const label =
     remainingPaise === 0
       ? "Allocated exactly"
       : remainingPaise < 0
       ? `Over by ${formatPaise(-remainingPaise)}`
-      : `${formatPaise(remainingPaise)} remaining to allocate`;
-  return <span className={cn("text-xs font-medium", tone)}>{label}</span>;
-}
-
-function PrefilledBadge() {
+      : `${formatPaise(remainingPaise)} remaining`;
   return (
-    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-emerald-700">
-      Pre-filled from receipt
+    <span className="text-xs font-medium" style={{ color }}>
+      {label}
     </span>
   );
 }
 
 function RemainingPercentage({ remainingPct }: { remainingPct: number }) {
-  const tone =
+  const color =
     remainingPct === 0
-      ? "text-emerald-700"
+      ? "#00C896"
       : remainingPct < 0
-      ? "text-rose-700"
-      : "text-slate-600 dark:text-slate-300";
+      ? "#FF4757"
+      : "#8B93A7";
   const label =
     remainingPct === 0
       ? "100% allocated"
       : remainingPct < 0
       ? `Over by ${(-remainingPct).toFixed(2)}%`
       : `${remainingPct.toFixed(2)}% remaining`;
-  return <span className={cn("text-xs font-medium", tone)}>{label}</span>;
+  return (
+    <span className="text-xs font-medium" style={{ color }}>
+      {label}
+    </span>
+  );
 }

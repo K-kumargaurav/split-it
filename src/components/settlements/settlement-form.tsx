@@ -2,11 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { Smartphone, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/cn";
 import { formatPaise, paiseToRupees, rupeesToPaise } from "@/lib/format";
 import { generateUpiLink } from "@/lib/upi";
+import { AmountInput } from "@/components/ui/amount-input";
+import { PremiumCard } from "@/components/ui/premium-card";
+import { PremiumSelect } from "@/components/ui/premium-select";
 
 // Mark-as-paid form. Receivers are limited to people the viewer *directly*
 // owes — per SPEC §3.4 the underlying ledger is direct debts, so this is the
@@ -142,45 +146,46 @@ export function SettlementForm({
 
   if (debts.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-5 py-10 text-center">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">You&apos;re all settled up</p>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      <PremiumCard className="px-5 py-12 text-center">
+        <p className="text-base font-semibold text-text-primary">
+          You&apos;re all settled up
+        </p>
+        <p className="mt-1.5 text-sm text-text-secondary">
           You don&apos;t currently owe anyone in this group.
         </p>
         <button
           type="button"
           onClick={() => router.push(`/groups/${groupId}`)}
-          className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
+          className="mt-5 inline-flex h-10 items-center justify-center rounded-2xl border px-5 text-sm font-medium text-text-primary transition hover:border-white/[0.12]"
+          style={{ borderColor: "rgba(255,255,255,0.08)" }}
         >
           Back to group
         </button>
-      </div>
+      </PremiumCard>
     );
   }
 
   if (pending) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-6 text-center">
-        <p className="text-sm font-semibold text-amber-900">
+      <PremiumCard className="px-5 py-10 text-center">
+        <p className="text-base font-semibold text-text-primary">
           Waiting for {selected?.receiverDisplayName ?? "the receiver"} to confirm
         </p>
-        <p className="mt-1 text-sm text-amber-800">
+        <p className="mt-2 text-sm text-text-secondary">
           We&apos;ve notified them. Your debt stays on the books until they confirm
           the payment.
         </p>
-        <div className="mt-4 flex items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              router.push(`/groups/${groupId}`);
-              router.refresh();
-            }}
-            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
-          >
-            Back to group
-          </button>
-        </div>
-      </div>
+        <button
+          type="button"
+          onClick={() => {
+            router.push(`/groups/${groupId}`);
+            router.refresh();
+          }}
+          className="mt-6 inline-flex h-12 items-center justify-center rounded-2xl bg-accent px-6 text-sm font-semibold text-bg transition hover:opacity-90"
+        >
+          Back to group
+        </button>
+      </PremiumCard>
     );
   }
 
@@ -195,60 +200,76 @@ export function SettlementForm({
       : null;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-      <div>
-        <label htmlFor="receiver" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-          Pay
-        </label>
-        <select
-          id="receiver"
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      {/* Receiver selector — shown only when multiple debts */}
+      {debts.length > 1 ? (
+        <PremiumSelect
+          label="Pay"
           value={receiverId}
           onChange={(e) => handleReceiverChange(e.target.value)}
-          className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         >
           {debts.map((d) => (
             <option key={d.receiverId} value={d.receiverId}>
               {d.receiverDisplayName} — you owe {formatPaise(d.amountPaise)}
             </option>
           ))}
-        </select>
-      </div>
+        </PremiumSelect>
+      ) : null}
 
-      <div>
-        <label htmlFor="amount" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-          Amount (₹)
-        </label>
-        <input
-          id="amount"
-          type="number"
-          inputMode="decimal"
-          step="0.01"
-          min="0.01"
-          value={amountRupees}
-          onChange={(e) => setAmountRupees(e.target.value)}
-          className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
-        {selected ? (
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-            Max {formatPaise(selected.amountPaise)} (your current debt).
+      {/* Debt summary card */}
+      {selected ? (
+        <PremiumCard className="px-5 py-6 text-center">
+          <p className="text-lg font-semibold text-text-primary">
+            You owe {selected.receiverDisplayName}
           </p>
-        ) : null}
-      </div>
+          <p
+            className="mt-2 text-[36px] font-bold tabular-nums leading-none"
+            style={{ color: "#FF4757" }}
+          >
+            {formatPaise(selected.amountPaise)}
+          </p>
+          <p className="mt-2 text-[13px] text-text-secondary">
+            from {debts.length === 1 ? "this group" : "shared expenses"}
+          </p>
+        </PremiumCard>
+      ) : null}
 
-      <fieldset>
-        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Payment method</legend>
-        <div className="mt-2 grid grid-cols-3 gap-2">
+      {/* Amount to pay */}
+      <PremiumCard className="p-5">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+          Amount to pay
+        </p>
+        <div className="py-4">
+          <AmountInput
+            id="amount"
+            value={amountRupees}
+            onChange={setAmountRupees}
+          />
+        </div>
+        <p className="text-center text-[12px] text-text-secondary">
+          Partial payment allowed
+        </p>
+      </PremiumCard>
+
+      {/* Payment method */}
+      <PremiumCard className="p-5">
+        <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+          Payment method
+        </p>
+        <div className="grid grid-cols-3 gap-2">
           {PAYMENT_METHODS.map((m) => {
             const isActive = paymentMethod === m.value;
             return (
               <label
                 key={m.value}
                 className={cn(
-                  "flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition",
-                  isActive
-                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600",
+                  "flex cursor-pointer items-center justify-center rounded-2xl border px-3 py-3 text-sm font-medium transition-colors duration-150",
                 )}
+                style={{
+                  borderColor: isActive ? "#00C896" : "rgba(255,255,255,0.06)",
+                  background: isActive ? "rgba(0,200,150,0.05)" : "rgba(255,255,255,0.02)",
+                  color: isActive ? "#00C896" : "#8B93A7",
+                }}
               >
                 <input
                   type="radio"
@@ -263,51 +284,77 @@ export function SettlementForm({
             );
           })}
         </div>
-      </fieldset>
+      </PremiumCard>
 
+      {/* UPI block */}
       {showUpiBlock && upiLink ? (
-        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+        <PremiumCard className="p-5 space-y-4">
+          {/* Copyable UPI ID pill */}
+          <div className="flex items-center justify-between">
+            <p className="text-[13px] text-text-secondary">Paying to</p>
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard.writeText(selected!.receiverUpiId ?? "");
+                toast.success("UPI ID copied");
+              }}
+              className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:text-text-primary"
+              style={{ borderColor: "rgba(255,255,255,0.08)" }}
+            >
+              <span className="font-mono">{selected!.receiverUpiId}</span>
+              <Copy size={11} />
+            </button>
+          </div>
+
+          {/* Pay via UPI button */}
           <a
             href={upiLink}
-            className="block rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition hover:opacity-90"
+            style={{ background: "#00C896", color: "#0E1116" }}
           >
+            <Smartphone size={18} />
             Pay via UPI
           </a>
-          <p className="mt-2 text-center text-xs text-indigo-900/80">
-            Pay to <span className="font-mono font-semibold">{selected!.receiverUpiId}</span>
-          </p>
-          {/* Desktop fallback: the upi:// scheme has no handler on most desktops,
-              so surface the raw deep-link string for copy/QR-scan workflows. A
-              real QR renderer ships in a follow-up — this placeholder reserves
-              the slot in the layout. */}
-          <div className="mt-3 hidden sm:block">
-            <p className="text-xs font-medium text-indigo-900/80">
-              On desktop? Scan this with your UPI app:
+
+          {/* Desktop fallback placeholder */}
+          <div className="hidden sm:block">
+            <p className="text-center text-[11px] text-text-secondary">
+              On desktop? Scan with your UPI app:
             </p>
             <div
+              className="mx-auto mt-2 flex h-32 w-32 items-center justify-center rounded-xl border-2 border-dashed text-[10px] uppercase tracking-wider text-text-secondary"
+              style={{ borderColor: "rgba(255,255,255,0.08)" }}
               aria-hidden="true"
-              className="mt-2 flex h-32 w-32 items-center justify-center rounded-lg border-2 border-dashed border-indigo-300 bg-white text-[10px] uppercase tracking-wider text-indigo-400"
             >
               QR placeholder
             </div>
-            <p className="mt-2 break-all font-mono text-[10px] text-indigo-900/70">
-              {upiLink}
-            </p>
           </div>
-        </div>
-      ) : null}
-      {showUpiBlock && !upiLink ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {selected!.receiverDisplayName} hasn&apos;t added a UPI ID yet — pay them
-          another way and record it here.
-        </p>
+        </PremiumCard>
       ) : null}
 
+      {showUpiBlock && !upiLink ? (
+        <div
+          className="rounded-2xl border px-4 py-3 text-sm"
+          style={{
+            borderColor: "rgba(255,176,32,0.2)",
+            background: "rgba(255,176,32,0.06)",
+            color: "#FFB020",
+          }}
+        >
+          {selected!.receiverDisplayName} hasn&apos;t added a UPI ID yet — pay them
+          another way and record it here.
+        </div>
+      ) : null}
+
+      {/* Transaction reference */}
       {paymentMethod !== "CASH" ? (
-        <div>
-          <label htmlFor="paymentRef" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+        <PremiumCard className="p-5">
+          <label
+            htmlFor="paymentRef"
+            className="mb-1.5 block text-[13px] text-text-secondary"
+          >
             Transaction reference{" "}
-            <span className="text-xs font-normal text-slate-400">(optional)</span>
+            <span className="text-[12px] opacity-60">(optional)</span>
           </label>
           <input
             id="paymentRef"
@@ -315,41 +362,44 @@ export function SettlementForm({
             value={paymentRef}
             onChange={(e) => setPaymentRef(e.target.value)}
             placeholder="UPI reference / transaction id"
-            className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="block h-12 w-full rounded-2xl border px-4 text-sm text-text-primary outline-none transition placeholder:text-text-secondary focus:border-accent"
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              borderColor: "rgba(255,255,255,0.06)",
+            }}
           />
-        </div>
+        </PremiumCard>
       ) : null}
 
+      {/* Server error */}
       {serverError ? (
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700"
+          className="rounded-2xl border px-4 py-3 text-sm text-error"
+          style={{
+            borderColor: "rgba(255,71,87,0.2)",
+            backgroundColor: "rgba(255,71,87,0.08)",
+          }}
         >
           {serverError}
         </div>
       ) : null}
 
-      <div className="flex items-center justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => router.push(`/groups/${groupId}`)}
-          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          className={cn(
-            "rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
-            "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-60",
-          )}
-        >
-          {submitting ? "Recording…" : "Mark as paid"}
-        </button>
-      </div>
+      {/* Submit */}
+      <button
+        type="submit"
+        disabled={submitting}
+        className={cn(
+          "flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition",
+          "bg-accent text-bg hover:opacity-90",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+          "active:scale-[0.98]",
+          "disabled:cursor-not-allowed disabled:opacity-40",
+        )}
+      >
+        {submitting ? "Recording…" : "Mark as Paid"}
+      </button>
     </form>
   );
 }

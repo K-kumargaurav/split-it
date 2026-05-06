@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
@@ -54,38 +55,35 @@ export default async function NewExpensePage({ params }: NewExpensePageProps) {
         image: session.user.image ?? null,
       }}
     >
-      <nav className="mb-6 text-sm">
+      {/* Page header */}
+      <div className="mb-6 flex items-center gap-3">
         <Link
           href={`/groups/${group.id}`}
-          className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+          className="flex h-9 w-9 items-center justify-center rounded-xl transition"
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            color: "#8B93A7",
+          }}
+          aria-label={`Back to ${group.name}`}
         >
-          ← Back to {group.name}
+          <ArrowLeft size={18} />
         </Link>
-      </nav>
-
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-          Add expense
+        <h1 className="text-[20px] font-semibold text-text-primary">
+          Add Expense
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Drop a receipt to auto-fill amount and date, or enter the details
-          manually. Choose how to split the total below.
-        </p>
-      </header>
+      </div>
 
-      <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8">
-        <ExpenseForm
-          groupId={group.id}
-          viewerId={session.user.id}
-          members={group.members.map((m) => ({
-            id: m.user.id,
-            displayName: m.user.displayName,
-            handle: m.user.handle,
-          }))}
-          ghostMembers={ghostMembers}
-          categories={categories}
-        />
-      </section>
+      <ExpenseForm
+        groupId={group.id}
+        viewerId={session.user.id}
+        members={group.members.map((m) => ({
+          id: m.user.id,
+          displayName: m.user.displayName,
+          handle: m.user.handle,
+        }))}
+        ghostMembers={ghostMembers}
+        categories={categories}
+      />
     </DashboardShell>
   );
 }

@@ -51,12 +51,17 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   if (memberships.length === 0) {
     return {
       netBalancePaise: "0",
+      settledThisMonthPaise: "0",
       groups: [],
       pending: { settlementsAwaitingConfirmation: 0, expenseEditVotesPending: 0 },
     };
   }
 
   const groupIds = memberships.map((m) => m.group.id);
+
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
 
   const [
     perGroupBalances,
@@ -65,6 +70,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     pendingSettlements,
     pendingProposals,
     votedProposalIds,
+    settledThisMonthResult,
   ] = await Promise.all([
     // One canonical net per group — same function the group-detail page uses
     // for its Balances section. Pending settlements are excluded by design.
@@ -113,6 +119,15 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       where: { voterId: userId },
       select: { proposalId: true },
     }),
+    prisma.settlement.aggregate({
+      where: {
+        OR: [{ payerId: userId }, { receiverId: userId }],
+        status: "CONFIRMED",
+        confirmedAt: { gte: startOfMonth },
+        deletedAt: null,
+      },
+      _sum: { amountPaise: true },
+    }),
   ]);
 
   const balanceByGroup = new Map<string, string>();
@@ -160,8 +175,13 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   const votedSet = new Set(votedProposalIds.map((v) => v.proposalId));
   const expenseEditVotesPending = pendingProposals.filter((p) => !votedSet.has(p.id)).length;
 
+  const settledThisMonthPaise = serializePaise(
+    settledThisMonthResult._sum.amountPaise ?? BigInt(0),
+  );
+
   return {
     netBalancePaise,
+    settledThisMonthPaise,
     groups,
     pending: {
       settlementsAwaitingConfirmation: pendingSettlements,

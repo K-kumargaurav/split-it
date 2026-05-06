@@ -29,6 +29,7 @@ export interface DashboardPending {
 
 export interface DashboardData {
   netBalancePaise: string;
+  settledThisMonthPaise: string;
   groups: DashboardGroupSummary[];
   pending: DashboardPending;
 }

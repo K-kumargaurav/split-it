@@ -198,20 +198,22 @@ export function RegisterForm() {
     <div className="space-y-5">
       <GoogleButton callbackUrl="/dashboard" label="Sign up with Google" />
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-slate-200 dark:border-slate-700" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-slate-50 dark:bg-slate-800 px-3 text-xs uppercase tracking-wider text-slate-400">
-            or sign up with email
-          </span>
-        </div>
+      {/* Divider */}
+      <div className="relative flex items-center gap-3">
+        <div className="h-px flex-1 bg-white/[0.06]" />
+        <span className="text-xs uppercase tracking-wider text-text-secondary">
+          or sign up with email
+        </span>
+        <div className="h-px flex-1 bg-white/[0.06]" />
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        {/* Display name */}
         <div>
-          <label htmlFor="displayName" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+          <label
+            htmlFor="displayName"
+            className="mb-1.5 block text-[13px] text-text-secondary"
+          >
             Display name
           </label>
           <input
@@ -222,16 +224,21 @@ export function RegisterForm() {
             placeholder="Asha Patel"
             aria-invalid={Boolean(errors.displayName ?? serverFieldErrors.displayName)}
             aria-describedby={
-              errors.displayName || serverFieldErrors.displayName ? "displayName-error" : undefined
+              errors.displayName || serverFieldErrors.displayName
+                ? "displayName-error"
+                : undefined
             }
             className={cn(
-              "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
-              "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-              (errors.displayName || serverFieldErrors.displayName) && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
+              "block h-12 w-full rounded-2xl border bg-card px-4 text-sm text-text-primary transition",
+              "placeholder:text-text-secondary",
+              "focus:outline-none focus:ring-2",
+              errors.displayName || serverFieldErrors.displayName
+                ? "border-error focus:border-error focus:ring-error/10"
+                : "border-white/[0.06] focus:border-accent focus:ring-accent/10",
             )}
           />
-          {(errors.displayName?.message || serverFieldErrors.displayName) ? (
-            <p id="displayName-error" className="mt-1.5 text-xs text-rose-600">
+          {errors.displayName?.message || serverFieldErrors.displayName ? (
+            <p id="displayName-error" className="mt-1.5 text-[12px] text-error">
               {errors.displayName?.message ?? serverFieldErrors.displayName}
             </p>
           ) : null}
@@ -257,11 +264,15 @@ export function RegisterForm() {
           }}
         />
 
+        {/* Password */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+          <label
+            htmlFor="password"
+            className="mb-1.5 block text-[13px] text-text-secondary"
+          >
             Password
           </label>
-          <div className="relative mt-1.5">
+          <div className="relative">
             <input
               {...register("password")}
               id="password"
@@ -269,18 +280,25 @@ export function RegisterForm() {
               autoComplete="new-password"
               placeholder="At least 8 characters"
               aria-invalid={Boolean(errors.password ?? serverFieldErrors.password)}
-              aria-describedby={errors.password || serverFieldErrors.password ? "password-error" : "password-strength"}
+              aria-describedby={
+                errors.password || serverFieldErrors.password
+                  ? "password-error"
+                  : "password-strength"
+              }
               className={cn(
-                "block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 pr-10 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
-                "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-                (errors.password || serverFieldErrors.password) && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
+                "block h-12 w-full rounded-2xl border bg-card px-4 pr-11 text-sm text-text-primary transition",
+                "placeholder:text-text-secondary",
+                "focus:outline-none focus:ring-2",
+                errors.password || serverFieldErrors.password
+                  ? "border-error focus:border-error focus:ring-error/10"
+                  : "border-white/[0.06] focus:border-accent focus:ring-accent/10",
               )}
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus:outline-none focus:text-slate-700 dark:focus:text-slate-200"
+              className="absolute inset-y-0 right-0 flex items-center px-3.5 text-text-secondary hover:text-text-primary transition-colors focus:outline-none"
             >
               <EyeIcon hidden={showPassword} />
             </button>
@@ -288,29 +306,36 @@ export function RegisterForm() {
           <div id="password-strength">
             <PasswordStrength password={password} />
           </div>
-          {(errors.password?.message || serverFieldErrors.password) ? (
-            <p id="password-error" className="mt-1.5 text-xs text-rose-600">
+          {errors.password?.message || serverFieldErrors.password ? (
+            <p id="password-error" className="mt-1.5 text-[12px] text-error">
               {errors.password?.message ?? serverFieldErrors.password}
             </p>
           ) : null}
         </div>
 
+        {/* Server error */}
         {serverError ? (
           <div
             role="alert"
             aria-live="polite"
-            className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700"
+            className="rounded-2xl border px-4 py-3 text-sm text-error"
+            style={{
+              borderColor: "rgba(255,71,87,0.2)",
+              backgroundColor: "rgba(255,71,87,0.08)",
+            }}
           >
             {serverError}
           </div>
         ) : null}
 
+        {/* Submit */}
         <button
           type="submit"
           disabled={submitting}
           className={cn(
-            "flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
-            "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+            "flex h-12 w-full items-center justify-center rounded-2xl bg-accent px-4 text-sm font-semibold text-bg transition",
+            "hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+            "active:scale-[0.98]",
             "disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >
@@ -393,20 +418,18 @@ function RegistrationOtpStep({
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Verify your email
-        </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <h2 className="text-lg font-semibold text-text-primary">Verify your email</h2>
+        <p className="mt-1 text-sm text-text-secondary">
           We sent a 6-digit code to{" "}
-          <span className="font-medium text-slate-900 dark:text-white">{email}</span>. Enter
-          it below to activate your account — it expires in 15 minutes.
+          <span className="font-medium text-text-primary">{email}</span>. Enter it below to
+          activate your account — it expires in 15 minutes.
         </p>
       </div>
 
       <div className="space-y-2">
         <label
           id="reg-otp-label"
-          className="block text-sm font-medium text-slate-700 dark:text-slate-200"
+          className="block text-[13px] text-text-secondary"
         >
           Verification code
         </label>
@@ -425,14 +448,18 @@ function RegistrationOtpStep({
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700"
+          className="rounded-2xl border px-4 py-3 text-sm text-error"
+          style={{
+            borderColor: "rgba(255,71,87,0.2)",
+            backgroundColor: "rgba(255,71,87,0.08)",
+          }}
         >
           {error}
         </div>
       ) : null}
 
       {resendMessage ? (
-        <p role="status" aria-live="polite" className="text-xs text-slate-600 dark:text-slate-400">
+        <p role="status" aria-live="polite" className="text-[12px] text-text-secondary">
           {resendMessage}
         </p>
       ) : null}
@@ -442,20 +469,20 @@ function RegistrationOtpStep({
         disabled={isVerifying || otp.length !== 6}
         onClick={() => verify(otp)}
         className={cn(
-          "flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
-          "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+          "flex h-12 w-full items-center justify-center rounded-2xl bg-accent px-4 text-sm font-semibold text-bg transition",
+          "hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
           "disabled:cursor-not-allowed disabled:opacity-60",
         )}
       >
         {isVerifying ? "Verifying…" : "Verify and sign in"}
       </button>
 
-      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+      <div className="flex items-center justify-between text-[12px] text-text-secondary">
         <button
           type="button"
           onClick={onBack}
           disabled={isVerifying}
-          className="font-medium underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-50"
+          className="font-medium underline underline-offset-2 hover:text-text-primary transition-colors disabled:opacity-50"
         >
           Back to registration
         </button>
@@ -463,7 +490,7 @@ function RegistrationOtpStep({
           type="button"
           onClick={resend}
           disabled={isResending || isVerifying}
-          className="font-medium underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-50"
+          className="font-medium underline underline-offset-2 hover:text-text-primary transition-colors disabled:opacity-50"
         >
           {isResending ? "Sending…" : "Resend code"}
         </button>

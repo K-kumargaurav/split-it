@@ -100,18 +100,19 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
     <div className="space-y-5">
       <GoogleButton callbackUrl={callbackUrl} />
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-slate-200 dark:border-slate-700" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-slate-50 dark:bg-slate-800 px-3 text-xs uppercase tracking-wider text-slate-400">
-            or
-          </span>
-        </div>
+      {/* Divider */}
+      <div className="relative flex items-center gap-3">
+        <div className="h-px flex-1 bg-white/[0.06]" />
+        <span className="text-xs uppercase tracking-wider text-text-secondary">OR</span>
+        <div className="h-px flex-1 bg-white/[0.06]" />
       </div>
 
-      <div role="tablist" aria-label="Sign-in method" className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+      {/* Tab switcher */}
+      <div
+        role="tablist"
+        aria-label="Sign-in method"
+        className="grid grid-cols-3 gap-1 rounded-2xl bg-card p-1"
+      >
         <ModeTab active={mode === "password"} onClick={() => setMode("password")}>
           Password
         </ModeTab>
@@ -129,8 +130,12 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
         <OtpForm />
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          {/* Email field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+            <label
+              htmlFor="email"
+              className="mb-1.5 block text-[13px] text-text-secondary"
+            >
               Email address
             </label>
             <input
@@ -142,31 +147,38 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
               aria-invalid={Boolean(errors.email)}
               aria-describedby={errors.email ? "email-error" : undefined}
               className={cn(
-                "mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
-                "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-                errors.email && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
+                "block h-12 w-full rounded-2xl border bg-card px-4 text-sm text-text-primary transition",
+                "placeholder:text-text-secondary",
+                "focus:outline-none focus:ring-2",
+                errors.email
+                  ? "border-error focus:border-error focus:ring-error/10"
+                  : "border-white/[0.06] focus:border-accent focus:ring-accent/10",
               )}
             />
             {errors.email ? (
-              <p id="email-error" className="mt-1.5 text-xs text-rose-600">
+              <p id="email-error" className="mt-1.5 text-[12px] text-error">
                 {errors.email.message}
               </p>
             ) : null}
           </div>
 
+          {/* Password field */}
           <div>
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+            <div className="mb-1.5 flex items-center justify-between">
+              <label
+                htmlFor="password"
+                className="text-[13px] text-text-secondary"
+              >
                 Password
               </label>
               <Link
                 href="/forgot-password"
-                className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
+                className="text-[12px] font-medium text-accent hover:opacity-80 transition-opacity"
               >
                 Forgot password?
               </Link>
             </div>
-            <div className="relative mt-1.5">
+            <div className="relative">
               <input
                 {...register("password")}
                 id="password"
@@ -176,59 +188,66 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
                 aria-invalid={Boolean(errors.password)}
                 aria-describedby={errors.password ? "password-error" : undefined}
                 className={cn(
-                  "block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 pr-10 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition",
-                  "focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-                  errors.password && "border-rose-300 focus:border-rose-400 focus:ring-rose-400",
+                  "block h-12 w-full rounded-2xl border bg-card px-4 pr-11 text-sm text-text-primary transition",
+                  "placeholder:text-text-secondary",
+                  "focus:outline-none focus:ring-2",
+                  errors.password
+                    ? "border-error focus:border-error focus:ring-error/10"
+                    : "border-white/[0.06] focus:border-accent focus:ring-accent/10",
                 )}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus:outline-none focus:text-slate-700 dark:focus:text-slate-200"
+                className="absolute inset-y-0 right-0 flex items-center px-3.5 text-text-secondary hover:text-text-primary transition-colors focus:outline-none"
               >
                 <EyeIcon hidden={showPassword} />
               </button>
             </div>
             {errors.password ? (
-              <p id="password-error" className="mt-1.5 text-xs text-rose-600">
+              <p id="password-error" className="mt-1.5 text-[12px] text-error">
                 {errors.password.message}
               </p>
             ) : null}
           </div>
 
+          {/* Server error */}
           {serverError ? (
             <div
               role="alert"
               aria-live="polite"
-              className="space-y-2 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700"
+              className="space-y-1.5 rounded-2xl border px-4 py-3 text-sm text-error"
+              style={{
+                borderColor: "rgba(255,71,87,0.2)",
+                backgroundColor: "rgba(255,71,87,0.08)",
+              }}
             >
               <p>{serverError.message}</p>
               {serverError.unverifiedEmail ? (
                 <Link
                   href={`/verify-email/pending?email=${encodeURIComponent(serverError.unverifiedEmail)}`}
-                  className="inline-block font-medium text-rose-800 underline"
+                  className="inline-block font-medium underline"
                 >
                   Resend verification email
                 </Link>
               ) : null}
               {serverError.showRegisterLink ? (
-                <Link
-                  href="/register"
-                  className="inline-block font-medium text-rose-800 underline"
-                >
+                <Link href="/register" className="inline-block font-medium underline">
                   Create one?
                 </Link>
               ) : null}
             </div>
           ) : null}
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={isSubmitting}
             className={cn(
-              "flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
-              "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+              "flex h-12 w-full items-center justify-center rounded-2xl bg-accent px-4 text-sm font-semibold text-bg transition",
+              "hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+              "active:scale-[0.98]",
               "disabled:cursor-not-allowed disabled:opacity-60",
             )}
           >
@@ -256,8 +275,10 @@ function ModeTab({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
-        active ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white",
+        "rounded-xl px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+        active
+          ? "bg-bg text-text-primary shadow-sm"
+          : "text-text-secondary hover:text-text-primary",
       )}
     >
       {children}
@@ -269,7 +290,15 @@ function Spinner({ label }: { label: string }) {
   return (
     <span className="inline-flex items-center gap-2">
       <svg viewBox="0 0 24 24" className="h-4 w-4 animate-spin" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="3"
+          fill="none"
+          opacity="0.25"
+        />
         <path
           d="M22 12a10 10 0 0 1-10 10"
           stroke="currentColor"

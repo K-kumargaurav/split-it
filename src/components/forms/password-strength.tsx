@@ -23,8 +23,8 @@ function score(pw: string): Strength {
       score: 0,
       label: "Enter a password",
       hint: "8+ characters, 1 uppercase, 1 number.",
-      barClass: "bg-slate-200 dark:bg-slate-700",
-      textClass: "text-slate-500 dark:text-slate-400",
+      barClass: "bg-white/[0.08]",
+      textClass: "text-text-secondary",
     };
   }
   let s = 0;
@@ -36,11 +36,11 @@ function score(pw: string): Strength {
   const clamped = Math.min(s, 4) as 0 | 1 | 2 | 3 | 4;
 
   const presets: Record<0 | 1 | 2 | 3 | 4, Omit<Strength, "score">> = {
-    0: { label: "Too short", hint: "At least 8 characters.", barClass: "bg-rose-500", textClass: "text-rose-600" },
-    1: { label: "Weak", hint: "Add a mix of cases and numbers.", barClass: "bg-rose-500", textClass: "text-rose-600" },
-    2: { label: "Fair", hint: "Try a longer phrase.", barClass: "bg-amber-500", textClass: "text-amber-700" },
-    3: { label: "Strong", hint: "Nice — that'll do.", barClass: "bg-emerald-500", textClass: "text-emerald-700" },
-    4: { label: "Excellent", hint: "Great password.", barClass: "bg-emerald-500", textClass: "text-emerald-700" },
+    0: { label: "Too short", hint: "At least 8 characters.", barClass: "bg-error", textClass: "text-error" },
+    1: { label: "Weak", hint: "Add a mix of cases and numbers.", barClass: "bg-error", textClass: "text-error" },
+    2: { label: "Fair", hint: "Try a longer phrase.", barClass: "bg-warning", textClass: "text-warning" },
+    3: { label: "Strong", hint: "Nice — that'll do.", barClass: "bg-accent", textClass: "text-accent" },
+    4: { label: "Excellent", hint: "Great password.", barClass: "bg-accent", textClass: "text-accent" },
   };
 
   return { score: clamped, ...presets[clamped] };
@@ -57,15 +57,15 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
           <div
             key={i}
             className={cn(
-              "h-1.5 flex-1 rounded-full transition-colors",
-              i <= filled ? s.barClass : "bg-slate-200 dark:bg-slate-700",
+              "h-1 flex-1 rounded-full transition-colors",
+              i <= filled ? s.barClass : "bg-white/[0.08]",
             )}
           />
         ))}
       </div>
-      <div className="mt-1.5 flex items-center justify-between text-xs">
+      <div className="mt-1.5 flex items-center justify-between text-[12px]">
         <span className={cn("font-medium", s.textClass)}>{s.label}</span>
-        <span className="text-slate-500 dark:text-slate-400">{s.hint}</span>
+        <span className="text-text-secondary">{s.hint}</span>
       </div>
     </div>
   );

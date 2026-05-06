@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell } from "lucide-react";
 import useSWRInfinite from "swr/infinite";
 
 import { cn } from "@/lib/cn";
 import { NotificationItem } from "./notification-item";
+import { EmptyNotifications } from "./empty-notifications";
+import { NotificationSkeleton } from "@/components/ui/skeleton";
 
 interface InboxItem {
   id: string;
@@ -193,30 +194,14 @@ export function NotificationsFeed(): JSX.Element {
 
       {/* ── Content ──────────────────────────────────────────────────────── */}
       {isLoading && visibleItems.length === 0 ? (
-        <div className="flex flex-col gap-2">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-[72px] animate-pulse rounded-2xl bg-[#161B22]"
-            />
-          ))}
+        <div className="flex flex-col gap-1">
+          <NotificationSkeleton />
+          <NotificationSkeleton />
+          <NotificationSkeleton />
+          <NotificationSkeleton />
         </div>
       ) : visibleItems.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl bg-[#161B22] p-12 text-center">
-          <span
-            aria-hidden="true"
-            className="flex h-14 w-14 items-center justify-center rounded-full"
-            style={{ background: "rgba(0,200,150,0.1)" }}
-          >
-            <Bell size={28} style={{ color: "#00C896" }} />
-          </span>
-          <div>
-            <p className="text-base font-semibold text-[#F5F7FA]">
-              You&apos;re all caught up
-            </p>
-            <p className="mt-1 text-sm text-[#8B93A7]">No new notifications</p>
-          </div>
-        </div>
+        <EmptyNotifications />
       ) : (
         <div className="flex flex-col gap-4">
           <AnimatePresence initial={false}>

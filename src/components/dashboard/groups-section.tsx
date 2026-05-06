@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Users } from "lucide-react";
 
 import { GroupCard, type GroupCardData } from "@/components/dashboard/group-card";
+import { EmptyGroups } from "@/components/dashboard/empty-groups";
 import { ScaleIn, StaggerChildren } from "@/components/ui/motion";
 
 interface GroupsSectionProps {
@@ -44,36 +44,6 @@ export function GroupsSection({ groups }: GroupsSectionProps) {
           </ScaleIn>
         ))}
       </StaggerChildren>
-    </section>
-  );
-}
-
-function EmptyGroups() {
-  return (
-    <section
-      aria-labelledby="no-groups-heading"
-      className="flex flex-col items-center rounded-3xl border border-white/5 bg-[#161B22] px-6 py-12 text-center shadow-card"
-    >
-      <Users
-        size={40}
-        className="text-[#8B93A7]"
-        aria-hidden="true"
-      />
-      <h2
-        id="no-groups-heading"
-        className="mt-4 text-base font-medium text-[#F5F7FA]"
-      >
-        No groups yet
-      </h2>
-      <p className="mt-1.5 max-w-xs text-sm text-[#8B93A7]">
-        Start splitting expenses with friends or flatmates
-      </p>
-      <Link
-        href="/groups/new"
-        className="mt-6 inline-flex h-[52px] items-center justify-center rounded-2xl bg-[#00C896] px-8 font-semibold text-[#0E1116] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0E1116]"
-      >
-        Create your first group
-      </Link>
     </section>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { StaggerChildren } from "@/components/ui/motion";
 import { ExpenseCard, type ExpenseCardData } from "./expense-card";
+import { EmptyExpenses } from "./empty-expenses";
 
 interface ExpenseListProps {
   expenses: ExpenseCardData[];
@@ -37,20 +38,7 @@ export function ExpenseList({ expenses, groupId, loadMoreHref }: ExpenseListProp
   const nonEmpty = BUCKETS.filter((b) => (grouped.get(b)?.length ?? 0) > 0);
 
   if (nonEmpty.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/5 bg-[#161B22] px-5 py-14 text-center">
-        <span
-          aria-hidden="true"
-          className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04]"
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-7 w-7 text-[#8B93A7]">
-            <path d="M5 2a1 1 0 0 0-1 1v14.382a.5.5 0 0 0 .724.447L7 16.618l2.276 1.211a.5.5 0 0 0 .448 0L12 16.618l2.276 1.211a.5.5 0 0 0 .724-.447V3a1 1 0 0 0-1-1H5zm2.5 4a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5h-5zm0 3a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5h-5zm0 3a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-3z" />
-          </svg>
-        </span>
-        <p className="text-base font-semibold text-[#F5F7FA]">No expenses yet</p>
-        <p className="mt-1 text-sm text-[#8B93A7]">Add the first expense to get started</p>
-      </div>
-    );
+    return <EmptyExpenses groupId={groupId} />;
   }
 
   return (

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { cn } from "@/lib/cn";
 import { formatPaise } from "@/lib/format";
+import { EmptySettlements } from "@/components/settlements/empty-settlements";
 
 export interface BalanceLine {
   direction: "owed" | "owes";
@@ -32,9 +33,7 @@ export function BalancesSection({ lines, mode, groupId }: BalancesSectionProps) 
       </div>
 
       {lines.length === 0 ? (
-        <p className="rounded-xl bg-white/[0.04] px-4 py-3 text-sm text-[#8B93A7]">
-          You&apos;re all settled up in this group.
-        </p>
+        <EmptySettlements />
       ) : (
         <ul className="divide-y divide-white/5">
           {lines.map((line, i) => (

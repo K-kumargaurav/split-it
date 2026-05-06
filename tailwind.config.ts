@@ -33,6 +33,15 @@ const config: Config = {
         card: "0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
         elevated: "0 8px 32px rgba(0,0,0,0.6)",
       },
+      keyframes: {
+        shimmer: {
+          "0%": { backgroundPosition: "200% 0" },
+          "100%": { backgroundPosition: "-200% 0" },
+        },
+      },
+      animation: {
+        shimmer: "shimmer 1.5s infinite linear",
+      },
     },
   },
   plugins: [],

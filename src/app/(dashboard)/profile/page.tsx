@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
@@ -19,6 +18,9 @@ export default async function ProfilePage() {
       displayName: true,
       avatarUrl: true,
       upiId: true,
+      currency: true,
+      locale: true,
+      createdAt: true,
     },
   });
   if (!user) notFound();
@@ -32,22 +34,8 @@ export default async function ProfilePage() {
         image: session.user.image ?? null,
       }}
     >
-      <nav className="mb-6 text-sm">
-        <Link
-          href="/dashboard"
-          className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-        >
-          ← Back to dashboard
-        </Link>
-      </nav>
-
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-          Profile
-        </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Update your display name, handle, avatar, and UPI ID.
-        </p>
+      <header className="mb-8">
+        <h1 className="text-2xl font-bold text-[#F5F7FA]">Profile</h1>
       </header>
 
       <ProfileForm
@@ -57,6 +45,9 @@ export default async function ProfilePage() {
           avatarUrl: user.avatarUrl,
           upiId: user.upiId,
           email: user.email,
+          currency: user.currency,
+          locale: user.locale,
+          createdAt: user.createdAt.toISOString(),
         }}
       />
     </DashboardShell>

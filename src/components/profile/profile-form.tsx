@@ -2,9 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/cn";
+import { PremiumCard } from "@/components/ui/premium-card";
+import { PremiumInput } from "@/components/ui/premium-input";
+import { ProfileHeaderCard } from "./profile-header-card";
+import { ProfilePreferencesSection } from "./profile-preferences-section";
+import { ProfileAccountSection } from "./profile-account-section";
 
 // Edit-in-place profile form. The "Save" button is disabled until at least
 // one field has changed against the server-provided initial values, so users
@@ -17,10 +22,27 @@ interface ProfileFormInitial {
   avatarUrl: string | null;
   upiId: string | null;
   email: string | null;
+  currency?: string | null;
+  locale?: string | null;
+  createdAt?: string | null;
 }
 
 interface ApiErrorBody {
   error?: { code?: string; message?: string };
+}
+
+const GRADIENT_PALETTES = [
+  "from-[#00C896] to-[#00A67C]",
+  "from-[#6366f1] to-[#4f46e5]",
+  "from-[#f59e0b] to-[#d97706]",
+  "from-[#ef4444] to-[#dc2626]",
+  "from-[#8b5cf6] to-[#7c3aed]",
+  "from-[#06b6d4] to-[#0891b2]",
+];
+
+function getGradient(name: string): string {
+  const idx = (name.charCodeAt(0) ?? 0) % GRADIENT_PALETTES.length;
+  return GRADIENT_PALETTES[idx];
 }
 
 export function ProfileForm({ initial }: { initial: ProfileFormInitial }) {
@@ -31,16 +53,12 @@ export function ProfileForm({ initial }: { initial: ProfileFormInitial }) {
   const [handle, setHandle] = useState(initial.handle);
   const [avatarUrl, setAvatarUrl] = useState(initial.avatarUrl ?? "");
   const [upiId, setUpiId] = useState(initial.upiId ?? "");
-
   const [savedSnapshot, setSavedSnapshot] = useState<ProfileFormInitial>(initial);
-
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Clear the success banner after a brief delay so it doesn't linger across
-  // subsequent edits.
   useEffect(() => {
     if (!success) return;
     const t = window.setTimeout(() => setSuccess(false), 3000);
@@ -54,6 +72,7 @@ export function ProfileForm({ initial }: { initial: ProfileFormInitial }) {
     (upiId.trim() || null) !== savedSnapshot.upiId;
 
   const initials = (displayName[0] ?? handle[0] ?? "?").toUpperCase();
+  const gradientClass = getGradient(displayName || handle || "?");
 
   async function handleAvatarFile(file: File) {
     setError(null);
@@ -95,12 +114,8 @@ export function ProfileForm({ initial }: { initial: ProfileFormInitial }) {
     const body: Record<string, unknown> = {};
     if (displayName.trim() !== savedSnapshot.displayName) body.displayName = displayName.trim();
     if (handle.trim() !== savedSnapshot.handle) body.handle = handle.trim();
-    if ((avatarUrl.trim() || null) !== savedSnapshot.avatarUrl) {
-      body.avatarUrl = avatarUrl.trim();
-    }
-    if ((upiId.trim() || null) !== savedSnapshot.upiId) {
-      body.upiId = upiId.trim();
-    }
+    if ((avatarUrl.trim() || null) !== savedSnapshot.avatarUrl) body.avatarUrl = avatarUrl.trim();
+    if ((upiId.trim() || null) !== savedSnapshot.upiId) body.upiId = upiId.trim();
 
     try {
       const res = await fetch("/api/v1/users/me", {
@@ -114,12 +129,7 @@ export function ProfileForm({ initial }: { initial: ProfileFormInitial }) {
         throw new Error(errBody?.error?.message ?? `Save failed (HTTP ${res.status}).`);
       }
       const data = (await res.json()) as {
-        user: {
-          displayName: string;
-          handle: string;
-          avatarUrl: string | null;
-          upiId: string | null;
-        };
+        user: { displayName: string; handle: string; avatarUrl: string | null; upiId: string | null };
       };
       setSavedSnapshot((s) => ({
         ...s,
@@ -145,194 +155,125 @@ export function ProfileForm({ initial }: { initial: ProfileFormInitial }) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8"
-    >
-      <section aria-labelledby="avatar-heading">
-        <h2
-          id="avatar-heading"
-          className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
-        >
-          Avatar
+    <form onSubmit={handleSubmit} className="space-y-4 pb-24 md:pb-0">
+
+      <ProfileHeaderCard
+        avatarUrl={avatarUrl}
+        displayName={displayName || initial.displayName}
+        handle={handle || initial.handle}
+        createdAt={initial.createdAt}
+        uploading={uploading}
+        initials={initials}
+        gradientClass={gradientClass}
+        onAvatarClick={() => fileInputRef.current?.click()}
+      />
+
+      {/* Hidden file input — ref lives here so handleAvatarFile can reset it */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleAvatarFile(f);
+        }}
+      />
+
+      {/* ── Personal Info ────────────────────────────────────────────────── */}
+      <PremiumCard className="p-6">
+        <h2 className="mb-4 text-[13px] font-semibold uppercase tracking-widest text-[#8B93A7]">
+          Personal Info
         </h2>
-        <div className="mt-3 flex items-center gap-4">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarUrl}
-              alt="Your avatar"
-              className="h-16 w-16 flex-shrink-0 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700"
-            />
-          ) : (
-            <span
-              aria-hidden="true"
-              className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xl font-semibold text-white"
-            >
-              {initials}
-            </span>
-          )}
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {uploading ? "Uploading…" : "Change avatar"}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void handleAvatarFile(f);
-              }}
-            />
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              JPEG, PNG, or WebP up to 5MB. Resized to 512×512.
-            </p>
-          </div>
+        <div className="space-y-4">
+          <PremiumInput
+            label="Display name"
+            id="displayName"
+            name="displayName"
+            autoComplete="name"
+            required
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+          />
+          <PremiumInput
+            label="Handle"
+            id="handle"
+            name="handle"
+            autoComplete="username"
+            required
+            value={handle}
+            onChange={(e) => setHandle(e.target.value.toLowerCase())}
+            leftIcon={<span className="text-sm text-[#8B93A7]">@</span>}
+            hint="Lowercase letters, numbers, and underscores."
+          />
+          <PremiumInput
+            label="UPI ID"
+            id="upiId"
+            name="upiId"
+            placeholder="yourname@upi"
+            value={upiId}
+            onChange={(e) => setUpiId(e.target.value)}
+            hint="yourname@upi — used to receive settlement payments."
+          />
+          {initial.email ? (
+            <div>
+              <p className="mb-1.5 text-[13px] text-[#8B93A7]">Email</p>
+              <div className="flex h-12 items-center rounded-2xl border border-white/[0.06] bg-[#0E1116]/60 px-4 text-sm text-[#8B93A7]">
+                {initial.email}
+              </div>
+              <p className="mt-1.5 text-[12px] text-[#8B93A7]">
+                Email changes aren&apos;t supported yet.
+              </p>
+            </div>
+          ) : null}
         </div>
-      </section>
+      </PremiumCard>
 
-      <Field
-        id="displayName"
-        label="Display name"
-        value={displayName}
-        onChange={setDisplayName}
-        autoComplete="name"
-        required
+      <ProfilePreferencesSection
+        initialCurrency={initial.currency ?? "INR"}
+        initialLocale={initial.locale ?? "en-IN"}
       />
 
-      <Field
-        id="handle"
-        label="Handle"
-        prefix="@"
-        value={handle}
-        onChange={(v) => setHandle(v.toLowerCase())}
-        autoComplete="username"
-        hint="Lowercase letters, numbers, and underscores. Must start with a letter."
-        required
-      />
+      <ProfileAccountSection />
 
-      <Field
-        id="upiId"
-        label="UPI ID"
-        value={upiId}
-        onChange={setUpiId}
-        placeholder="yourname@upi"
-        hint="yourname@upi or phone@bank — used to receive settlement payments."
-      />
+      {/* ── Feedback ─────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {error ? (
+          <motion.p
+            key="error"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            role="alert"
+            className="rounded-2xl border border-[#FF4757]/20 bg-[rgba(255,71,87,0.06)] px-4 py-3 text-sm text-[#FF4757]"
+          >
+            {error}
+          </motion.p>
+        ) : null}
+        {success ? (
+          <motion.p
+            key="success"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            role="status"
+            className="rounded-2xl border border-[#00C896]/20 bg-[rgba(0,200,150,0.06)] px-4 py-3 text-sm text-[#00C896]"
+          >
+            Profile saved.
+          </motion.p>
+        ) : null}
+      </AnimatePresence>
 
-      {initial.email ? (
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-            Email
-          </label>
-          <p className="mt-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-sm text-slate-600 dark:text-slate-300">
-            {initial.email}
-          </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Email changes aren&apos;t supported yet.
-          </p>
-        </div>
-      ) : null}
-
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      {success ? (
-        <p
-          role="status"
-          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-        >
-          Profile saved.
-        </p>
-      ) : null}
-
-      <div className="flex items-center justify-end gap-2">
+      {/* ── Save — sticky on mobile, inline on desktop ───────────────────── */}
+      <div className="fixed bottom-16 left-0 right-0 z-10 border-t border-white/[0.04] bg-[#0E1116]/90 px-4 py-3 backdrop-blur-md md:static md:border-0 md:bg-transparent md:p-0 md:pb-6 md:backdrop-blur-none">
         <button
           type="submit"
           disabled={!dirty || submitting}
-          className={cn(
-            "inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition",
-            "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:bg-indigo-300",
-          )}
+          className="w-full rounded-2xl bg-[#00C896] py-3 text-sm font-semibold text-[#0E1116] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 md:w-auto md:px-6"
         >
           {submitting ? "Saving…" : "Save changes"}
         </button>
       </div>
     </form>
-  );
-}
-
-interface FieldProps {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  hint?: string;
-  placeholder?: string;
-  autoComplete?: string;
-  required?: boolean;
-  prefix?: string;
-}
-
-function Field({
-  id,
-  label,
-  value,
-  onChange,
-  hint,
-  placeholder,
-  autoComplete,
-  required,
-  prefix,
-}: FieldProps) {
-  return (
-    <div>
-      <label
-        htmlFor={id}
-        className="block text-sm font-medium text-slate-700 dark:text-slate-200"
-      >
-        {label}
-      </label>
-      <div
-        className={cn(
-          "mt-1.5 flex items-center rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 shadow-sm",
-          "focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500",
-        )}
-      >
-        {prefix ? (
-          <span className="pl-3 text-sm text-slate-400" aria-hidden="true">
-            {prefix}
-          </span>
-        ) : null}
-        <input
-          id={id}
-          name={id}
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
-          required={required}
-          className="block w-full bg-transparent px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
-        />
-      </div>
-      {hint ? (
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</p>
-      ) : null}
-    </div>
   );
 }

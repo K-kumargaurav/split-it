@@ -6,6 +6,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { toast } from "sonner";
+
 import { cn } from "@/lib/cn";
 
 // Six on-brand presets — keeps groups visually distinct on the dashboard
@@ -89,6 +91,7 @@ export function CreateGroupForm() {
         return;
       }
       const body = (await response.json()) as CreatedGroupResponse;
+      toast.success("Group created");
       // Navigate via push so back button returns to /groups/new — keeps the
       // mental model that "creating a group" is a discrete action the user
       // can undo with a back-press if they realise they typed the wrong name.

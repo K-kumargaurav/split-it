@@ -21,7 +21,6 @@ export function MemberSelector({
   members,
   selected,
   onToggle,
-  mode = "multi",
   error,
 }: MemberSelectorProps) {
   const selectedSet = new Set(

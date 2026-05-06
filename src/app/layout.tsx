@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Inter } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
-import { ToastProvider } from "@/components/ui/toast-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -40,7 +40,19 @@ export default function RootLayout({
       >
         <ThemeProvider>
           {children}
-          <ToastProvider />
+          <Toaster
+            position="bottom-center"
+            theme="dark"
+            toastOptions={{
+              style: {
+                background: "#161B22",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#F5F7FA",
+                borderRadius: "16px",
+                fontSize: "14px",
+              },
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

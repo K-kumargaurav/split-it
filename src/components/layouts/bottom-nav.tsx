@@ -49,7 +49,7 @@ export function BottomNav() {
       aria-label="Primary mobile navigation"
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 border-t border-white/5 backdrop-blur-xl md:hidden",
-        "pb-[env(safe-area-inset-bottom)]",
+        "safe-bottom",
       )}
       style={{ backgroundColor: "rgba(14,17,22,0.95)" }}
     >

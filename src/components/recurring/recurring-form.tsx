@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { toast } from "sonner";
+
 import { cn } from "@/lib/cn";
 import { formatDate, formatPaise, rupeesToPaise } from "@/lib/format";
 import { equalSplit, percentageSplit } from "@/lib/split";
@@ -215,6 +217,7 @@ export function RecurringForm({
         setError(json?.error?.message ?? "Couldn't save the recurring expense.");
         return;
       }
+      toast.success("Recurring expense set up");
       router.push(`/groups/${groupId}/recurring`);
       router.refresh();
     } catch {

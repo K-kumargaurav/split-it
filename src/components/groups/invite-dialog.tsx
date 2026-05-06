@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { toast } from "sonner";
+
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import { INVITE_LINK_DEFAULT_MAX_USES, INVITE_LINK_MAX_USES_CAP } from "@/lib/validations/invites";
@@ -90,6 +92,7 @@ export function InviteDialog({ groupId, open, onClose }: InviteDialogProps) {
 
     const body = (await response.json()) as { status: string };
     setEmail("");
+    toast.success("Invite sent");
     setEmailMessage(
       body.status === "ADDED_DIRECTLY"
         ? "User added to the group."

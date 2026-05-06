@@ -1,5 +1,7 @@
 import { BottomNav } from "@/components/layouts/bottom-nav";
 import { Navbar } from "@/components/layouts/navbar";
+import { PageTransition } from "@/components/ui/page-transition";
+import { ScrollReset } from "@/components/ui/scroll-reset";
 
 interface DashboardShellProps {
   user: {
@@ -29,7 +31,10 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
       />
 
       <main className="mx-auto max-w-6xl px-4 pb-20 pt-8 sm:px-6 sm:pt-10 md:pb-0 lg:py-12">
-        {children}
+        <ScrollReset />
+        <PageTransition>
+          {children}
+        </PageTransition>
       </main>
 
       <BottomNav />

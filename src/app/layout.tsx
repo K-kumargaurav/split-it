@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { PwaInstallPrompt } from "@/components/ui/pwa-install-prompt";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -20,9 +21,23 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SplitEasy — Split bills with friends, the easy way",
+  title: "SplitEasy — Split expenses. Not friendships.",
   description:
-    "SplitEasy is the modern bill splitter for groups, trips, and households. Track shared expenses, settle up in one tap, and never argue over who owes whom again.",
+    "Track shared expenses with friends, flatmates, and travel companions.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "SplitEasy",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0E1116",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -35,11 +50,20 @@ export default function RootLayout({
   // which legitimately differs from the server-rendered markup.
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+      </head>
       <body
         className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} antialiased bg-[#0E1116]`}
       >
         <ThemeProvider>
           {children}
+          <PwaInstallPrompt />
           <Toaster
             position="bottom-center"
             theme="dark"

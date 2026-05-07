@@ -1,3 +1,5 @@
+import withPWA from "next-pwa";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
@@ -36,4 +38,26 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+const pwaConfig = withPWA({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development",
+  runtimeCaching: [
+    {
+      urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "supabase-cache",
+        expiration: { maxEntries: 50, maxAgeSeconds: 3600 },
+      },
+    },
+    {
+      urlPattern: /\/api\/v1\/groups$/,
+      handler: "StaleWhileRevalidate",
+      options: { cacheName: "api-groups" },
+    },
+  ],
+});
+
+export default pwaConfig(nextConfig);

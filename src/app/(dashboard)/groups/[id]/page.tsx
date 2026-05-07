@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Settings } from "lucide-react";
+import { SearchX, Settings } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
@@ -158,14 +158,7 @@ export default async function GroupPage({ params, searchParams }: GroupPageProps
           />
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
-                Expenses
-                {hasActiveFilters ? (
-                  <span className="ml-2 text-sm font-normal text-[#8B93A7]">
-                    ({expenses.length} found)
-                  </span>
-                ) : null}
-              </h2>
+              <h2 className="text-lg font-semibold text-[#F5F7FA]">Expenses</h2>
               <Link
                 href={`/groups/${group.id}/expenses/new`}
                 className="hidden rounded-xl bg-[#00C896] px-3.5 py-2 text-sm font-semibold text-[#0E1116] transition hover:bg-[#00C896]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896] sm:inline-flex"
@@ -173,11 +166,32 @@ export default async function GroupPage({ params, searchParams }: GroupPageProps
                 Add expense
               </Link>
             </div>
-            <ExpenseList
-              expenses={expenseCards}
-              groupId={group.id}
-              loadMoreHref={loadMoreHref}
-            />
+            {hasActiveFilters && (
+              <p className="mb-3 text-[13px] text-[#8B93A7]">
+                {expenses.length} expense{expenses.length !== 1 ? "s" : ""} found
+              </p>
+            )}
+            {hasActiveFilters && expenses.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.06] bg-[#161B22] py-14 text-center">
+                <SearchX className="h-10 w-10 text-[#8B93A7]" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold text-[#F5F7FA]">No expenses match your filters</p>
+                  <p className="mt-1 text-sm text-[#8B93A7]">Try adjusting or clearing your filters</p>
+                </div>
+                <Link
+                  href={`/groups/${group.id}`}
+                  className="mt-1 rounded-xl border border-white/[0.06] bg-[#0E1116] px-4 py-2 text-sm font-medium text-[#8B93A7] transition hover:border-white/10 hover:text-[#F5F7FA]"
+                >
+                  Clear filters
+                </Link>
+              </div>
+            ) : (
+              <ExpenseList
+                expenses={expenseCards}
+                groupId={group.id}
+                loadMoreHref={loadMoreHref}
+              />
+            )}
           </div>
           <ActivityFeed settlements={confirmedSettlements} viewerId={session.user.id} />
         </div>

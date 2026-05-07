@@ -1,99 +1,63 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, Search, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/cn";
-
-// Filter UI for SPEC §4.14. Filters live in the URL so the page they sit on
-// is shareable and the back button preserves the filtered view. The filter
-// panel itself is collapsible — most users hit a group page to scan the
-// recent feed, not to dig through history, so the panel stays closed by
-// default and announces an active-filter count when the URL has filters.
-
-interface MemberOption {
-  id: string;
-  displayName: string;
-}
-
-interface CategoryOption {
-  id: string;
-  name: string;
-  emoji: string | null;
-}
+import { MemberSelector } from "@/components/ui/member-selector";
+import { PremiumInput } from "@/components/ui/premium-input";
+import { PremiumSelect } from "@/components/ui/premium-select";
+import {
+  activeCount,
+  amountError,
+  buildChips,
+  commitAmount,
+  EMPTY_FILTER,
+  FILTER_KEYS,
+  fromParams,
+  sameState,
+  type CategoryOption,
+  type FilterChip,
+  type FilterState,
+  type MemberOption,
+} from "./expense-filter-helpers";
 
 export interface ExpenseFiltersProps {
   members: MemberOption[];
   categories: CategoryOption[];
 }
 
-interface FilterState {
-  dateFrom: string;
-  dateTo: string;
-  categoryId: string;
-  paidBy: string;
-  involves: string;
-  minAmount: string;
-  maxAmount: string;
-  keyword: string;
-}
+const DEBOUNCE_MS = 400;
 
-const EMPTY_STATE: FilterState = {
-  dateFrom: "",
-  dateTo: "",
-  categoryId: "",
-  paidBy: "",
-  involves: "",
-  minAmount: "",
-  maxAmount: "",
-  keyword: "",
-};
-
-const FILTER_KEYS = [
-  "dateFrom",
-  "dateTo",
-  "categoryId",
-  "paidBy",
-  "involves",
-  "minAmount",
-  "maxAmount",
-  "keyword",
-] as const;
-
-const KEYWORD_DEBOUNCE_MS = 400;
-const RUPEE_PATTERN = /^\d+(\.\d{1,2})?$/;
+const AMOUNT_INPUT_CLASS =
+  "h-[44px] w-full rounded-2xl border border-white/[0.06] bg-[#0E1116] px-4 text-sm " +
+  "text-[#F5F7FA] placeholder:text-[#8B93A7] focus:outline-none focus:ring-2 " +
+  "focus:ring-[#00C896]/20 focus:border-[#00C896]/40 transition";
 
 export function ExpenseFilters({ members, categories }: ExpenseFiltersProps) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const params = useSearchParams();
-
-  const initial = useMemo<FilterState>(() => readFromParams(params), [params]);
+  const initial = useMemo(() => fromParams(params), [params]);
   const [draft, setDraft] = useState<FilterState>(initial);
-  const [open, setOpen] = useState<boolean>(() => activeCount(initial) > 0);
+  const [open, setOpen] = useState(() => activeCount(initial) > 0);
 
-  // Re-sync local draft when the URL changes from outside the component (e.g.
-  // browser back/forward, or another component pushing). We only overwrite
-  // when the params actually differ — typing into a field shouldn't get its
-  // value yanked away while React batches a router.push.
   useEffect(() => {
-    const fromUrl = readFromParams(params);
-    setDraft((prev) => (sameState(prev, fromUrl) ? prev : fromUrl));
+    const fromUrl = fromParams(params);
+    setDraft((p) => (sameState(p, fromUrl) ? p : fromUrl));
   }, [params]);
 
-  const pushFilters = useCallback(
+  const push = useCallback(
     (next: FilterState) => {
       const sp = new URLSearchParams();
-      // Preserve unrelated query params (e.g. tab state) by copying anything
-      // we don't own back into the new URLSearchParams.
       Array.from(params.entries()).forEach(([k, v]) => {
-        if (!FILTER_KEYS.includes(k as (typeof FILTER_KEYS)[number])) {
-          sp.set(k, v);
-        }
+        if (!FILTER_KEYS.includes(k as (typeof FILTER_KEYS)[number])) sp.set(k, v);
       });
       for (const key of FILTER_KEYS) {
         const raw = next[key].trim();
-        if (raw.length > 0) sp.set(key, raw);
+        if (raw) sp.set(key, raw);
       }
       const qs = sp.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
@@ -102,324 +66,216 @@ export function ExpenseFilters({ members, categories }: ExpenseFiltersProps) {
   );
 
   const setField = useCallback(
-    <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-      setDraft((prev) => ({ ...prev, [key]: value }));
-    },
+    <K extends keyof FilterState>(k: K, v: FilterState[K]) =>
+      setDraft((p) => ({ ...p, [k]: v })),
     [],
   );
 
-  const applyImmediate = useCallback(
-    (next: FilterState) => {
-      setDraft(next);
-      pushFilters(next);
-    },
-    [pushFilters],
+  const apply = useCallback(
+    (next: FilterState) => { setDraft(next); push(next); },
+    [push],
   );
 
-  // Keyword input is debounced — we don't want a re-fetch on every keystroke.
-  // Other filters fire immediately because they're discrete (selects, dates).
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (draft.keyword === initial.keyword) return;
-    debounceRef.current = setTimeout(() => {
-      pushFilters(draft);
-    }, KEYWORD_DEBOUNCE_MS);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-    // We deliberately don't depend on `pushFilters` here — it changes whenever
-    // params change, which happens after the push lands. Including it would
-    // schedule a redundant push on every URL update.
+    debounceRef.current = setTimeout(() => push(draft), DEBOUNCE_MS);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.keyword]);
 
   const count = activeCount(draft);
-  const hasFilters = count > 0;
-  const amountError = amountRangeError(draft);
-
-  const onClear = () => {
-    applyImmediate(EMPTY_STATE);
-  };
+  const chips: FilterChip[] = buildChips(draft, categories, members);
+  const amountErr = amountError(draft);
 
   return (
-    <section
-      aria-label="Expense filters"
-      className="mb-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+    <section aria-label="Expense filters">
+      {/* ── Filter bar ─────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-[#8B93A7]">
+            <Search size={16} aria-hidden="true" />
+          </span>
+          <input
+            type="search"
+            value={draft.keyword}
+            onChange={(e) => setField("keyword", e.target.value)}
+            placeholder="Search expenses..."
+            aria-label="Search expenses"
+            className="h-[44px] w-full rounded-2xl border border-white/[0.06] bg-[#161B22] pl-10 pr-4 text-sm text-[#F5F7FA] placeholder:text-[#8B93A7] focus:outline-none focus:ring-2 focus:ring-[#00C896]/20 focus:border-[#00C896]/40 transition"
+          />
+        </div>
+
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          aria-controls="expense-filters-panel"
-          className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          aria-controls="filter-panel"
+          className={cn(
+            "flex h-[44px] items-center gap-2 rounded-2xl border border-white/[0.06] bg-[#161B22]",
+            "px-4 text-sm font-medium text-[#8B93A7] transition",
+            "hover:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-[#00C896]/20",
+            open && "border-white/10 text-[#F5F7FA]",
+          )}
         >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 20 20"
-            className="h-4 w-4"
-            fill="currentColor"
-          >
-            <path d="M3 5a1 1 0 011-1h12a1 1 0 01.78 1.625l-4.78 6V16a1 1 0 01-1.447.894l-2-1A1 1 0 018 15v-3.375L3.22 5.625A1 1 0 013 5z" />
-          </svg>
           Filters
-          {count > 0 ? (
+          {count > 0 && (
             <span
               aria-label={`${count} active filter${count === 1 ? "" : "s"}`}
-              className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-xs font-semibold text-white"
+              className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#00C896] px-1.5 text-[11px] font-semibold text-[#0E1116]"
             >
               {count}
             </span>
-          ) : null}
-        </button>
-        {hasFilters ? (
-          <button
-            type="button"
-            onClick={onClear}
-            className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded"
+          )}
+          <motion.span
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex items-center"
           >
-            Clear all
-          </button>
-        ) : null}
+            <ChevronDown size={16} aria-hidden="true" />
+          </motion.span>
+        </button>
       </div>
 
-      {open ? (
-        <div
-          id="expense-filters-panel"
-          className="border-t border-slate-100 dark:border-slate-800 px-5 py-4"
-        >
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Search title or notes" htmlFor="filter-keyword">
-              <input
-                id="filter-keyword"
-                type="search"
-                value={draft.keyword}
-                placeholder="e.g. groceries, dinner"
-                onChange={(e) => setField("keyword", e.target.value)}
-                className={inputClass}
-              />
-            </Field>
-
-            <Field label="Date from" htmlFor="filter-date-from">
-              <input
-                id="filter-date-from"
-                type="date"
-                value={draft.dateFrom}
-                onChange={(e) => applyImmediate({ ...draft, dateFrom: e.target.value })}
-                className={inputClass}
-              />
-            </Field>
-
-            <Field label="Date to" htmlFor="filter-date-to">
-              <input
-                id="filter-date-to"
-                type="date"
-                value={draft.dateTo}
-                onChange={(e) => applyImmediate({ ...draft, dateTo: e.target.value })}
-                className={inputClass}
-              />
-            </Field>
-
-            <Field label="Category" htmlFor="filter-category">
-              <select
-                id="filter-category"
-                value={draft.categoryId}
-                onChange={(e) =>
-                  applyImmediate({ ...draft, categoryId: e.target.value })
-                }
-                className={inputClass}
+      {/* ── Active chips ───────────────────────────────────────────── */}
+      {chips.length > 0 && (
+        <motion.div layout className="mt-3 flex flex-wrap gap-2">
+          <AnimatePresence mode="popLayout">
+            {chips.map((chip) => (
+              <motion.div
+                key={chip.key}
+                layout
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.85 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className="flex items-center gap-1.5 rounded-full border border-[rgba(0,200,150,0.2)] bg-[rgba(0,200,150,0.1)] px-3 py-1 text-xs font-medium text-[#00C896]"
               >
-                <option value="">All categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.emoji ? `${c.emoji} ${c.name}` : c.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={() => apply({ ...draft, [chip.key]: "" } as FilterState)}
+                  aria-label={`Remove ${chip.label} filter`}
+                  className="ml-0.5 transition hover:opacity-70 focus:outline-none"
+                >
+                  <X size={12} aria-hidden="true" />
+                </button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+      )}
 
-            <Field label="Paid by" htmlFor="filter-paid-by">
-              <select
-                id="filter-paid-by"
-                value={draft.paidBy}
-                onChange={(e) =>
-                  applyImmediate({ ...draft, paidBy: e.target.value })
-                }
-                className={inputClass}
-              >
-                <option value="">Any payer</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.displayName}
-                  </option>
-                ))}
-              </select>
-            </Field>
+      {/* ── Expanded panel ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="filter-panel"
+            id="filter-panel"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="mt-2 rounded-2xl border border-white/[0.06] bg-[#161B22] p-5">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Row 1 — dates */}
+                <PremiumInput
+                  id="filter-date-from" label="From" type="date"
+                  value={draft.dateFrom}
+                  onChange={(e) => apply({ ...draft, dateFrom: e.target.value })}
+                />
+                <PremiumInput
+                  id="filter-date-to" label="To" type="date"
+                  value={draft.dateTo}
+                  onChange={(e) => apply({ ...draft, dateTo: e.target.value })}
+                />
 
-            <Field label="Involves member" htmlFor="filter-involves">
-              <select
-                id="filter-involves"
-                value={draft.involves}
-                onChange={(e) =>
-                  applyImmediate({ ...draft, involves: e.target.value })
-                }
-                className={inputClass}
-              >
-                <option value="">Anyone</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.displayName}
-                  </option>
-                ))}
-              </select>
-            </Field>
+                {/* Row 2 — category + paid by */}
+                <PremiumSelect
+                  id="filter-category" label="Category"
+                  value={draft.categoryId}
+                  onChange={(e) => apply({ ...draft, categoryId: e.target.value })}
+                >
+                  <option value="">All categories</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.emoji ? `${c.emoji} ${c.name}` : c.name}
+                    </option>
+                  ))}
+                </PremiumSelect>
+                <PremiumSelect
+                  id="filter-paid-by" label="Paid by"
+                  value={draft.paidBy}
+                  onChange={(e) => apply({ ...draft, paidBy: e.target.value })}
+                >
+                  <option value="">Any payer</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>{m.displayName}</option>
+                  ))}
+                </PremiumSelect>
 
-            <Field label="Min amount (₹)" htmlFor="filter-min-amount">
-              <input
-                id="filter-min-amount"
-                type="text"
-                inputMode="decimal"
-                value={draft.minAmount}
-                placeholder="0"
-                onChange={(e) => setField("minAmount", e.target.value)}
-                onBlur={() => commitIfValidAmount("minAmount", draft, applyImmediate)}
-                className={inputClass}
-              />
-            </Field>
+                {/* Row 3 — amounts (compact) */}
+                <div>
+                  <label htmlFor="filter-min" className="mb-1.5 block text-[13px] text-[#8B93A7]">
+                    Min amount (₹)
+                  </label>
+                  <input
+                    id="filter-min" type="text" inputMode="decimal"
+                    value={draft.minAmount} placeholder="0"
+                    onChange={(e) => setField("minAmount", e.target.value)}
+                    onBlur={() => commitAmount("minAmount", draft, apply)}
+                    className={AMOUNT_INPUT_CLASS}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="filter-max" className="mb-1.5 block text-[13px] text-[#8B93A7]">
+                    Max amount (₹)
+                  </label>
+                  <input
+                    id="filter-max" type="text" inputMode="decimal"
+                    value={draft.maxAmount} placeholder="∞"
+                    onChange={(e) => setField("maxAmount", e.target.value)}
+                    onBlur={() => commitAmount("maxAmount", draft, apply)}
+                    className={AMOUNT_INPUT_CLASS}
+                  />
+                </div>
+              </div>
 
-            <Field label="Max amount (₹)" htmlFor="filter-max-amount">
-              <input
-                id="filter-max-amount"
-                type="text"
-                inputMode="decimal"
-                value={draft.maxAmount}
-                placeholder="∞"
-                onChange={(e) => setField("maxAmount", e.target.value)}
-                onBlur={() => commitIfValidAmount("maxAmount", draft, applyImmediate)}
-                className={inputClass}
-              />
-            </Field>
-          </div>
+              {/* Row 4 — involves member */}
+              <div className="mt-4">
+                <p className="mb-2 text-[13px] text-[#8B93A7]">Involves member</p>
+                <MemberSelector
+                  members={members}
+                  selected={draft.involves}
+                  onToggle={(id) =>
+                    apply({ ...draft, involves: draft.involves === id ? "" : id })
+                  }
+                  mode="single"
+                />
+              </div>
 
-          {amountError ? (
-            <p
-              role="alert"
-              className="mt-3 text-xs font-medium text-rose-600"
-            >
-              {amountError}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+              {amountErr && (
+                <p role="alert" className="mt-3 text-[12px] text-[#FF4757]">{amountErr}</p>
+              )}
+
+              {count > 0 && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => apply(EMPTY_FILTER)}
+                    className="text-sm font-medium text-[#FF4757] transition hover:opacity-80 focus:outline-none"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
-}
-
-function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label htmlFor={htmlFor} className="flex flex-col gap-1">
-      <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-const inputClass = cn(
-  "w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900",
-  "px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
-);
-
-function readFromParams(params: URLSearchParams): FilterState {
-  const get = (k: string): string => params.get(k) ?? "";
-  return {
-    dateFrom: get("dateFrom"),
-    dateTo: get("dateTo"),
-    categoryId: get("categoryId"),
-    paidBy: get("paidBy"),
-    involves: get("involves"),
-    minAmount: paiseToRupeesField(params.get("minAmount")),
-    maxAmount: paiseToRupeesField(params.get("maxAmount")),
-    keyword: get("keyword"),
-  };
-}
-
-// URL carries paise (matches the API), but the field is rupees-facing per
-// SPEC §4.2. Convert at the boundary in both directions.
-function paiseToRupeesField(raw: string | null): string {
-  if (!raw) return "";
-  if (!/^-?\d+$/.test(raw)) return "";
-  const paise = BigInt(raw);
-  const negative = paise < BigInt(0);
-  const abs = negative ? -paise : paise;
-  const whole = abs / BigInt(100);
-  const fraction = (abs % BigInt(100)).toString().padStart(2, "0");
-  const trimmed = fraction === "00" ? `${whole}` : `${whole}.${fraction}`;
-  return negative ? `-${trimmed}` : trimmed;
-}
-
-function rupeesFieldToPaise(rupees: string): string | null {
-  const trimmed = rupees.trim();
-  if (trimmed.length === 0) return null;
-  if (!RUPEE_PATTERN.test(trimmed)) return null;
-  const [whole, fractionRaw = ""] = trimmed.split(".");
-  const fraction = fractionRaw.padEnd(2, "0").slice(0, 2);
-  const paise = BigInt(whole) * BigInt(100) + BigInt(fraction);
-  return paise.toString();
-}
-
-function commitIfValidAmount(
-  key: "minAmount" | "maxAmount",
-  draft: FilterState,
-  apply: (next: FilterState) => void,
-): void {
-  const raw = draft[key].trim();
-  if (raw.length === 0) {
-    apply({ ...draft, [key]: "" });
-    return;
-  }
-  const paise = rupeesFieldToPaise(raw);
-  if (paise === null) return;
-  // Round-trip through rupees → paise → rupees so the field shows a
-  // canonical "10.00" rather than "10" on commit.
-  apply({ ...draft, [key]: paiseToRupeesField(paise) });
-}
-
-function activeCount(state: FilterState): number {
-  let n = 0;
-  for (const key of FILTER_KEYS) {
-    if (state[key].trim().length > 0) n += 1;
-  }
-  return n;
-}
-
-function sameState(a: FilterState, b: FilterState): boolean {
-  for (const key of FILTER_KEYS) {
-    if (a[key] !== b[key]) return false;
-  }
-  return true;
-}
-
-function amountRangeError(state: FilterState): string | null {
-  const min = rupeesFieldToPaise(state.minAmount);
-  const max = rupeesFieldToPaise(state.maxAmount);
-  if (state.minAmount.trim().length > 0 && min === null) {
-    return "Min amount must be a positive number with up to 2 decimal places.";
-  }
-  if (state.maxAmount.trim().length > 0 && max === null) {
-    return "Max amount must be a positive number with up to 2 decimal places.";
-  }
-  if (min !== null && max !== null && BigInt(min) > BigInt(max)) {
-    return "Min amount can't exceed max amount.";
-  }
-  return null;
 }

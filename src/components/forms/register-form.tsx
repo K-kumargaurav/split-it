@@ -190,6 +190,7 @@ export function RegisterForm() {
       <RegistrationOtpStep
         email={pendingEmail}
         onBack={() => setPendingEmail(null)}
+        onSuccess={() => { window.location.href = "/dashboard"; }}
       />
     );
   }
@@ -355,11 +356,12 @@ export function RegisterForm() {
 function RegistrationOtpStep({
   email,
   onBack,
+  onSuccess,
 }: {
   email: string;
   onBack: () => void;
+  onSuccess: () => void;
 }) {
-  const router = useRouter();
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -387,8 +389,7 @@ function RegistrationOtpStep({
       return;
     }
 
-    router.push(result.url ?? "/dashboard");
-    router.refresh();
+    onSuccess();
   }
 
   async function resend() {

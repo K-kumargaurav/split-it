@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { RefreshCw } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
-import { cn } from "@/lib/cn";
-import { formatDate, formatPaise } from "@/lib/format";
-import { RecurringActions } from "@/components/recurring/recurring-actions";
+import { StaggerChildren } from "@/components/ui/motion";
+import { RecurringCard } from "@/components/recurring/recurring-actions";
 import { getGroupById, type GroupDetail } from "@/server/groups/get-groups";
 import {
   listRecurringTemplates,
@@ -16,13 +16,13 @@ interface RecurringPageProps {
   params: { id: string };
 }
 
-const FREQUENCY_LABEL: Record<RecurringTemplateRow["frequency"], string> = {
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-  BIWEEKLY: "Every two weeks",
-  MONTHLY: "Monthly",
-  YEARLY: "Yearly",
-};
+function participantCount(config: RecurringTemplateRow["participantConfig"]): number {
+  if (!config || typeof config !== "object" || Array.isArray(config)) return 0;
+  const c = config as { participantIds?: unknown; splits?: unknown };
+  if (Array.isArray(c.participantIds)) return c.participantIds.length;
+  if (Array.isArray(c.splits)) return c.splits.length;
+  return 0;
+}
 
 export default async function RecurringPage({ params }: RecurringPageProps) {
   const session = await auth();
@@ -44,104 +44,52 @@ export default async function RecurringPage({ params }: RecurringPageProps) {
     <div>
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#F5F7FA] sm:text-3xl">
-            Recurring expenses
-          </h1>
-          <p className="mt-1 text-sm text-[#8B93A7]">
-            Templates auto-add an expense on each scheduled date until paused or ended.
+          <h1 className="text-[20px] font-semibold text-[#F5F7FA]">Recurring</h1>
+          <p className="mt-0.5 text-[13px] text-[#8B93A7]">
+            Auto-added on schedule until paused
           </p>
         </div>
         <Link
           href={`/groups/${group.id}/recurring/new`}
-          className="inline-flex items-center justify-center rounded-xl bg-[#00C896] px-3.5 py-2 text-sm font-semibold text-[#0E1116] transition hover:bg-[#00C896]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896]"
+          className="inline-flex h-10 items-center justify-center rounded-xl bg-[#00C896] px-4 text-sm font-semibold text-[#0E1116] transition hover:bg-[#00C896]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896]"
         >
           Add recurring
         </Link>
       </header>
 
       {templates.length === 0 ? (
-        <section className="rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] px-5 py-10 text-center">
-          <p className="text-sm font-medium text-[#F5F7FA]">No recurring expenses yet</p>
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] px-5 py-16 text-center">
+          <RefreshCw className="mb-4 h-10 w-10 text-[#8B93A7]" strokeWidth={1.5} />
+          <p className="text-sm font-medium text-[#F5F7FA]">No recurring expenses</p>
           <p className="mt-1 text-sm text-[#8B93A7]">
-            Set up rent, subscriptions, or anything that repeats — we&apos;ll add it automatically.
+            Set up rent, subscriptions, or any regular split
           </p>
-        </section>
+          <Link
+            href={`/groups/${group.id}/recurring/new`}
+            className="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-[#00C896] px-4 text-sm font-semibold text-[#0E1116] transition hover:bg-[#00C896]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896]"
+          >
+            Add recurring
+          </Link>
+        </div>
       ) : (
-        <ul className="space-y-3">
-          {templates.map((t) => {
-            const partCount = participantCount(t.participantConfig);
-            return (
-              <li
-                key={t.id}
-                className={cn(
-                  "rounded-2xl border border-white/[0.06] bg-[#161B22] p-5 sm:p-6",
-                  !t.isActive && "opacity-75",
-                )}
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-base font-semibold text-[#F5F7FA]">
-                        {t.title}
-                      </p>
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
-                          t.isActive
-                            ? "bg-[#00C896]/10 text-[#00C896]"
-                            : "bg-[#FFB020]/10 text-[#FFB020]",
-                        )}
-                      >
-                        {t.isActive ? "Active" : "Paused"}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-[#8B93A7]">
-                      {FREQUENCY_LABEL[t.frequency]} · {partCount} participant
-                      {partCount === 1 ? "" : "s"} ·{" "}
-                      {t.splitType === "EQUAL"
-                        ? "Equal"
-                        : t.splitType === "EXACT"
-                          ? "Exact"
-                          : "Percentage"}
-                    </p>
-                    <p className="mt-2 text-xs text-[#8B93A7]">
-                      Next run:{" "}
-                      <span className="font-mono text-[#F5F7FA]">
-                        {formatDate(t.nextRunDate)}
-                      </span>
-                      {t.endDate ? (
-                        <>
-                          {" "}
-                          · Ends{" "}
-                          <span className="font-mono">{formatDate(t.endDate)}</span>
-                        </>
-                      ) : null}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <p className="font-mono text-lg font-semibold tabular-nums text-[#F5F7FA]">
-                      {formatPaise(t.amountPaise)}
-                    </p>
-                    <RecurringActions
-                      groupId={group.id}
-                      templateId={t.id}
-                      isActive={t.isActive}
-                    />
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <StaggerChildren className="space-y-3">
+          {templates.map((t) => (
+            <RecurringCard
+              key={t.id}
+              groupId={group.id}
+              templateId={t.id}
+              title={t.title}
+              amountPaise={t.amountPaise}
+              frequency={t.frequency}
+              splitType={t.splitType}
+              participantCount={participantCount(t.participantConfig)}
+              nextRunDate={t.nextRunDate}
+              endDate={t.endDate}
+              isActive={t.isActive}
+            />
+          ))}
+        </StaggerChildren>
       )}
     </div>
   );
-}
-
-function participantCount(config: RecurringTemplateRow["participantConfig"]): number {
-  if (!config || typeof config !== "object" || Array.isArray(config)) return 0;
-  const c = config as { participantIds?: unknown; splits?: unknown };
-  if (Array.isArray(c.participantIds)) return c.participantIds.length;
-  if (Array.isArray(c.splits)) return c.splits.length;
-  return 0;
 }

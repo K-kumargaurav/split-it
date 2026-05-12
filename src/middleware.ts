@@ -8,14 +8,16 @@ import authEdgeConfig from "@/lib/auth-edge";
 // client, none of which are edge-compatible.
 const { auth } = NextAuth(authEdgeConfig);
 
-const AUTH_PAGES = new Set(["/login", "/register"]);
+// /register is intentionally excluded: an authenticated user must be able to
+// remain on /register while the profile-setup screen is displayed (which is
+// rendered client-side after OTP verification, before any navigation away).
+const AUTH_PAGES = new Set(["/login"]);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
-  // Already-signed-in users should never see the login or register pages —
-  // bounce them to the dashboard so they can't accidentally re-trigger an
-  // auth flow that recreates a session for the same identity.
+  // Already-signed-in users should never see the login page — bounce them to
+  // the dashboard. /register is excluded so profile setup can complete first.
   if (req.auth?.user && AUTH_PAGES.has(pathname)) {
     const url = req.nextUrl.clone();
     url.pathname = "/dashboard";

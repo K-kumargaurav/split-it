@@ -66,7 +66,14 @@ export default async function DashboardPage() {
             userName={displayName}
           />
 
-          <QuickActions />
+          <QuickActions
+            groups={groupCards.map((g) => ({
+              id: g.id,
+              name: g.name,
+              icon: g.icon,
+              memberCount: g.memberCount,
+            }))}
+          />
 
           <PendingActions pending={data.pending} />
 

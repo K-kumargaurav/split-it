@@ -4,7 +4,6 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime, formatPaise, formatRelativeTime } from "@/lib/format";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { ProposalActions } from "@/components/expenses/proposal-actions";
 import { DeleteExpenseButton } from "@/components/expenses/delete-expense-button";
 import type { ProposedChanges } from "@/lib/validations/proposals";
@@ -61,18 +60,11 @@ export default async function ExpenseDetailPage({
   const totalRupeesLabel = formatPaise(Number(expense.totalAmount));
 
   return (
-    <DashboardShell
-      user={{
-        name: session.user.name ?? null,
-        email: session.user.email ?? null,
-        handle: session.user.handle,
-        image: session.user.image ?? null,
-      }}
-    >
+    <div>
       <nav className="mb-6 text-sm">
         <Link
           href={`/groups/${params.id}`}
-          className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+          className="text-[#8B93A7] transition-colors hover:text-[#F5F7FA]"
         >
           ← Back to {expense.group.name}
         </Link>
@@ -80,10 +72,10 @@ export default async function ExpenseDetailPage({
 
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#F5F7FA] sm:text-3xl">
             {expense.title}
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm text-[#8B93A7]">
             {totalRupeesLabel} · paid by {expense.payers.map((p) => p.user.displayName).join(", ")}
             {" · "}added {formatRelativeTime(expense.createdAt)} by {expense.creator.displayName}
             {expense.status === "DELETED" ? " · deleted" : ""}
@@ -93,7 +85,7 @@ export default async function ExpenseDetailPage({
           <div className="flex flex-col items-end gap-2">
             <Link
               href={`/groups/${params.id}/expenses/${expense.id}/edit`}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-800"
+              className="rounded-xl border border-white/[0.06] bg-[#161B22] px-3 py-1.5 text-sm font-medium text-[#F5F7FA] shadow-sm transition hover:bg-white/[0.06]"
             >
               {isOwn ? "Edit" : "Propose edit"}
             </Link>
@@ -116,23 +108,23 @@ export default async function ExpenseDetailPage({
         />
       ) : null}
 
-      <section className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      <section className="mt-4 rounded-2xl border border-white/[0.06] bg-[#161B22] p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[#8B93A7]">
           Split breakdown
         </h2>
-        <ul className="mt-3 divide-y divide-slate-200 dark:divide-slate-700">
+        <ul className="mt-3 divide-y divide-white/[0.04]">
           {expense.participants.map((p) => (
             <li
               key={p.userId}
-              className="flex items-center justify-between py-2 text-sm text-slate-700 dark:text-slate-200"
+              className="flex items-center justify-between py-2 text-sm text-[#F5F7FA]"
             >
               <span>
                 {p.user.displayName}
                 {p.userId === userId ? (
-                  <span className="ml-1 text-xs text-slate-400">(you)</span>
+                  <span className="ml-1 text-xs text-[#8B93A7]">(you)</span>
                 ) : null}
               </span>
-              <span className="font-mono tabular-nums text-slate-900 dark:text-white">
+              <span className="font-mono tabular-nums">
                 {formatPaise(Number(p.amountPaise))}
               </span>
             </li>
@@ -141,8 +133,8 @@ export default async function ExpenseDetailPage({
       </section>
 
       {expense.receiptUrl ? (
-        <section className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <section className="mt-4 rounded-2xl border border-white/[0.06] bg-[#161B22] p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[#8B93A7]">
             Receipt
           </h2>
           <a
@@ -155,12 +147,12 @@ export default async function ExpenseDetailPage({
             <img
               src={expense.receiptUrl}
               alt="Receipt"
-              className="h-40 w-40 rounded-lg border border-slate-200 dark:border-slate-700 object-cover"
+              className="h-40 w-40 rounded-lg border border-white/[0.06] object-cover"
             />
           </a>
         </section>
       ) : null}
-    </DashboardShell>
+    </div>
   );
 }
 
@@ -199,18 +191,18 @@ function ProposalBanner({
     <section
       role="status"
       aria-live="polite"
-      className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4"
+      className="rounded-2xl border border-[#FFB020]/20 bg-[#FFB020]/5 px-5 py-4"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-amber-900">
+          <p className="text-sm font-semibold text-[#FFB020]">
             {verb === "deletion" ? "Deletion" : "Edit"} proposed by{" "}
             {proposal.proposer.displayName}
           </p>
-          <p className="mt-1 text-xs text-amber-800">
+          <p className="mt-1 text-xs text-[#FFB020]/80">
             Vote by {formatDateTime(proposal.expiresAt)}
           </p>
-          <p className="mt-2 text-xs text-amber-900">
+          <p className="mt-2 text-xs text-[#FFB020]">
             {approveCount} approved · {rejectCount} rejected · {pending} pending
           </p>
         </div>

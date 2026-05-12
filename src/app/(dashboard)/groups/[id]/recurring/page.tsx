@@ -5,8 +5,6 @@ import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { cn } from "@/lib/cn";
 import { formatDate, formatPaise } from "@/lib/format";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { GroupTabs } from "@/components/groups/group-tabs";
 import { RecurringActions } from "@/components/recurring/recurring-actions";
 import { getGroupById, type GroupDetail } from "@/server/groups/get-groups";
 import {
@@ -43,43 +41,28 @@ export default async function RecurringPage({ params }: RecurringPageProps) {
   const templates = await listRecurringTemplates(session.user.id, params.id);
 
   return (
-    <DashboardShell
-      user={{
-        name: session.user.name ?? null,
-        email: session.user.email ?? null,
-        handle: session.user.handle,
-        image: session.user.image ?? null,
-      }}
-    >
-      <nav className="mb-6 text-sm">
-        <Link href={`/groups/${group.id}`} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-          ← Back to {group.name}
-        </Link>
-      </nav>
-
-      <GroupTabs groupId={group.id} />
-
+    <div>
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#F5F7FA] sm:text-3xl">
             Recurring expenses
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm text-[#8B93A7]">
             Templates auto-add an expense on each scheduled date until paused or ended.
           </p>
         </div>
         <Link
           href={`/groups/${group.id}/recurring/new`}
-          className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          className="inline-flex items-center justify-center rounded-xl bg-[#00C896] px-3.5 py-2 text-sm font-semibold text-[#0E1116] transition hover:bg-[#00C896]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896]"
         >
           Add recurring
         </Link>
       </header>
 
       {templates.length === 0 ? (
-        <section className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-5 py-10 text-center">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">No recurring expenses yet</p>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <section className="rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] px-5 py-10 text-center">
+          <p className="text-sm font-medium text-[#F5F7FA]">No recurring expenses yet</p>
+          <p className="mt-1 text-sm text-[#8B93A7]">
             Set up rent, subscriptions, or anything that repeats — we&apos;ll add it automatically.
           </p>
         </section>
@@ -91,30 +74,28 @@ export default async function RecurringPage({ params }: RecurringPageProps) {
               <li
                 key={t.id}
                 className={cn(
-                  "rounded-2xl border bg-white dark:bg-slate-900 p-5 shadow-sm sm:p-6",
-                  t.isActive
-                    ? "border-slate-200 dark:border-slate-700"
-                    : "border-slate-200 dark:border-slate-700 opacity-75",
+                  "rounded-2xl border border-white/[0.06] bg-[#161B22] p-5 sm:p-6",
+                  !t.isActive && "opacity-75",
                 )}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-base font-semibold text-slate-900 dark:text-white">
+                      <p className="truncate text-base font-semibold text-[#F5F7FA]">
                         {t.title}
                       </p>
                       <span
                         className={cn(
                           "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
                           t.isActive
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-amber-50 text-amber-700",
+                            ? "bg-[#00C896]/10 text-[#00C896]"
+                            : "bg-[#FFB020]/10 text-[#FFB020]",
                         )}
                       >
                         {t.isActive ? "Active" : "Paused"}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    <p className="mt-1 text-xs text-[#8B93A7]">
                       {FREQUENCY_LABEL[t.frequency]} · {partCount} participant
                       {partCount === 1 ? "" : "s"} ·{" "}
                       {t.splitType === "EQUAL"
@@ -123,9 +104,9 @@ export default async function RecurringPage({ params }: RecurringPageProps) {
                           ? "Exact"
                           : "Percentage"}
                     </p>
-                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    <p className="mt-2 text-xs text-[#8B93A7]">
                       Next run:{" "}
-                      <span className="font-mono text-slate-900 dark:text-white">
+                      <span className="font-mono text-[#F5F7FA]">
                         {formatDate(t.nextRunDate)}
                       </span>
                       {t.endDate ? (
@@ -138,7 +119,7 @@ export default async function RecurringPage({ params }: RecurringPageProps) {
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <p className="font-mono text-lg font-semibold tabular-nums text-slate-900 dark:text-white">
+                    <p className="font-mono text-lg font-semibold tabular-nums text-[#F5F7FA]">
                       {formatPaise(t.amountPaise)}
                     </p>
                     <RecurringActions
@@ -153,12 +134,10 @@ export default async function RecurringPage({ params }: RecurringPageProps) {
           })}
         </ul>
       )}
-    </DashboardShell>
+    </div>
   );
 }
 
-// participantConfig is JSON in the DB — narrow it just enough to count
-// the participants without hard-coding the full schema in the page.
 function participantCount(config: RecurringTemplateRow["participantConfig"]): number {
   if (!config || typeof config !== "object" || Array.isArray(config)) return 0;
   const c = config as { participantIds?: unknown; splits?: unknown };

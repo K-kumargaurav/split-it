@@ -1,10 +1,7 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { GroupTabs } from "@/components/groups/group-tabs";
 import { AuditTimeline, type AuditEntryClient } from "@/components/audit/audit-timeline";
 import { getAuditLog } from "@/server/audit/get-audit-log";
 import { getGroupById, type GroupDetail } from "@/server/groups/get-groups";
@@ -41,30 +38,12 @@ export default async function AuditPage({ params }: AuditPageProps) {
   }));
 
   return (
-    <DashboardShell
-      user={{
-        name: session.user.name ?? null,
-        email: session.user.email ?? null,
-        handle: session.user.handle,
-        image: session.user.image ?? null,
-      }}
-    >
-      <nav className="mb-6 text-sm">
-        <Link
-          href={`/groups/${group.id}`}
-          className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-        >
-          ← Back to {group.name}
-        </Link>
-      </nav>
-
-      <GroupTabs groupId={group.id} />
-
+    <div>
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-[#F5F7FA] sm:text-3xl">
           Activity
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-[#8B93A7]">
           Every edit to expenses, settlements, and members in {group.name}.
         </p>
       </header>
@@ -75,6 +54,6 @@ export default async function AuditPage({ params }: AuditPageProps) {
         initialNextCursor={initialPage.nextCursor}
         viewerId={session.user.id}
       />
-    </DashboardShell>
+    </div>
   );
 }

@@ -1,13 +1,10 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { AddGuestForm } from "@/components/groups/add-guest-form";
-import { GroupTabs } from "@/components/groups/group-tabs";
 import {
   InviteButton,
   LeaveGroupButton,
@@ -50,28 +47,13 @@ export default async function MembersPage({ params }: MembersPageProps) {
   const isOwner = viewerRole === "OWNER";
 
   return (
-    <DashboardShell
-      user={{
-        name: session.user.name ?? null,
-        email: session.user.email ?? null,
-        handle: session.user.handle,
-        image: session.user.image ?? null,
-      }}
-    >
-      <nav className="mb-6 text-sm">
-        <Link href={`/groups/${group.id}`} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-          ← Back to {group.name}
-        </Link>
-      </nav>
-
-      <GroupTabs groupId={group.id} />
-
+    <div>
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#F5F7FA] sm:text-3xl">
             Members
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm text-[#8B93A7]">
             {members.length} {members.length === 1 ? "member" : "members"} in {group.name}
           </p>
         </div>
@@ -80,12 +62,12 @@ export default async function MembersPage({ params }: MembersPageProps) {
 
       <section
         aria-labelledby="members-heading"
-        className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8"
+        className="rounded-2xl border border-white/[0.06] bg-[#161B22] p-6 sm:p-8"
       >
         <h2 id="members-heading" className="sr-only">
           Members list
         </h2>
-        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+        <ul className="divide-y divide-white/[0.04]">
           {members.map((m) => (
             <MemberRowItem
               key={m.userId}
@@ -103,12 +85,12 @@ export default async function MembersPage({ params }: MembersPageProps) {
 
       <section
         aria-labelledby="add-guest-heading"
-        className="mt-6 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-6 sm:p-8"
+        className="mt-6 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] p-6 sm:p-8"
       >
-        <h2 id="add-guest-heading" className="text-sm font-semibold text-slate-900 dark:text-white">
+        <h2 id="add-guest-heading" className="text-sm font-semibold text-[#F5F7FA]">
           Splitting with someone who doesn&apos;t use SplitEasy?
         </h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-[#8B93A7]">
           Add them as a guest. They&apos;ll get a private link to see their balance and pay
           you back — no signup needed.
         </p>
@@ -122,7 +104,7 @@ export default async function MembersPage({ params }: MembersPageProps) {
           <LeaveGroupButton groupId={group.id} userId={session.user.id} />
         </div>
       ) : null}
-    </DashboardShell>
+    </div>
   );
 }
 
@@ -136,18 +118,18 @@ function GhostMemberRow({
     <li className="flex items-center gap-3 py-3">
       <span
         aria-hidden="true"
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-300 text-sm font-semibold text-white"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white"
       >
         {initial}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
+        <p className="truncate text-sm font-medium text-[#F5F7FA]">
           {ghost.displayName}
-          <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-700">
+          <span className="ml-2 rounded-full bg-[#FFB020]/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#FFB020]">
             Guest
           </span>
         </p>
-        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+        <p className="truncate text-xs text-[#8B93A7]">
           {ghost.email ?? ghost.phone ?? "No contact info"} · added{" "}
           {formatDate(ghost.createdAt)}
         </p>
@@ -182,7 +164,7 @@ function MemberRowItem({
         <img
           src={member.avatarUrl}
           alt=""
-          className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700"
+          className="h-9 w-9 rounded-full object-cover ring-1 ring-white/10"
         />
       ) : (
         <span
@@ -193,16 +175,16 @@ function MemberRowItem({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
+        <p className="truncate text-sm font-medium text-[#F5F7FA]">
           {member.displayName}
-          {isYou ? <span className="ml-1 text-xs text-slate-400">(you)</span> : null}
+          {isYou ? <span className="ml-1 text-xs text-[#8B93A7]">(you)</span> : null}
         </p>
-        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+        <p className="truncate text-xs text-[#8B93A7]">
           @{member.handle} · joined {formatDate(member.joinedAt)}
         </p>
       </div>
       {isOwnerRow ? (
-        <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+        <span className="rounded-full bg-[#00C896]/10 px-2 py-0.5 text-xs font-medium text-[#00C896]">
           Owner
         </span>
       ) : null}

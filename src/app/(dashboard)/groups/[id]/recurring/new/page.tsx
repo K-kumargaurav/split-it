@@ -4,7 +4,6 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { RecurringForm } from "@/components/recurring/recurring-form";
 import { getGroupById, type GroupDetail } from "@/server/groups/get-groups";
 
@@ -33,34 +32,27 @@ export default async function NewRecurringPage({ params }: NewRecurringPageProps
   });
 
   return (
-    <DashboardShell
-      user={{
-        name: session.user.name ?? null,
-        email: session.user.email ?? null,
-        handle: session.user.handle,
-        image: session.user.image ?? null,
-      }}
-    >
+    <div>
       <nav className="mb-6 text-sm">
         <Link
           href={`/groups/${group.id}/recurring`}
-          className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+          className="text-[#8B93A7] transition-colors hover:text-[#F5F7FA]"
         >
           ← Back to recurring
         </Link>
       </nav>
 
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-[#F5F7FA] sm:text-3xl">
           New recurring expense
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-[#8B93A7]">
           Define how it repeats and we&apos;ll create the expense automatically on each
           scheduled date.
         </p>
       </header>
 
-      <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8">
+      <section className="rounded-2xl border border-white/[0.06] bg-[#161B22] p-6 sm:p-8">
         <RecurringForm
           groupId={group.id}
           viewerId={session.user.id}
@@ -72,6 +64,6 @@ export default async function NewRecurringPage({ params }: NewRecurringPageProps
           categories={categories}
         />
       </section>
-    </DashboardShell>
+    </div>
   );
 }

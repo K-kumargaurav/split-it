@@ -5,7 +5,6 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import {
   SettlementForm,
   type DebtOption,
@@ -52,28 +51,16 @@ export default async function NewSettlementPage({
   const debts = toDebtOptions(direct, session.user.id, group.members, upiByUserId);
 
   return (
-    <DashboardShell
-      user={{
-        name: session.user.name ?? null,
-        email: session.user.email ?? null,
-        handle: session.user.handle,
-        image: session.user.image ?? null,
-      }}
-    >
-      {/* Page header */}
+    <div>
       <div className="mb-6 flex items-center gap-3">
         <Link
           href={`/groups/${group.id}`}
-          className="flex h-9 w-9 items-center justify-center rounded-xl transition"
-          style={{
-            background: "rgba(255,255,255,0.04)",
-            color: "#8B93A7",
-          }}
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.04] text-[#8B93A7] transition hover:text-[#F5F7FA]"
           aria-label={`Back to ${group.name}`}
         >
           <ArrowLeft size={18} />
         </Link>
-        <h1 className="text-[20px] font-semibold text-text-primary">
+        <h1 className="text-[20px] font-semibold text-[#F5F7FA]">
           Mark as Paid
         </h1>
       </div>
@@ -83,7 +70,7 @@ export default async function NewSettlementPage({
         debts={debts}
         defaultReceiverId={searchParams.to}
       />
-    </DashboardShell>
+    </div>
   );
 }
 

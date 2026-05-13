@@ -14,6 +14,13 @@ const nextConfig = {
       "@prisma/adapter-pg",
       "sharp",
     ],
+    serverActions: {
+      allowedOrigins: [
+        "spliteasy.info",
+        "www.spliteasy.info",
+        "localhost:3000",
+      ],
+    },
   },
   async headers() {
     return [

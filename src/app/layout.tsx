@@ -26,10 +26,7 @@ export const metadata: Metadata = {
     "Track shared expenses with friends, flatmates, and travel companions.",
   manifest: "/manifest.json",
   icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico" },
-    ],
+    icon: "/favicon.svg",
     apple: "/icons/icon-192x192.png",
   },
   appleWebApp: {

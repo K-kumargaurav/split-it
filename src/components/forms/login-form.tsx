@@ -7,6 +7,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { motion } from "framer-motion";
+
 import { cn } from "@/lib/cn";
 import { GoogleButton } from "@/components/forms/google-button";
 import { MagicLinkForm } from "@/components/forms/magic-link-form";
@@ -275,13 +277,18 @@ function ModeTab({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "rounded-xl px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-        active
-          ? "bg-bg text-text-primary shadow-sm"
-          : "text-text-secondary hover:text-text-primary",
+        "relative rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+        active ? "text-text-primary" : "text-text-secondary hover:text-text-primary",
       )}
     >
-      {children}
+      {active && (
+        <motion.span
+          layoutId="tab-pill"
+          className="absolute inset-0 rounded-xl bg-bg shadow-sm"
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        />
+      )}
+      <span className="relative z-10">{children}</span>
     </button>
   );
 }

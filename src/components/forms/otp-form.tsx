@@ -133,8 +133,9 @@ function EmailStep({ onSent }: { onSent: (email: string) => void }) {
         type="submit"
         disabled={isSubmitting}
         className={cn(
-          "flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
-          "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+          "flex h-12 w-full items-center justify-center rounded-2xl bg-accent px-4 text-sm font-semibold text-bg transition",
+          "hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+          "active:scale-[0.98]",
           "disabled:cursor-not-allowed disabled:opacity-60",
         )}
       >
@@ -256,8 +257,9 @@ function OtpStep({ email, onBack }: OtpStepProps) {
         disabled={isVerifying || otp.length !== 6}
         onClick={() => verify(otp)}
         className={cn(
-          "flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
-          "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+          "flex h-12 w-full items-center justify-center rounded-2xl bg-accent px-4 text-sm font-semibold text-bg transition",
+          "hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+          "active:scale-[0.98]",
           "disabled:cursor-not-allowed disabled:opacity-60",
         )}
       >

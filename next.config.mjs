@@ -2,7 +2,6 @@ import withPWA from "next-pwa";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
   // serverComponentsExternalPackages tells Next.js not to bundle these on the
   // server — they must be resolved from node_modules at runtime. We list the
   // Prisma query engine packages that contain native binaries; the generated

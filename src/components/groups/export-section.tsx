@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Download } from "lucide-react";
+import { motion } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 
@@ -35,7 +37,8 @@ export function ExportSection({ groupId }: ExportSectionProps) {
         return;
       }
       const blob = await response.blob();
-      const filename = parseFilename(response.headers.get("Content-Disposition")) ??
+      const filename =
+        parseFilename(response.headers.get("Content-Disposition")) ??
         `spliteasy-export.${format}`;
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -52,11 +55,18 @@ export function ExportSection({ groupId }: ExportSectionProps) {
     }
   }
 
+  const dateInputClass = cn(
+    "block w-full rounded-2xl border border-white/[0.06] bg-card px-4 py-3 text-sm text-text-primary transition",
+    "focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/10",
+    "[color-scheme:dark]",
+  );
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Date range */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="export-start" className="block text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label htmlFor="export-start" className="mb-1.5 block text-[13px] text-text-secondary">
             From
           </label>
           <input
@@ -64,11 +74,11 @@ export function ExportSection({ groupId }: ExportSectionProps) {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className={dateInputClass}
           />
         </div>
         <div>
-          <label htmlFor="export-end" className="block text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label htmlFor="export-end" className="mb-1.5 block text-[13px] text-text-secondary">
             To
           </label>
           <input
@@ -76,40 +86,46 @@ export function ExportSection({ groupId }: ExportSectionProps) {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className={dateInputClass}
           />
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
+      {/* Export buttons */}
+      <div className="flex flex-wrap gap-3">
+        <motion.button
           type="button"
+          whileTap={{ scale: 0.97 }}
           onClick={() => download("pdf")}
           disabled={busy !== null}
           className={cn(
-            "inline-flex items-center justify-center rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition",
-            "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-60",
+            "inline-flex h-10 items-center gap-2 rounded-2xl border border-white/10 px-5 text-sm font-medium text-text-primary transition",
+            "hover:border-white/20 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+            "disabled:cursor-not-allowed disabled:opacity-50",
           )}
         >
-          {busy === "pdf" ? "Generating PDF…" : "Export PDF"}
-        </button>
-        <button
+          <Download size={15} aria-hidden="true" />
+          {busy === "pdf" ? "Generating…" : "Export PDF"}
+        </motion.button>
+
+        <motion.button
           type="button"
+          whileTap={{ scale: 0.97 }}
           onClick={() => download("csv")}
           disabled={busy !== null}
           className={cn(
-            "inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition",
-            "hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-60",
+            "inline-flex h-10 items-center gap-2 rounded-2xl border border-white/10 px-5 text-sm font-medium text-text-primary transition",
+            "hover:border-white/20 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+            "disabled:cursor-not-allowed disabled:opacity-50",
           )}
         >
-          {busy === "csv" ? "Generating CSV…" : "Export CSV"}
-        </button>
+          <Download size={15} aria-hidden="true" />
+          {busy === "csv" ? "Generating…" : "Export CSV"}
+        </motion.button>
       </div>
 
       {error ? (
-        <p role="alert" className="text-xs text-rose-600">
+        <p role="alert" className="text-[13px] text-error">
           {error}
         </p>
       ) : null}

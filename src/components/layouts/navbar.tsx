@@ -193,7 +193,7 @@ function AvatarMenu({ user }: { user: NavbarProps["user"] }) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -4 }}
             transition={{ type: "spring", stiffness: 300, damping: 24 }}
-            className="absolute right-0 z-50 mt-2 w-52 origin-top-right overflow-hidden rounded-2xl border border-white/[0.08] bg-[#161B22] shadow-elevated"
+            className="absolute right-0 z-50 mt-2 min-w-[160px] max-w-[200px] origin-top-right overflow-hidden rounded-2xl border border-white/[0.08] bg-[#161B22] shadow-elevated"
           >
             {/* Handle */}
             <div className="border-b border-white/5 px-4 py-3">
@@ -208,7 +208,7 @@ function AvatarMenu({ user }: { user: NavbarProps["user"] }) {
                 </DropdownLink>
               </li>
               <li>
-                <DropdownLink href="/groups" onClick={() => setOpen(false)}>
+                <DropdownLink href="/settings" onClick={() => setOpen(false)}>
                   Settings
                 </DropdownLink>
               </li>

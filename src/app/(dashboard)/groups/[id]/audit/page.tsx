@@ -39,12 +39,12 @@ export default async function AuditPage({ params }: AuditPageProps) {
 
   return (
     <div>
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-[#F5F7FA] sm:text-3xl">
+      <header className="mb-8">
+        <h1 className="text-[24px] font-bold tracking-[-0.02em] text-text-primary">
           Activity
         </h1>
-        <p className="mt-1 text-sm text-[#8B93A7]">
-          Every edit to expenses, settlements, and members in {group.name}.
+        <p className="mt-1.5 text-[14px] text-text-secondary">
+          Every change in {group.name} — permanent record
         </p>
       </header>
 

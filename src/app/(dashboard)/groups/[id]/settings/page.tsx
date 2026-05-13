@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
@@ -29,30 +30,31 @@ export default async function GroupSettingsPage({ params }: SettingsPageProps) {
   const isOwner = group.viewerRole === "OWNER";
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <nav className="mb-6 text-sm">
+    <div className="mx-auto max-w-2xl">
+      {/* Back nav */}
+      <nav className="mb-6">
         <Link
           href={`/groups/${group.id}`}
-          className="text-[#8B93A7] transition-colors hover:text-[#F5F7FA]"
+          className="inline-flex items-center gap-1 text-[13px] text-text-secondary transition hover:text-text-primary"
         >
-          ← Back to {group.name}
+          <ChevronLeft size={14} aria-hidden="true" />
+          Back to {group.name}
         </Link>
       </nav>
 
+      {/* Page header */}
       <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-[#F5F7FA] sm:text-3xl">
+        <h1 className="text-[24px] font-bold tracking-[-0.02em] text-text-primary">
           Group settings
         </h1>
-        <p className="mt-2 text-sm text-[#8B93A7]">
+        <p className="mt-1.5 text-[14px] text-text-secondary">
           Update general info, change the balance mode, export records, or archive the group.
         </p>
       </header>
 
-      <div className="space-y-6">
-        <Section
-          title="General"
-          description="Visible to everyone in the group."
-        >
+      <div className="space-y-4">
+        {/* General settings */}
+        <Section title="General" description="Visible to everyone in the group.">
           <GroupSettingsForm
             group={{
               id: group.id,
@@ -66,26 +68,28 @@ export default async function GroupSettingsPage({ params }: SettingsPageProps) {
           />
         </Section>
 
+        {/* Export */}
         <Section
-          title="Export"
-          description="Download a PDF report or a CSV of all expenses for the selected date range."
+          title="Export group data"
+          description="Download a PDF report or CSV of all expenses."
         >
           <ExportSection groupId={group.id} />
         </Section>
 
+        {/* Danger zone — owner only */}
         {isOwner ? (
           <section
             aria-labelledby="danger-zone-heading"
-            className="rounded-2xl border border-[#FF4757]/20 bg-[#FF4757]/5 p-6 sm:p-8"
+            className="rounded-3xl border border-error/20 bg-error/5 p-6 sm:p-8"
           >
-            <header className="mb-4">
+            <header className="mb-5">
               <h2
                 id="danger-zone-heading"
-                className="text-lg font-semibold tracking-tight text-[#FF4757]"
+                className="text-[16px] font-semibold tracking-[-0.01em] text-error"
               >
                 Danger zone
               </h2>
-              <p className="mt-1 text-sm text-[#FF4757]/70">
+              <p className="mt-1 text-[13px] text-error/60">
                 Archiving requires all settlements to be confirmed first.
               </p>
             </header>
@@ -109,11 +113,13 @@ function Section({
   return (
     <section
       aria-label={title}
-      className="rounded-2xl border border-white/[0.06] bg-[#161B22] p-6 sm:p-8"
+      className="rounded-3xl border border-white/5 bg-card p-6 shadow-card sm:p-8"
     >
-      <header className="mb-4">
-        <h2 className="text-lg font-semibold tracking-tight text-[#F5F7FA]">{title}</h2>
-        <p className="mt-1 text-sm text-[#8B93A7]">{description}</p>
+      <header className="mb-5 border-b border-white/[0.05] pb-4">
+        <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-text-primary">
+          {title}
+        </h2>
+        <p className="mt-1 text-[13px] text-text-secondary">{description}</p>
       </header>
       {children}
     </section>

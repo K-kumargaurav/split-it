@@ -2,20 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { motion } from "framer-motion";
 
 import { cn } from "@/lib/cn";
+import { PremiumInput } from "@/components/ui/premium-input";
 
-// Mirror of `COLOR_PRESETS` in create-group-form. Six on-brand presets keep
-// monogram tiles legible across the dashboard. Free-form hex would let users
-// pick colours that fail the contrast check on the white avatar.
-const COLOR_PRESETS = [
-  { hex: "#6366F1", label: "Indigo" },
-  { hex: "#10B981", label: "Emerald" },
-  { hex: "#F59E0B", label: "Amber" },
-  { hex: "#EC4899", label: "Pink" },
-  { hex: "#0EA5E9", label: "Sky" },
-  { hex: "#8B5CF6", label: "Violet" },
-] as const;
+const ICONS = ["🏠", "✈️", "🍕", "🎮", "💪", "🎉", "🌴", "💼"] as const;
+const COLORS = ["#6366F1", "#00C896", "#F59E0B", "#EC4899", "#06B6D4", "#8B5CF6"] as const;
 
 interface GroupSettingsFormProps {
   group: {
@@ -33,17 +26,17 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
   const router = useRouter();
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description ?? "");
-  const [icon, setIcon] = useState(group.icon ?? "");
-  const [color, setColor] = useState(group.color ?? COLOR_PRESETS[0].hex);
+  const [icon, setIcon] = useState(group.icon ?? ICONS[0]);
+  const [color, setColor] = useState(group.color ?? COLORS[0]);
   const [balanceMode, setBalanceMode] = useState(group.balanceMode);
-
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [saved, setSaved] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setError(null);
+    setSaved(false);
     setSubmitting(true);
     try {
       const trimmedName = name.trim();
@@ -55,7 +48,7 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
       const body: Record<string, unknown> = {
         name: trimmedName,
         description: description.trim() ? description.trim() : null,
-        icon: icon.trim() ? icon.trim() : null,
+        icon: icon || null,
         color,
       };
       if (isOwner) body.balanceMode = balanceMode;
@@ -72,7 +65,7 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
         setError(json?.error?.message ?? "Couldn't save changes.");
         return;
       }
-      setSavedAt(Date.now());
+      setSaved(true);
       router.refresh();
     } catch {
       setError("Couldn't save changes.");
@@ -83,159 +76,164 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-      <div>
-        <label htmlFor="g-name" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-          Group name
-        </label>
-        <input
-          id="g-name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={80}
-          className="mt-1.5 block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
-      </div>
+      {/* Group name */}
+      <PremiumInput
+        id="g-name"
+        label="Group name"
+        value={name}
+        onChange={(e) => { setName(e.target.value); setSaved(false); }}
+        maxLength={80}
+        autoComplete="off"
+        placeholder="Goa trip · Roomies · Office lunch"
+      />
 
+      {/* Description */}
       <div>
-        <label htmlFor="g-desc" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-          Description
+        <label htmlFor="g-desc" className="mb-1.5 block text-[13px] text-text-secondary">
+          Description <span className="text-[#8B93A7]">(optional)</span>
         </label>
         <textarea
           id="g-desc"
           rows={3}
           maxLength={500}
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="mt-1.5 block w-full resize-y rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          onChange={(e) => { setDescription(e.target.value); setSaved(false); }}
+          placeholder="What's this group for?"
+          className={cn(
+            "block w-full resize-none rounded-2xl border bg-card px-4 py-3 text-sm text-text-primary transition",
+            "placeholder:text-text-secondary focus:outline-none focus:ring-2",
+            "border-white/[0.06] focus:border-accent focus:ring-accent/10",
+          )}
         />
       </div>
 
-      <div>
-        <label htmlFor="g-icon" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-          Icon <span className="text-slate-400">(emoji or single character)</span>
-        </label>
-        <input
-          id="g-icon"
-          type="text"
-          maxLength={8}
-          value={icon}
-          onChange={(e) => setIcon(e.target.value)}
-          className="mt-1.5 block w-32 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
-      </div>
-
+      {/* Icon picker */}
       <fieldset>
-        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Color</legend>
-        <div className="mt-2 flex flex-wrap gap-2.5">
-          {COLOR_PRESETS.map((preset) => {
-            const active = color === preset.hex;
+        <legend className="mb-2 text-[13px] text-text-secondary">Icon</legend>
+        <div className="flex flex-wrap gap-2">
+          {ICONS.map((emoji) => {
+            const active = icon === emoji;
             return (
-              <button
-                key={preset.hex}
+              <motion.button
+                key={emoji}
                 type="button"
-                onClick={() => setColor(preset.hex)}
-                aria-label={preset.label}
+                whileTap={{ scale: 0.92 }}
+                onClick={() => { setIcon(emoji); setSaved(false); }}
+                aria-pressed={active}
+                aria-label={`Select icon ${emoji}`}
+                className={cn(
+                  "flex h-11 w-11 items-center justify-center rounded-full border text-xl transition",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
+                  active
+                    ? "border-accent bg-accent/10"
+                    : "border-white/[0.06] bg-white/[0.04] hover:border-white/[0.12]",
+                )}
+              >
+                {emoji}
+              </motion.button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      {/* Color picker */}
+      <fieldset>
+        <legend className="mb-2 text-[13px] text-text-secondary">Color</legend>
+        <div className="flex flex-wrap gap-3">
+          {COLORS.map((hex) => {
+            const active = color === hex;
+            return (
+              <motion.button
+                key={hex}
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                onClick={() => { setColor(hex); setSaved(false); }}
+                aria-label={`Select color ${hex}`}
                 aria-pressed={active}
                 className={cn(
-                  "h-9 w-9 rounded-full border-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
-                  active ? "scale-110 border-slate-900" : "border-transparent hover:scale-105",
+                  "h-8 w-8 rounded-full transition focus-visible:outline-none",
+                  active && "ring-2 ring-white ring-offset-2 ring-offset-[#161B22]",
                 )}
-                style={{ backgroundColor: preset.hex }}
+                style={{ backgroundColor: hex }}
               />
             );
           })}
         </div>
       </fieldset>
 
-      <fieldset>
-        <legend className="block text-sm font-medium text-slate-700 dark:text-slate-200">Balance mode</legend>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {isOwner
-            ? "Switch how balances are displayed across the group."
-            : "Only the group owner can change the balance mode."}
+      {/* Balance mode */}
+      <div>
+        <p className="text-[13px] text-text-secondary mb-1">
+          Balance mode
+          {!isOwner && (
+            <span className="ml-1 text-[11px] text-text-secondary/60">
+              — only the group owner can change this
+            </span>
+          )}
         </p>
-        <div role="radiogroup" className="mt-2 grid gap-2 sm:grid-cols-2">
-          <ModeOption
-            label="Direct"
-            description="Show every pairwise debt as-is."
-            active={balanceMode === "DIRECT"}
-            disabled={!isOwner}
-            onClick={() => setBalanceMode("DIRECT")}
-          />
-          <ModeOption
-            label="Simplified"
-            description="Combine debts into the fewest payments."
-            active={balanceMode === "SIMPLIFIED"}
-            disabled={!isOwner}
-            onClick={() => setBalanceMode("SIMPLIFIED")}
-          />
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Balance mode">
+          {(["DIRECT", "SIMPLIFIED"] as const).map((mode) => {
+            const active = balanceMode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                disabled={!isOwner}
+                onClick={() => { setBalanceMode(mode); setSaved(false); }}
+                className={cn(
+                  "flex flex-col rounded-2xl border px-4 py-3 text-left transition",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
+                  active
+                    ? "border-accent bg-accent/5"
+                    : "border-white/[0.06] bg-transparent hover:border-white/[0.12]",
+                  !isOwner && "cursor-not-allowed opacity-50",
+                )}
+              >
+                <span className="text-sm font-medium text-text-primary">
+                  {mode === "DIRECT" ? "Direct" : "Simplified"}
+                </span>
+                <span className="mt-0.5 text-[12px] text-text-secondary">
+                  {mode === "DIRECT"
+                    ? "Show every pairwise debt as-is"
+                    : "Minimize number of payments"}
+                </span>
+              </button>
+            );
+          })}
         </div>
-      </fieldset>
+      </div>
 
+      {/* Error / success */}
       {error ? (
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700"
+          className="rounded-2xl border border-error/20 bg-error/10 px-4 py-3 text-sm text-error"
         >
           {error}
         </div>
       ) : null}
-
-      {savedAt ? (
-        <p className="text-xs text-emerald-700" aria-live="polite">
+      {saved ? (
+        <p className="text-[13px] text-accent" aria-live="polite">
           Changes saved.
         </p>
       ) : null}
 
-      <div className="flex items-center justify-end gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={submitting}
-          className={cn(
-            "inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition",
-            "hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-60",
-          )}
-        >
-          {submitting ? "Saving…" : "Save changes"}
-        </button>
-      </div>
+      {/* Save button */}
+      <motion.button
+        type="submit"
+        disabled={submitting}
+        whileTap={{ scale: 0.98 }}
+        className={cn(
+          "flex h-[52px] w-full items-center justify-center rounded-2xl bg-accent font-semibold text-bg transition-opacity",
+          "hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-card",
+          "disabled:cursor-not-allowed disabled:opacity-60",
+        )}
+      >
+        {submitting ? "Saving…" : "Save changes"}
+      </motion.button>
     </form>
-  );
-}
-
-function ModeOption({
-  label,
-  description,
-  active,
-  disabled,
-  onClick,
-}: {
-  label: string;
-  description: string;
-  active: boolean;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={active}
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        "flex flex-col rounded-xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
-        active
-          ? "border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-500"
-          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600",
-        disabled && "cursor-not-allowed opacity-60",
-      )}
-    >
-      <span className="text-sm font-semibold text-slate-900 dark:text-white">{label}</span>
-      <span className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</span>
-    </button>
   );
 }

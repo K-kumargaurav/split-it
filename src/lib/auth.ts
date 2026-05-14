@@ -133,6 +133,7 @@ const adapter: typeof baseAdapter = {
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   ...authEdgeConfig,
   adapter,
   providers: [

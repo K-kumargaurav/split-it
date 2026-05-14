@@ -26,7 +26,7 @@ const PUBLIC_PREFIXES = [
 
 export const authEdgeConfig = {
   trustHost: true,
-  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  secret: process.env.AUTH_SECRET,
   pages: { signIn: "/login" },
   // 7-day rolling JWT session. The original 15-min maxAge logged users out
   // mid-task because there was no refresh token mechanism wired — every

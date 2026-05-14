@@ -22,6 +22,7 @@ const PUBLIC_PREFIXES = [
   "/api/v1/internal/cron/",
   "/api/v1/invites/accept",
   "/api/guest/",
+  "/api/debug",
 ];
 
 export const authEdgeConfig = {

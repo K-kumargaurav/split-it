@@ -134,6 +134,7 @@ const adapter: typeof baseAdapter = {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authEdgeConfig,
+  secret: process.env.AUTH_SECRET,
   adapter,
   providers: [
     ...authEdgeConfig.providers,

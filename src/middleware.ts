@@ -6,7 +6,10 @@ import authEdgeConfig from "@/lib/auth-edge";
 // Middleware runs on the edge runtime. It MUST import the edge-only config —
 // the full config in `@/lib/auth` pulls in nodemailer, bcrypt, and the Prisma
 // client, none of which are edge-compatible.
-const { auth } = NextAuth(authEdgeConfig);
+const { auth } = NextAuth({
+  ...authEdgeConfig,
+  secret: process.env.AUTH_SECRET,
+});
 
 // /register is intentionally excluded: an authenticated user must be able to
 // remain on /register while the profile-setup screen is displayed (which is

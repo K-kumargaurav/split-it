@@ -16,7 +16,7 @@ import { prisma } from "@/lib/prisma";
 
 const PUBLIC = process.env.VAPID_PUBLIC_KEY ?? "";
 const PRIVATE = process.env.VAPID_PRIVATE_KEY ?? "";
-const SUBJECT = process.env.VAPID_EMAIL ?? "mailto:hello@spliteasy.app";
+const SUBJECT = process.env.VAPID_EMAIL ?? "mailto:hello@spliteasy.info";
 
 let configured = false;
 function ensureConfigured(): boolean {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { OTP_TTL_MS, createEmailOtp } from "@/server/auth/email-otp";
@@ -36,15 +37,14 @@ export async function POST(request: Request): Promise<NextResponse<SendOtpResult
     return NextResponse.json({ ok: false, formError: "Invalid request." }, { status: 400 });
   }
 
-  const raw = (body as Record<string, unknown>)?.email;
-  if (typeof raw !== "string") {
-    return NextResponse.json({ ok: false, formError: "Email is required." }, { status: 400 });
+  const parseResult = z.object({ email: z.email().max(254) }).safeParse(body);
+  if (!parseResult.success) {
+    return NextResponse.json(
+      { ok: false, formError: "Enter a valid email address." },
+      { status: 400 },
+    );
   }
-
-  const email = raw.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
-    return NextResponse.json({ ok: false, formError: "Enter a valid email address." }, { status: 400 });
-  }
+  const email = parseResult.data.email.trim().toLowerCase();
 
   const ip = getClientIp(await headers());
 

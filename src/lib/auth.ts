@@ -176,7 +176,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             response: (err as { response?: string } | null)?.response,
             host: process.env.BREVO_SMTP_HOST,
             port: process.env.BREVO_SMTP_PORT,
-            user: process.env.BREVO_SMTP_USER,
+            hasSmtpUser: !!process.env.BREVO_SMTP_USER,
             hasPassword: !!process.env.BREVO_SMTP_PASS,
             fromEmail: process.env.BREVO_FROM_EMAIL,
             fromName: process.env.BREVO_FROM_NAME,

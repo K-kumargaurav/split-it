@@ -35,12 +35,12 @@ async function assertMember(groupId: string, userId: string): Promise<void> {
   }
 }
 
-interface ExpenseRow {
+export interface ExpenseRow {
   payers: { userId: string; amountPaise: bigint }[];
   participants: { userId: string; amountPaise: bigint }[];
 }
 
-interface SettlementRow {
+export interface SettlementRow {
   payerId: string;
   receiverId: string;
   amountPaise: bigint;
@@ -260,6 +260,32 @@ export async function getUserNetBalance(
     if (owed) net -= owed;
   }
   return net;
+}
+
+// Pure in-memory net-balance computation used by the dashboard batch-load path
+// in get-groups.ts. Accepts pre-loaded ledger rows so no DB call is made —
+// the caller fetches all groups' expenses/settlements in two queries and feeds
+// each group's slice here.
+export function computeNetBalance(
+  expenses: ExpenseRow[],
+  settlements: SettlementRow[],
+  userId: string,
+): bigint {
+  const net = new Map<string, Map<string, bigint>>();
+  for (const e of expenses) applyExpense(net, e);
+  for (const s of settlements) applySettlement(net, s);
+  const direct = flattenNet(net);
+
+  let balance = ZERO;
+  for (const amount of Object.values(direct[userId] ?? {})) {
+    balance += amount;
+  }
+  for (const [creditor, debts] of Object.entries(direct)) {
+    if (creditor === userId) continue;
+    const owed = debts[userId];
+    if (owed) balance -= owed;
+  }
+  return balance;
 }
 
 // Pure functions are exported for test reuse — the Prisma-backed wrappers

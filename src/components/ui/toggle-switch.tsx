@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 
+import { cn } from "@/lib/cn";
+
 interface ToggleSwitchProps {
   checked: boolean;
   onChange: (v: boolean) => void;
@@ -20,8 +22,10 @@ export function ToggleSwitch({
       aria-checked={checked}
       aria-label={ariaLabel}
       onClick={() => onChange(!checked)}
-      className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896] focus-visible:ring-offset-2 focus-visible:ring-offset-[#161B22]"
-      style={{ background: checked ? "#00C896" : "rgba(255,255,255,0.1)" }}
+      className={cn(
+        "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-card",
+        checked ? "bg-accent" : "bg-white/10",
+      )}
     >
       <motion.span
         animate={{ x: checked ? 20 : 2 }}

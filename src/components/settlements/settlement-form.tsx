@@ -156,8 +156,7 @@ export function SettlementForm({
         <button
           type="button"
           onClick={() => router.push(`/groups/${groupId}`)}
-          className="mt-5 inline-flex h-10 items-center justify-center rounded-2xl border px-5 text-sm font-medium text-text-primary transition hover:border-white/[0.12]"
-          style={{ borderColor: "rgba(255,255,255,0.08)" }}
+          className="mt-5 inline-flex h-10 items-center justify-center rounded-2xl border border-border-dashed px-5 text-sm font-medium text-text-primary transition hover:border-white/[0.12]"
         >
           Back to group
         </button>
@@ -223,8 +222,7 @@ export function SettlementForm({
             You owe {selected.receiverDisplayName}
           </p>
           <p
-            className="mt-2 text-[36px] font-bold tabular-nums leading-none"
-            style={{ color: "#FF4757" }}
+            className="mt-2 text-[36px] font-bold tabular-nums leading-none text-error"
           >
             {formatPaise(selected.amountPaise)}
           </p>
@@ -264,12 +262,10 @@ export function SettlementForm({
                 key={m.value}
                 className={cn(
                   "flex cursor-pointer items-center justify-center rounded-2xl border px-3 py-3 text-sm font-medium transition-colors duration-150",
+                  isActive
+                    ? "border-accent bg-[rgba(0,200,150,0.05)] text-accent"
+                    : "border-surface-hover bg-[rgba(255,255,255,0.02)] text-text-secondary",
                 )}
-                style={{
-                  borderColor: isActive ? "#00C896" : "rgba(255,255,255,0.06)",
-                  background: isActive ? "rgba(0,200,150,0.05)" : "rgba(255,255,255,0.02)",
-                  color: isActive ? "#00C896" : "#8B93A7",
-                }}
               >
                 <input
                   type="radio"
@@ -298,8 +294,7 @@ export function SettlementForm({
                 void navigator.clipboard.writeText(selected!.receiverUpiId ?? "");
                 toast.success("UPI ID copied");
               }}
-              className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:text-text-primary"
-              style={{ borderColor: "rgba(255,255,255,0.08)" }}
+              className="flex items-center gap-1.5 rounded-full border border-border-dashed px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:text-text-primary"
             >
               <span className="font-mono">{selected!.receiverUpiId}</span>
               <Copy size={11} />
@@ -309,8 +304,7 @@ export function SettlementForm({
           {/* Pay via UPI button */}
           <a
             href={upiLink}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition hover:opacity-90"
-            style={{ background: "#00C896", color: "#0E1116" }}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-accent text-bg text-sm font-semibold transition hover:opacity-90"
           >
             <Smartphone size={18} />
             Pay via UPI
@@ -322,8 +316,7 @@ export function SettlementForm({
               On desktop? Scan with your UPI app:
             </p>
             <div
-              className="mx-auto mt-2 flex h-32 w-32 items-center justify-center rounded-xl border-2 border-dashed text-[10px] uppercase tracking-wider text-text-secondary"
-              style={{ borderColor: "rgba(255,255,255,0.08)" }}
+              className="mx-auto mt-2 flex h-32 w-32 items-center justify-center rounded-xl border-2 border-dashed border-border-dashed text-[10px] uppercase tracking-wider text-text-secondary"
               aria-hidden="true"
             >
               QR placeholder
@@ -334,12 +327,7 @@ export function SettlementForm({
 
       {showUpiBlock && !upiLink ? (
         <div
-          className="rounded-2xl border px-4 py-3 text-sm"
-          style={{
-            borderColor: "rgba(255,176,32,0.2)",
-            background: "rgba(255,176,32,0.06)",
-            color: "#FFB020",
-          }}
+          className="rounded-2xl border border-[rgba(255,176,32,0.2)] bg-[rgba(255,176,32,0.06)] text-warning px-4 py-3 text-sm"
         >
           {selected!.receiverDisplayName} hasn&apos;t added a UPI ID yet — pay them
           another way and record it here.
@@ -362,11 +350,7 @@ export function SettlementForm({
             value={paymentRef}
             onChange={(e) => setPaymentRef(e.target.value)}
             placeholder="UPI reference / transaction id"
-            className="block h-12 w-full rounded-2xl border px-4 text-sm text-text-primary outline-none transition placeholder:text-text-secondary focus:border-accent"
-            style={{
-              background: "rgba(255,255,255,0.03)",
-              borderColor: "rgba(255,255,255,0.06)",
-            }}
+            className="block h-12 w-full rounded-2xl border border-surface-hover bg-[rgba(255,255,255,0.03)] px-4 text-sm text-text-primary outline-none transition placeholder:text-text-secondary focus:border-accent"
           />
         </PremiumCard>
       ) : null}
@@ -376,11 +360,7 @@ export function SettlementForm({
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-2xl border px-4 py-3 text-sm text-error"
-          style={{
-            borderColor: "rgba(255,71,87,0.2)",
-            backgroundColor: "rgba(255,71,87,0.08)",
-          }}
+          className="rounded-2xl border border-[rgba(255,71,87,0.2)] bg-[rgba(255,71,87,0.08)] px-4 py-3 text-sm text-error"
         >
           {serverError}
         </div>

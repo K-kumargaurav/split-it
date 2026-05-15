@@ -77,6 +77,7 @@ describe("getGroupsForUser", () => {
     // each). Direct-ledger net for Alice from this expense alone is +25000.
     expenseFindMany.mockResolvedValue([
       {
+        groupId: "g_1",
         payers: [{ userId: USER_ID, amountPaise: BigInt(50000) }],
         participants: [
           { userId: USER_ID, amountPaise: BigInt(25000) },
@@ -88,7 +89,7 @@ describe("getGroupsForUser", () => {
     // receiver). Settlement reduces Alice's outstanding credit, so the
     // canonical net drops from +25000 to +15000.
     settlementFindMany.mockResolvedValue([
-      { payerId: BOB, receiverId: USER_ID, amountPaise: BigInt(10000) },
+      { groupId: "g_1", payerId: BOB, receiverId: USER_ID, amountPaise: BigInt(10000) },
     ]);
 
     const groups = await getGroupsForUser(USER_ID);

@@ -47,11 +47,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
           <div
             role="alert"
             aria-live="polite"
-            className="flex items-start gap-2.5 rounded-2xl border px-4 py-3 text-sm text-error"
-            style={{
-              borderColor: "rgba(255,71,87,0.2)",
-              backgroundColor: "rgba(255,71,87,0.08)",
-            }}
+            className="flex items-start gap-2.5 rounded-2xl border border-error/20 bg-error/[0.08] px-4 py-3 text-sm text-error"
           >
             <ErrorIcon />
             <span>{errorMessage}</span>

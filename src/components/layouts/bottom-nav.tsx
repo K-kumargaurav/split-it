@@ -48,10 +48,9 @@ export function BottomNav() {
     <nav
       aria-label="Primary mobile navigation"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 border-t border-white/5 backdrop-blur-xl md:hidden",
+        "fixed inset-x-0 bottom-0 z-50 border-t border-white/5 bg-bg-95 backdrop-blur-xl md:hidden",
         "safe-bottom",
       )}
-      style={{ backgroundColor: "rgba(14,17,22,0.95)" }}
     >
       <ul className="grid h-16 grid-cols-4">
         {TABS.map(({ href, label, match, Icon }) => {

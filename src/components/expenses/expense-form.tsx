@@ -470,8 +470,7 @@ export function ExpenseForm({
               ? {
                   rightIcon: (
                     <span
-                      className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
-                      style={{ background: "rgba(0,200,150,0.1)", color: "#00C896" }}
+                      className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide bg-accent-muted text-accent"
                     >
                       OCR
                     </span>
@@ -559,8 +558,7 @@ export function ExpenseForm({
         {splitType === "EQUAL" && equalPreview ? (
           <ul
             aria-label="Split preview"
-            className="mt-4 divide-y"
-            style={{ borderColor: "rgba(255,255,255,0.04)" }}
+            className="mt-4 divide-y border-border-subtle"
           >
             {equalPreview.map((row) => {
               const member = memberById.get(row.memberId);
@@ -597,8 +595,7 @@ export function ExpenseForm({
               <RemainingAmount remainingPaise={exactState.remainingPaise} />
             </div>
             <ul
-              className="divide-y"
-              style={{ borderColor: "rgba(255,255,255,0.04)" }}
+              className="divide-y border-border-subtle"
             >
               {(participantIds ?? []).map((id) => {
                 const member = memberById.get(id);
@@ -629,11 +626,7 @@ export function ExpenseForm({
                         onChange={(e) =>
                           setExactInputs((prev) => ({ ...prev, [id]: e.target.value }))
                         }
-                        className="w-28 rounded-xl border px-2 py-1 text-right font-mono text-sm text-text-primary outline-none focus:border-accent"
-                        style={{
-                          background: "rgba(255,255,255,0.04)",
-                          borderColor: "rgba(255,255,255,0.08)",
-                        }}
+                        className="w-28 rounded-xl border px-2 py-1 text-right font-mono text-sm text-text-primary outline-none focus:border-accent bg-surface-subtle border-border-dashed"
                       />
                     </div>
                   </li>
@@ -652,8 +645,7 @@ export function ExpenseForm({
               <RemainingPercentage remainingPct={percentState.remainingPct} />
             </div>
             <ul
-              className="divide-y"
-              style={{ borderColor: "rgba(255,255,255,0.04)" }}
+              className="divide-y border-border-subtle"
             >
               {(participantIds ?? []).map((id, i) => {
                 const member = memberById.get(id);
@@ -691,11 +683,7 @@ export function ExpenseForm({
                           onChange={(e) =>
                             setPercentInputs((prev) => ({ ...prev, [id]: e.target.value }))
                           }
-                          className="w-20 rounded-xl border px-2 py-1 text-right font-mono text-sm text-text-primary outline-none focus:border-accent"
-                          style={{
-                            background: "rgba(255,255,255,0.04)",
-                            borderColor: "rgba(255,255,255,0.08)",
-                          }}
+                          className="w-20 rounded-xl border px-2 py-1 text-right font-mono text-sm text-text-primary outline-none focus:border-accent bg-surface-subtle border-border-dashed"
                         />
                         <span className="text-xs text-text-secondary">%</span>
                       </div>
@@ -713,11 +701,7 @@ export function ExpenseForm({
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-2xl border px-4 py-3 text-sm text-error"
-          style={{
-            borderColor: "rgba(255,71,87,0.2)",
-            backgroundColor: "rgba(255,71,87,0.08)",
-          }}
+          className="rounded-2xl border px-4 py-3 text-sm text-error border-error/20 bg-error/[0.08]"
         >
           {serverError}
         </div>
@@ -750,8 +734,7 @@ function MemberAvatar({ name }: { name: string }) {
     .toUpperCase();
   return (
     <span
-      className="flex h-6 w-6 flex-none items-center justify-center rounded-full text-[10px] font-semibold text-text-secondary"
-      style={{ background: "rgba(255,255,255,0.06)" }}
+      className="flex h-6 w-6 flex-none items-center justify-center rounded-full text-[10px] font-semibold text-text-secondary bg-surface-hover"
     >
       {initials}
     </span>

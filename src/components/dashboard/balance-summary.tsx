@@ -57,11 +57,7 @@ export function BalanceSummary({ netBalancePaise, groupCount, displayName }: Bal
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage: "radial-gradient(circle at 80% 0%, white 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-        }}
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,white_1px,transparent_1px)] bg-[length:24px_24px] opacity-[0.07]"
       />
 
       <p className="text-sm font-medium text-white/80">

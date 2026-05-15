@@ -118,8 +118,7 @@ export function RecurringCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg"
-              style={{ background: "rgba(0,200,150,0.15)" }}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-muted-strong text-lg"
               aria-hidden="true"
             >
               🔁

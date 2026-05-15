@@ -37,8 +37,8 @@ function Step({
       {!isLast && (
         <div
           aria-hidden="true"
-          className="absolute top-6 left-full hidden lg:block w-full h-px bg-gradient-to-r from-white/10 to-transparent"
-          style={{ width: "calc(100% - 48px)", left: "calc(50% + 24px)" }}
+          className="absolute top-6 hidden h-px w-[calc(100%-48px)] bg-gradient-to-r from-white/10 to-transparent lg:block"
+          style={{ left: "calc(50% + 24px)" }}
         />
       )}
 

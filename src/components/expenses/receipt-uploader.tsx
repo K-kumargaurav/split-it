@@ -167,11 +167,7 @@ export function ReceiptUploader({ groupId, onFileChange, onPrefill }: ReceiptUpl
         </div>
       ) : (
         <div
-          className="flex items-start gap-4 rounded-2xl p-3"
-          style={{
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
+          className="flex items-start gap-4 rounded-2xl border border-surface-hover bg-white/[0.02] p-3"
         >
           {isImage && previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -182,8 +178,7 @@ export function ReceiptUploader({ groupId, onFileChange, onPrefill }: ReceiptUpl
             />
           ) : (
             <div
-              className="flex h-24 w-24 flex-none items-center justify-center rounded-xl text-xs font-semibold text-text-secondary"
-              style={{ background: "rgba(255,255,255,0.04)" }}
+              className="flex h-24 w-24 flex-none items-center justify-center rounded-xl bg-surface-subtle text-xs font-semibold text-text-secondary"
             >
               PDF
             </div>
@@ -219,15 +214,11 @@ function StatusLine({ status }: { status: Status }) {
     return (
       <div className="mt-2">
         <div
-          className="h-1 w-full overflow-hidden rounded-full"
-          style={{ background: "rgba(255,255,255,0.06)" }}
+          className="h-1 w-full overflow-hidden rounded-full bg-surface-hover"
         >
           <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${Math.max(5, status.progress)}%`,
-              background: "#00C896",
-            }}
+            className="h-full rounded-full bg-accent transition-all"
+            style={{ width: `${Math.max(5, status.progress)}%` }}
           />
         </div>
         <p className="mt-1 text-[11px] text-text-secondary">
@@ -239,11 +230,7 @@ function StatusLine({ status }: { status: Status }) {
   if (status.kind === "done") {
     return (
       <span
-        className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-        style={{
-          background: "rgba(0,200,150,0.1)",
-          color: "#00C896",
-        }}
+        className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent-muted px-2 py-0.5 text-[11px] font-medium text-accent"
       >
         OCR pre-filled ✓
       </span>
@@ -251,7 +238,7 @@ function StatusLine({ status }: { status: Status }) {
   }
   if (status.kind === "ocr-failed") {
     return (
-      <p className="mt-2 text-[11px]" style={{ color: "#FFB020" }}>
+      <p className="mt-2 text-[11px] text-warning">
         Couldn&apos;t read receipt — fill manually
       </p>
     );

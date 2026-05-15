@@ -104,6 +104,138 @@ export function ExpenseCardSkeleton() {
   );
 }
 
+export function FormSkeleton() {
+  return (
+    <div aria-hidden="true" className="space-y-6">
+      {/* Title area */}
+      <Skeleton className="h-4 w-40" />
+      {/* Field 1 */}
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-10 w-full rounded-xl" />
+      </div>
+      {/* Field 2 */}
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-10 w-full rounded-xl" />
+      </div>
+      {/* Field 3 */}
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-10 w-full rounded-xl" />
+      </div>
+      {/* Submit */}
+      <Skeleton className="h-11 w-full rounded-2xl" />
+    </div>
+  );
+}
+
+export function MemberListSkeleton() {
+  return (
+    <div aria-hidden="true" className="space-y-0 divide-y divide-white/[0.04]">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center gap-3 py-3">
+          <Skeleton className="h-9 w-9 flex-shrink-0 rounded-full" />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton className="h-3.5 w-28" />
+            <Skeleton className="h-2.5 w-40" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AuditSkeleton() {
+  return (
+    <div aria-hidden="true" className="space-y-4">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex gap-3">
+          <Skeleton className="h-8 w-8 flex-shrink-0 rounded-full" />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton className="h-3.5 w-48" />
+            <Skeleton className="h-2.5 w-32" />
+          </div>
+          <Skeleton className="h-2.5 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function SettingsSkeleton() {
+  return (
+    <div aria-hidden="true" className="space-y-4">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="rounded-3xl border border-white/5 bg-[#161B22] p-6 shadow-card sm:p-8"
+        >
+          <div className="mb-5 border-b border-white/[0.05] pb-4">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="mt-1 h-3 w-48" />
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-6 w-10 rounded-full" />
+            </div>
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-6 w-10 rounded-full" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ProfileSkeleton() {
+  return (
+    <div aria-hidden="true" className="space-y-6">
+      {/* Avatar */}
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-16 w-16 rounded-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+      </div>
+      {/* Fields */}
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="space-y-2">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-10 w-full rounded-xl" />
+        </div>
+      ))}
+      <Skeleton className="h-11 w-full rounded-2xl" />
+    </div>
+  );
+}
+
+export function RecurringSkeleton() {
+  return (
+    <div aria-hidden="true" className="space-y-3">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="flex items-center justify-between rounded-2xl border border-white/5 bg-[#161B22] px-4 py-3"
+        >
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-9 flex-shrink-0 rounded-full" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-3.5 w-28" />
+              <Skeleton className="h-2.5 w-20" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function NotificationSkeleton() {
   return (
     <div

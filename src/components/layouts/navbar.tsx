@@ -40,8 +40,7 @@ export function Navbar({ user }: NavbarProps) {
 
   return (
     <header
-      className="sticky top-0 z-50 h-[60px] border-b border-white/5 backdrop-blur-md"
-      style={{ backgroundColor: "rgba(14,17,22,0.8)" }}
+      className="sticky top-0 z-50 h-[60px] border-b border-white/5 bg-bg-80 backdrop-blur-md"
     >
       <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}

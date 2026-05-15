@@ -1,4 +1,3 @@
-import dns from "dns/promises"
 import pg from "pg"
 
 export async function GET() {

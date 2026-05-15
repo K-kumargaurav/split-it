@@ -1,4 +1,4 @@
-import { PrismaClient } from "@/generated/prisma/client"
+import { PrismaClient } from "@/generated/prisma"
 import { PrismaPg } from "@prisma/adapter-pg"
 import pg from "pg"
 
@@ -12,14 +12,23 @@ function createPrismaClient() {
   const pool = new pg.Pool({
     host: url.hostname,
     port: parseInt(url.port),
-    user: url.username,
+    user: decodeURIComponent(url.username),
     password: decodeURIComponent(url.password),
     database: url.pathname.slice(1),
     ssl: { rejectUnauthorized: false },
     max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
   })
 
-  const adapter = new PrismaPg(pool)
+  pool.on("error", (err) => {
+    console.error("pg pool error:", err.message)
+  })
+
+  const adapter = new PrismaPg(pool, {
+    schema: "public"
+  })
+
   return new PrismaClient({ adapter })
 }
 

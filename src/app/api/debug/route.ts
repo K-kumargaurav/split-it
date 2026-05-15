@@ -1,23 +1,18 @@
+import dns from "dns/promises"
+
 export async function GET() {
-  let parsed = null
+  let dnsResult = null
   try {
-    const url = new URL(process.env.DATABASE_URL ?? "")
-    parsed = {
-      host: url.hostname,
-      port: url.port,
-      user: url.username,
-      database: url.pathname.slice(1),
-      hasPassword: !!url.password,
-    }
+    const addresses = await dns.lookup("aws-0-ap-south-1.pooler.supabase.com")
+    dnsResult = { resolved: true, address: addresses.address }
   } catch (e) {
-    parsed = { error: "URL parse failed: " + String(e) }
+    dnsResult = { resolved: false, error: String(e) }
   }
 
   return Response.json({
     hasAuthSecret: !!process.env.AUTH_SECRET,
     hasDatabase: !!process.env.DATABASE_URL,
-    hasBrevo: !!process.env.BREVO_SMTP_HOST,
     nodeEnv: process.env.NODE_ENV,
-    dbParsed: parsed,
+    dns: dnsResult,
   })
 }

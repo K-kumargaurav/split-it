@@ -21,7 +21,7 @@ import type {
   AuditEntityType,
   NotificationEventType,
   Prisma,
-} from "@/generated/prisma";
+} from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 import { sendWebPush } from "./web-push";

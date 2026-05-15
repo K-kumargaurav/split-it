@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import { prisma } from "@/lib/prisma";
-import type { VerificationPurpose } from "@/generated/prisma";
+import type { VerificationPurpose } from "@/generated/prisma/client";
 
 const RAW_TOKEN_BYTES = 32;
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 
 import { auth } from "@/lib/auth";
 import { errorFromThrown, errorResponse } from "@/lib/api-response";

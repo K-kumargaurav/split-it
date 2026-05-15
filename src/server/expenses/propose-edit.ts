@@ -1,4 +1,4 @@
-import type { ExpenseProposal, Prisma } from "@/generated/prisma";
+import type { ExpenseProposal, Prisma } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";

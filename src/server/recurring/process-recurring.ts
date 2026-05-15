@@ -2,7 +2,7 @@ import type {
   Prisma,
   PrismaClient,
   RecurringFrequency,
-} from "@/generated/prisma";
+} from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { equalSplit, exactSplit, percentageSplit } from "@/lib/split";
 import { formatPaise } from "@/lib/format";

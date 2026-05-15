@@ -1,4 +1,4 @@
-import type { Prisma, RecurringFrequency, SplitType } from "@/generated/prisma";
+import type { Prisma, RecurringFrequency, SplitType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
 import { serializePaise } from "@/lib/api-response";

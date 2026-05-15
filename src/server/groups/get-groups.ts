@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
 import { computeNetBalance, getUserNetBalance, type ExpenseRow, type SettlementRow } from "@/server/balance/calculate-balances";

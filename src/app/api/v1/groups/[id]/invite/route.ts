@@ -7,6 +7,7 @@ import { inviteRequestSchema } from "@/lib/validations/invites";
 import {
   generateInviteLink,
   inviteMemberByEmail,
+  inviteMemberByHandle,
 } from "@/server/groups/invite-member";
 
 export const runtime = "nodejs";
@@ -50,6 +51,15 @@ export async function POST(
         session.user.id,
         params.id,
         parsed.data.email,
+      );
+      return NextResponse.json(result, { status: 201 });
+    }
+
+    if (parsed.data.type === "handle") {
+      const result = await inviteMemberByHandle(
+        session.user.id,
+        params.id,
+        parsed.data.handle,
       );
       return NextResponse.json(result, { status: 201 });
     }

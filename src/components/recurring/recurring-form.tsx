@@ -216,7 +216,7 @@ export function RecurringForm({ groupId, members }: RecurringFormProps) {
           {(["EQUAL", "EXACT", "PERCENTAGE"] as const).map((t) => (
             <button key={t} type="button" role="tab" aria-selected={splitType === t}
               onClick={() => setSplitType(t)}
-              className={cn("rounded-lg px-3.5 py-1.5 text-sm font-medium transition",
+              className={cn("rounded-xl px-3.5 py-1.5 text-sm font-medium transition",
                 splitType === t ? "bg-[#161B22] text-[#F5F7FA] shadow-sm" : "text-[#8B93A7] hover:text-[#F5F7FA]")}>
               {t === "EQUAL" ? "Equal" : t === "EXACT" ? "Exact" : "Percentage"}
             </button>

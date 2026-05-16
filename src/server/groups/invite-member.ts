@@ -89,6 +89,39 @@ export async function inviteMemberByEmail(
   });
 }
 
+export async function inviteMemberByHandle(
+  ownerId: string,
+  groupId: string,
+  rawHandle: string,
+): Promise<InviteByEmailResult> {
+  const handle = rawHandle.trim().toLowerCase();
+
+  const group = await loadGroupForInvite(groupId);
+  await assertViewerIsMember(ownerId, groupId);
+  assertCapacity(group);
+
+  const user = await prisma.user.findFirst({
+    where: { handle, deletedAt: null },
+    select: { id: true, handle: true, displayName: true },
+  });
+
+  if (!user) {
+    throw new AppError(
+      "NOT_FOUND",
+      `No user found with handle @${handle}.`,
+      [{ path: ["handle"], message: "User not found." }],
+    );
+  }
+
+  return addExistingUser({
+    ownerId,
+    groupId,
+    userId: user.id,
+    handle: user.handle,
+    displayName: user.displayName,
+  });
+}
+
 interface LoadedGroup {
   id: string;
   name: string;

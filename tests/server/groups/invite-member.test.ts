@@ -40,7 +40,7 @@ jest.mock("@/server/email/auth-emails", () => ({
 }));
 
 import { AppError } from "@/lib/errors";
-import { inviteMemberByEmail } from "@/server/groups/invite-member";
+import { inviteMemberByEmail, inviteMemberByHandle } from "@/server/groups/invite-member";
 
 const OWNER = "00000000-0000-4000-8000-00000000000a";
 const NEW_EMAIL = "newuser@example.com";
@@ -217,5 +217,70 @@ describe("inviteMemberByEmail — new email branch", () => {
     await expect(
       inviteMemberByEmail(OWNER, GROUP, "   "),
     ).rejects.toBeInstanceOf(AppError);
+  });
+});
+
+describe("inviteMemberByHandle", () => {
+  beforeEach(() => {
+    defaultGroup();
+  });
+
+  it("adds a user directly when found by handle", async () => {
+    userFindFirst.mockResolvedValue({
+      id: EXISTING_USER_ID,
+      handle: "bob",
+      displayName: "Bob",
+    });
+    groupMemberFindUnique
+      .mockResolvedValueOnce({ id: "gm_owner" }) // owner membership check
+      .mockResolvedValueOnce(null); // invitee not yet a member
+
+    const result = await inviteMemberByHandle(OWNER, GROUP, "bob");
+
+    expect(result).toMatchObject({
+      status: "ADDED_DIRECTLY",
+      member: { userId: EXISTING_USER_ID, handle: "bob" },
+    });
+    expect(groupMemberCreate).toHaveBeenCalledTimes(1);
+    expect(sendGroupInviteEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects NOT_FOUND when no user matches the handle", async () => {
+    userFindFirst.mockResolvedValue(null);
+    await expect(
+      inviteMemberByHandle(OWNER, GROUP, "nobody"),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(groupMemberCreate).not.toHaveBeenCalled();
+  });
+
+  it("normalises the handle to lowercase", async () => {
+    userFindFirst.mockResolvedValue({
+      id: EXISTING_USER_ID,
+      handle: "bob",
+      displayName: "Bob",
+    });
+    groupMemberFindUnique
+      .mockResolvedValueOnce({ id: "gm_owner" })
+      .mockResolvedValueOnce(null);
+
+    await inviteMemberByHandle(OWNER, GROUP, "  BOB  ");
+
+    const findArgs = userFindFirst.mock.calls[0]![0];
+    expect(findArgs.where.handle).toBe("bob");
+  });
+
+  it("rejects CONFLICT when user is already a member", async () => {
+    userFindFirst.mockResolvedValue({
+      id: EXISTING_USER_ID,
+      handle: "bob",
+      displayName: "Bob",
+    });
+    groupMemberFindUnique
+      .mockResolvedValueOnce({ id: "gm_owner" })
+      .mockResolvedValueOnce({ id: "gm_existing" }); // already a member
+
+    await expect(
+      inviteMemberByHandle(OWNER, GROUP, "bob"),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 });

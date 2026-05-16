@@ -3,8 +3,8 @@ import { z } from "zod";
 
 // Invite + invite-link schemas for SPEC §4.1. The same POST endpoint accepts
 // either form (discriminated by `type`); the discriminated union keeps each
-// branch's required fields tight (email is required for "email", maxUses
-// optional for "link").
+// branch's required fields tight (email is required for "email", handle for
+// "handle", maxUses optional for "link").
 
 const MAX_USES_DEFAULT = 100;
 const MAX_USES_CAP = 500;
@@ -17,6 +17,19 @@ export const emailInviteSchema = z.object({
     .toLowerCase()
     .email({ message: "Enter a valid email address." })
     .max(254, { message: "Email is too long." }),
+});
+
+export const handleInviteSchema = z.object({
+  type: z.literal("handle"),
+  handle: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3, { message: "Handle must be at least 3 characters." })
+    .max(20, { message: "Handle must be at most 20 characters." })
+    .regex(/^[a-z][a-z0-9_]*$/, {
+      message: "Use lowercase letters, numbers, and underscores. Must start with a letter.",
+    }),
 });
 
 export const linkInviteSchema = z.object({
@@ -32,6 +45,7 @@ export const linkInviteSchema = z.object({
 
 export const inviteRequestSchema = z.discriminatedUnion("type", [
   emailInviteSchema,
+  handleInviteSchema,
   linkInviteSchema,
 ]);
 

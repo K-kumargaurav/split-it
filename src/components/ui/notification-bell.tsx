@@ -49,7 +49,6 @@ export function NotificationBell(): JSX.Element {
     { refreshInterval: POLL_INTERVAL_MS, revalidateOnFocus: true },
   );
 
-  // Click-outside to close the dropdown — same behaviour as native menus.
   useEffect(() => {
     if (!open) return;
     function onPointerDown(ev: MouseEvent) {
@@ -94,20 +93,16 @@ export function NotificationBell(): JSX.Element {
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 transition",
-          "hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+          "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.06] bg-card text-text-secondary transition",
+          "hover:border-white/10 hover:bg-surface-hover hover:text-text-primary",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         )}
       >
         <BellIcon />
         {unreadCount > 0 ? (
           <span aria-hidden="true" className="absolute -right-1 -top-1 inline-flex">
-            {/* Animated halo behind the count badge — communicates "new
-                stuff arrived" without making the bell itself shake. The
-                ping ring uses Tailwind's animate-ping; the badge sits on
-                top so the number stays legible. */}
-            <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-rose-500/70" />
-            <span className="relative inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold leading-none text-white">
+            <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-accent/60" />
+            <span className="relative inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-none text-[#0E1116]">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           </span>
@@ -118,29 +113,29 @@ export function NotificationBell(): JSX.Element {
         <div
           role="menu"
           aria-label="Notifications"
-          className="absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"
+          className="absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-white/5 bg-card shadow-elevated"
         >
-          <header className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-4 py-2.5">
-            <span className="text-sm font-semibold text-slate-900 dark:text-white">
+          <header className="flex items-center justify-between border-b border-white/[0.05] px-4 py-2.5">
+            <span className="text-sm font-semibold text-text-primary">
               Notifications
             </span>
             <button
               type="button"
               onClick={markAllRead}
               disabled={unreadCount === 0}
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:cursor-not-allowed disabled:text-slate-400"
+              className="text-[12px] font-medium text-accent hover:opacity-80 disabled:cursor-not-allowed disabled:text-text-secondary disabled:opacity-50"
             >
               Mark all read
             </button>
           </header>
 
-          <ul className="max-h-96 divide-y divide-slate-100 dark:divide-slate-800 overflow-y-auto">
+          <ul className="max-h-96 divide-y divide-white/[0.04] overflow-y-auto">
             {isLoading && items.length === 0 ? (
-              <li className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                Loading…
+              <li className="px-4 py-6 text-center text-sm text-text-secondary">
+                Loading...
               </li>
             ) : items.length === 0 ? (
-              <li className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+              <li className="px-4 py-6 text-center text-sm text-text-secondary">
                 You&apos;re all caught up.
               </li>
             ) : (
@@ -158,11 +153,11 @@ export function NotificationBell(): JSX.Element {
             )}
           </ul>
 
-          <footer className="border-t border-slate-100 dark:border-slate-800 px-4 py-2 text-center">
+          <footer className="border-t border-white/[0.05] px-4 py-2 text-center">
             <Link
               href="/notifications"
               onClick={() => setOpen(false)}
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+              className="text-[12px] font-medium text-accent hover:opacity-80"
             >
               View all
             </Link>
@@ -185,21 +180,21 @@ function NotificationRow({
   const content = (
     <div
       className={cn(
-        "flex items-start gap-3 px-4 py-3 text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800",
-        !item.isRead && "bg-indigo-50/40",
+        "flex items-start gap-3 px-4 py-3 text-sm transition hover:bg-surface-hover",
+        !item.isRead && "bg-accent/[0.04]",
       )}
     >
       <span
         aria-hidden="true"
         className={cn(
           "mt-1 inline-flex h-2 w-2 flex-shrink-0 rounded-full",
-          item.isRead ? "bg-transparent" : "bg-indigo-600",
+          item.isRead ? "bg-transparent" : "bg-accent",
         )}
       />
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-slate-900 dark:text-white">{item.title}</p>
-        <p className="mt-0.5 truncate text-slate-600 dark:text-slate-300">{item.body}</p>
-        <p className="mt-1 text-[11px] uppercase tracking-wider text-slate-400">
+        <p className="font-medium text-text-primary">{item.title}</p>
+        <p className="mt-0.5 truncate text-text-secondary">{item.body}</p>
+        <p className="mt-1 text-[11px] uppercase tracking-wider text-text-secondary">
           {formatRelativeTime(item.createdAt)}
         </p>
       </div>
@@ -223,16 +218,8 @@ function NotificationRow({
 function entityHref(item: InboxItem): string | null {
   if (!item.entityType || !item.entityId) return null;
   switch (item.entityType) {
-    case "EXPENSE":
-      // We don't have the groupId encoded — fall back to a search-style
-      // route that the detail page resolves. For now route to /notifications
-      // so click is non-broken; deep-linking can be added once entityId
-      // includes a stable groupId reference.
-      return null;
     case "GROUP":
       return `/groups/${item.entityId}`;
-    case "SETTLEMENT":
-      return null;
     default:
       return null;
   }

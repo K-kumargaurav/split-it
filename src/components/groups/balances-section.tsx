@@ -66,7 +66,7 @@ export function BalancesSection({ lines, mode, groupId }: BalancesSectionProps) 
                 {line.direction === "owes" ? (
                   <Link
                     href={`/groups/${groupId}/settlements/new?to=${line.counterpartyId}`}
-                    className="rounded-lg border border-white/5 px-2.5 py-1 text-xs font-medium text-[#8B93A7] transition hover:border-white/10 hover:text-[#F5F7FA]"
+                    className="rounded-xl border border-white/5 px-2.5 py-1.5 text-[12px] font-medium text-text-secondary transition hover:border-white/10 hover:text-text-primary"
                   >
                     Mark as paid
                   </Link>

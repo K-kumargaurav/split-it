@@ -81,9 +81,9 @@ export function CreateGroupForm() {
         return;
       }
       const body = (await response.json()) as CreatedGroupResponse;
-      toast.success("Group created");
+      toast.success("Group created! Now invite your members.");
       startTransition(() => {
-        router.push(`/groups/${body.group.id}`);
+        router.push(`/groups/${body.group.id}/members`);
         router.refresh();
       });
     } catch {

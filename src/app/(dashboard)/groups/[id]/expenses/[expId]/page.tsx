@@ -143,11 +143,13 @@ export default async function ExpenseDetailPage({
             rel="noreferrer noopener"
             className="mt-3 inline-block"
           >
+            {/* Receipt is user-uploaded to Supabase; dimensions are unknown,
+                so we use a fixed container with object-cover. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={expense.receiptUrl}
               alt="Receipt"
-              className="h-40 w-40 rounded-lg border border-white/[0.06] object-cover"
+              className="h-40 w-40 rounded-2xl border border-white/[0.06] object-cover"
             />
           </a>
         </section>

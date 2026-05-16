@@ -21,8 +21,13 @@ export function InviteButton({ groupId }: InviteButtonProps): React.ReactElement
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+        className={cn(
+          "inline-flex items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-2.5 text-sm font-semibold text-[#0E1116] shadow-sm transition",
+          "hover:opacity-90 active:scale-[0.97]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+        )}
       >
+        <PlusIcon />
         Invite
       </button>
       <InviteDialog groupId={groupId} open={open} onClose={() => setOpen(false)} />
@@ -91,14 +96,15 @@ export function RemoveMemberButton({
         onClick={handleRemove}
         disabled={submitting}
         className={cn(
-          "rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700",
+          "rounded-xl border border-error/20 bg-error/5 px-3 py-1.5 text-[12px] font-medium text-error transition",
+          "hover:border-error/30 hover:bg-error/10",
           "disabled:cursor-not-allowed disabled:opacity-60",
         )}
       >
-        {submitting ? "Removing…" : "Remove"}
+        {submitting ? "Removing..." : "Remove"}
       </button>
       {error ? (
-        <p role="alert" className="text-xs text-rose-600">
+        <p role="alert" className="text-[12px] text-error">
           {error}
         </p>
       ) : null}
@@ -156,23 +162,32 @@ export function LeaveGroupButton({
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-start gap-1.5">
       <button
         type="button"
         onClick={handleLeave}
         disabled={submitting}
         className={cn(
-          "rounded-xl border border-rose-200 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50",
+          "rounded-2xl border border-error/20 bg-error/10 px-4 py-2.5 text-sm font-semibold text-error transition",
+          "hover:border-error/30 hover:bg-error/15",
           "disabled:cursor-not-allowed disabled:opacity-60",
         )}
       >
-        {submitting ? "Leaving…" : "Leave group"}
+        {submitting ? "Leaving..." : "Leave this group"}
       </button>
       {error ? (
-        <p role="alert" className="text-xs text-rose-600">
+        <p role="alert" className="text-[12px] text-error">
           {error}
         </p>
       ) : null}
     </div>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+      <path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2z" />
+    </svg>
   );
 }

@@ -83,26 +83,28 @@ export function PendingSettlementActions({
           onClick={() => send("dispute")}
           disabled={pending !== null}
           className={cn(
-            "rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700",
+            "rounded-xl border border-error/20 bg-error/5 px-3 py-1.5 text-[12px] font-medium text-error transition",
+            "hover:border-error/30 hover:bg-error/10",
             "disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >
-          {pending === "dispute" ? "Disputing…" : "Dispute"}
+          {pending === "dispute" ? "Disputing..." : "Dispute"}
         </button>
         <button
           type="button"
           onClick={() => send("confirm")}
           disabled={pending !== null}
           className={cn(
-            "rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500",
+            "rounded-xl bg-accent px-3 py-1.5 text-[12px] font-semibold text-[#0E1116] transition",
+            "hover:opacity-90",
             "disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >
-          {pending === "confirm" ? "Confirming…" : "Confirm"}
+          {pending === "confirm" ? "Confirming..." : "Confirm"}
         </button>
       </div>
       {error ? (
-        <p role="alert" className="text-xs text-rose-600">
+        <p role="alert" className="text-[12px] text-error">
           {error}
         </p>
       ) : null}

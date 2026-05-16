@@ -52,7 +52,7 @@ export function MobileBottomNav() {
     <nav
       aria-label="Primary"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur sm:hidden",
+        "fixed inset-x-0 bottom-0 z-20 border-t border-white/[0.06] bg-bg-95 backdrop-blur sm:hidden",
         "pb-[env(safe-area-inset-bottom)]",
       )}
     >
@@ -67,8 +67,8 @@ export function MobileBottomNav() {
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-medium transition active:scale-95",
                   active
-                    ? "text-indigo-600 dark:text-indigo-400"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white",
+                    ? "text-accent"
+                    : "text-text-secondary hover:text-text-primary",
                 )}
               >
                 <span aria-hidden="true">{tab.icon()}</span>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
@@ -47,63 +48,86 @@ export default async function MembersPage({ params }: MembersPageProps) {
   const isOwner = viewerRole === "OWNER";
 
   return (
-    <div>
-      <header className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#F5F7FA] sm:text-3xl">
-            Members
-          </h1>
-          <p className="mt-1 text-sm text-[#8B93A7]">
-            {members.length} {members.length === 1 ? "member" : "members"} in {group.name}
-          </p>
+    <div className="mx-auto max-w-2xl">
+      <header className="mb-8">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[24px] font-bold tracking-[-0.02em] text-text-primary">
+              Members
+            </h1>
+            <p className="mt-1.5 text-[14px] text-text-secondary">
+              {members.length} {members.length === 1 ? "member" : "members"} in {group.name}
+            </p>
+          </div>
+          <InviteButton groupId={group.id} />
         </div>
-        <InviteButton groupId={group.id} />
       </header>
 
-      <section
-        aria-labelledby="members-heading"
-        className="rounded-2xl border border-white/[0.06] bg-[#161B22] p-6 sm:p-8"
-      >
-        <h2 id="members-heading" className="sr-only">
-          Members list
-        </h2>
-        <ul className="divide-y divide-white/[0.04]">
-          {members.map((m) => (
-            <MemberRowItem
-              key={m.userId}
-              member={m}
-              groupId={group.id}
-              viewerId={session.user.id}
-              viewerIsOwner={isOwner}
-            />
-          ))}
-          {ghosts.map((g) => (
-            <GhostMemberRow key={g.id} ghost={g} />
-          ))}
-        </ul>
-      </section>
+      <div className="space-y-4">
+        <section
+          aria-labelledby="members-heading"
+          className="rounded-3xl border border-white/5 bg-card p-6 shadow-card sm:p-8"
+        >
+          <header className="mb-5 border-b border-white/[0.05] pb-4">
+            <h2
+              id="members-heading"
+              className="text-[16px] font-semibold tracking-[-0.01em] text-text-primary"
+            >
+              Group members
+            </h2>
+            <p className="mt-1 text-[13px] text-text-secondary">
+              People who can view and add expenses.
+            </p>
+          </header>
+          <ul className="divide-y divide-white/[0.04]">
+            {members.map((m) => (
+              <MemberRowItem
+                key={m.userId}
+                member={m}
+                groupId={group.id}
+                viewerId={session.user.id}
+                viewerIsOwner={isOwner}
+              />
+            ))}
+            {ghosts.map((g) => (
+              <GhostMemberRow key={g.id} ghost={g} />
+            ))}
+          </ul>
+        </section>
 
-      <section
-        aria-labelledby="add-guest-heading"
-        className="mt-6 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] p-6 sm:p-8"
-      >
-        <h2 id="add-guest-heading" className="text-sm font-semibold text-[#F5F7FA]">
-          Splitting with someone who doesn&apos;t use SplitEasy?
-        </h2>
-        <p className="mt-1 text-sm text-[#8B93A7]">
-          Add them as a guest. They&apos;ll get a private link to see their balance and pay
-          you back — no signup needed.
-        </p>
-        <div className="mt-4">
+        <section
+          aria-labelledby="add-guest-heading"
+          className="rounded-3xl border border-dashed border-white/[0.08] bg-card p-6 shadow-card sm:p-8"
+        >
+          <header className="mb-5 border-b border-white/[0.05] pb-4">
+            <h2
+              id="add-guest-heading"
+              className="text-[16px] font-semibold tracking-[-0.01em] text-text-primary"
+            >
+              Add a guest
+            </h2>
+            <p className="mt-1 text-[13px] text-text-secondary">
+              Splitting with someone who doesn&apos;t use SplitEasy? Add them as a guest
+              — they&apos;ll get a private link to see their balance.
+            </p>
+          </header>
           <AddGuestForm groupId={group.id} />
-        </div>
-      </section>
+        </section>
 
-      {!isOwner ? (
-        <div className="mt-6 flex justify-end">
-          <LeaveGroupButton groupId={group.id} userId={session.user.id} />
-        </div>
-      ) : null}
+        {!isOwner ? (
+          <section className="rounded-3xl border border-error/20 bg-error/5 p-6 shadow-card sm:p-8">
+            <header className="mb-4">
+              <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-error">
+                Leave group
+              </h2>
+              <p className="mt-1 text-[13px] text-error/60">
+                You&apos;ll lose access until someone re-invites you.
+              </p>
+            </header>
+            <LeaveGroupButton groupId={group.id} userId={session.user.id} />
+          </section>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -115,21 +139,21 @@ function GhostMemberRow({
 }): React.ReactElement {
   const initial = (ghost.displayName[0] ?? "?").toUpperCase();
   return (
-    <li className="flex items-center gap-3 py-3">
+    <li className="group flex items-center gap-3.5 rounded-2xl px-2 py-3 transition hover:bg-surface-hover">
       <span
         aria-hidden="true"
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning/10 text-sm font-bold text-warning"
       >
         {initial}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-[#F5F7FA]">
+        <p className="flex items-center gap-2 truncate text-[14px] font-medium text-text-primary">
           {ghost.displayName}
-          <span className="ml-2 rounded-full bg-[#FFB020]/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#FFB020]">
+          <span className="inline-flex items-center rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-warning">
             Guest
           </span>
         </p>
-        <p className="truncate text-xs text-[#8B93A7]">
+        <p className="mt-0.5 truncate text-[13px] text-text-secondary">
           {ghost.email ?? ghost.phone ?? "No contact info"} · added{" "}
           {formatDate(ghost.createdAt)}
         </p>
@@ -158,33 +182,36 @@ function MemberRowItem({
   const isOwnerRow = member.role === "OWNER";
 
   return (
-    <li className="flex items-center gap-3 py-3">
+    <li className="group flex items-center gap-3.5 rounded-2xl px-2 py-3 transition hover:bg-surface-hover">
       {member.avatarUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={member.avatarUrl}
           alt=""
-          className="h-9 w-9 rounded-full object-cover ring-1 ring-white/10"
+          width={40}
+          height={40}
+          className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-white/10"
         />
       ) : (
         <span
           aria-hidden="true"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/15 text-sm font-bold text-accent"
         >
           {initial}
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-[#F5F7FA]">
+        <p className="flex items-center gap-1.5 truncate text-[14px] font-medium text-text-primary">
           {member.displayName}
-          {isYou ? <span className="ml-1 text-xs text-[#8B93A7]">(you)</span> : null}
+          {isYou ? (
+            <span className="text-[12px] font-normal text-text-secondary">(you)</span>
+          ) : null}
         </p>
-        <p className="truncate text-xs text-[#8B93A7]">
+        <p className="mt-0.5 truncate text-[13px] text-text-secondary">
           @{member.handle} · joined {formatDate(member.joinedAt)}
         </p>
       </div>
       {isOwnerRow ? (
-        <span className="rounded-full bg-[#00C896]/10 px-2 py-0.5 text-xs font-medium text-[#00C896]">
+        <span className="rounded-full bg-accent/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
           Owner
         </span>
       ) : null}

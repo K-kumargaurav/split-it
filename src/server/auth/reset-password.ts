@@ -32,7 +32,7 @@ export async function resetPasswordAction(rawInput: unknown): Promise<ResetPassw
   // forgot-password limit so a single attacker can't park on a guessed token.
   const ip = getClientIp(await headers());
   const rateKey = `reset-pw:${ip}`;
-  if (!consumeRateLimit(rateKey)) {
+  if (!(await consumeRateLimit(rateKey))) {
     return {
       ok: false,
       formError: "Too many attempts. Please wait a minute and try again.",

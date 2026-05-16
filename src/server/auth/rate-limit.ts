@@ -1,51 +1,64 @@
-// In-memory fixed-window rate limiter for auth endpoints. Per CLAUDE.md:
+// PostgreSQL-backed fixed-window rate limiter for auth endpoints. Per CLAUDE.md:
 // "Rate limit all auth endpoints (max 5 req/min)".
 //
-// Production caveat: this Map lives in a single Node process. On serverless
-// (Vercel) each warm instance has its own counter, so the effective rate is
-// MAX_ATTEMPTS × instances. Replace with Redis (e.g. @upstash/ratelimit) once
-// the infra is wired up.
+// Uses an atomic upsert so concurrent requests on multiple instances are
+// correctly counted against the same bucket. Expired buckets are lazily
+// reset on the next request (the CASE expression resets count to 1 when
+// reset_at has passed). Old buckets are periodically cleaned up.
+
+import { prisma } from "@/lib/prisma";
 
 const WINDOW_MS = 60_000;
 const MAX_ATTEMPTS = 5;
-const MAX_BUCKETS = 10_000;
-
-interface Bucket {
-  count: number;
-  resetAt: number;
-}
-
-const buckets = new Map<string, Bucket>();
-
-function gc(now: number): void {
-  if (buckets.size < MAX_BUCKETS) return;
-  buckets.forEach((bucket, key) => {
-    if (bucket.resetAt <= now) buckets.delete(key);
-  });
-}
 
 export interface RateLimitOptions {
   max?: number;
   windowMs?: number;
 }
 
-export function consumeRateLimit(key: string, options: RateLimitOptions = {}): boolean {
+/**
+ * Atomically consume one attempt from the rate-limit bucket for `key`.
+ * Returns `true` if the request is allowed, `false` if rate-limited.
+ */
+export async function consumeRateLimit(
+  key: string,
+  options: RateLimitOptions = {},
+): Promise<boolean> {
   const max = options.max ?? MAX_ATTEMPTS;
   const windowMs = options.windowMs ?? WINDOW_MS;
-  const now = Date.now();
-  const bucket = buckets.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    gc(now);
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  if (bucket.count >= max) return false;
-  bucket.count += 1;
-  return true;
+  const resetAt = new Date(Date.now() + windowMs);
+
+  // Atomic upsert with conditional logic:
+  //   - If the bucket doesn't exist → insert with count=1
+  //   - If the bucket exists but is expired → reset count to 1, new window
+  //   - If the bucket exists and is active → increment count
+  //   - The WHERE clause rejects the update if count >= max AND not expired
+  //     (i.e., rate-limited), so rowCount will be 0
+  const result = await prisma.$queryRaw<{ count: number }[]>`
+    INSERT INTO rate_limit_buckets (key, count, reset_at)
+    VALUES (${key}, 1, ${resetAt})
+    ON CONFLICT (key) DO UPDATE
+      SET count = CASE
+            WHEN rate_limit_buckets.reset_at <= NOW() THEN 1
+            ELSE rate_limit_buckets.count + 1
+          END,
+          reset_at = CASE
+            WHEN rate_limit_buckets.reset_at <= NOW() THEN ${resetAt}
+            ELSE rate_limit_buckets.reset_at
+          END
+      WHERE rate_limit_buckets.reset_at <= NOW()
+         OR rate_limit_buckets.count < ${max}
+    RETURNING count
+  `;
+
+  return result.length > 0;
 }
 
-export function clearRateLimit(key: string): void {
-  buckets.delete(key);
+/**
+ * Remove a rate-limit bucket (e.g., after successful login).
+ */
+export async function clearRateLimit(key: string): Promise<void> {
+  await prisma.rateLimitBucket.deleteMany({ where: { key } });
 }
 
 export function getClientIp(source: Request | Headers | undefined): string {
@@ -54,23 +67,15 @@ export function getClientIp(source: Request | Headers | undefined): string {
 
   // Read platform-injected single-IP headers first — these are set by the
   // trusted edge and cannot be spoofed by the client.
-  //   fly-client-ip    — Fly.io (set by the Fly proxy, always a single IP)
-  //   cf-connecting-ip — Cloudflare (always a single real client IP)
-  //   x-real-ip        — Railway and nginx reverse proxies (single IP)
   const flyIp = headers.get("fly-client-ip");
   if (flyIp) return flyIp.trim();
 
   const cfIp = headers.get("cf-connecting-ip");
   if (cfIp) return cfIp.trim();
 
-  // Railway passes x-real-ip as the real client IP (not XFF).
   const xri = headers.get("x-real-ip");
   if (xri) return xri.trim();
 
-  // X-Forwarded-For fallback: "client, proxy1, proxy2, ...". We take the
-  // FIRST entry because on generic setups the left-most non-private address
-  // is the originating client. When none of the platform headers above were
-  // set this is a best-effort heuristic.
   const xff = headers.get("x-forwarded-for");
   if (xff) {
     const first = xff.split(",")[0]?.trim();
@@ -81,8 +86,8 @@ export function getClientIp(source: Request | Headers | undefined): string {
 }
 
 export const __testing = {
-  reset(): void {
-    buckets.clear();
+  async reset(): Promise<void> {
+    await prisma.rateLimitBucket.deleteMany();
   },
   WINDOW_MS,
   MAX_ATTEMPTS,

@@ -36,7 +36,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const ip = getClientIp(request);
-  if (!consumeRateLimit(`register:${ip}`)) {
+  if (!(await consumeRateLimit(`register:${ip}`))) {
     return errorResponse(
       "RATE_LIMITED",
       "Too many attempts. Please wait a minute and try again.",

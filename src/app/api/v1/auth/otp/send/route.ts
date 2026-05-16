@@ -49,7 +49,7 @@ export async function POST(request: Request): Promise<NextResponse<SendOtpResult
   const ip = getClientIp(await headers());
 
   // Layer 1: per-IP cap — prevents rotating target addresses for fresh buckets.
-  if (!consumeRateLimit(`otp-send-ip:${ip}`, { max: 5, windowMs: 60_000 })) {
+  if (!(await consumeRateLimit(`otp-send-ip:${ip}`, { max: 5, windowMs: 60_000 }))) {
     return NextResponse.json(
       { ok: false, formError: "Too many requests. Please wait a minute and try again." },
       { status: 429 },
@@ -57,7 +57,7 @@ export async function POST(request: Request): Promise<NextResponse<SendOtpResult
   }
 
   // Layer 2: per-email cap — limits inbox flooding from many IPs.
-  if (!consumeRateLimit(`otp-send-email:${email}`, { max: 3, windowMs: OTP_TTL_MS })) {
+  if (!(await consumeRateLimit(`otp-send-email:${email}`, { max: 3, windowMs: OTP_TTL_MS }))) {
     return NextResponse.json(
       { ok: false, formError: "Too many codes sent to this address. Please wait before requesting another." },
       { status: 429 },

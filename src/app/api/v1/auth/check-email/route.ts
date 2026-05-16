@@ -28,7 +28,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   // 10 req/min per IP, separate bucket from handle-check.
   const ip = getClientIp(request);
-  if (!consumeRateLimit(`check-email:${ip}`, { max: 10, windowMs: 60_000 })) {
+  if (!(await consumeRateLimit(`check-email:${ip}`, { max: 10, windowMs: 60_000 }))) {
     return errorResponse("RATE_LIMITED", "Too many checks. Please wait a moment.", 429);
   }
 

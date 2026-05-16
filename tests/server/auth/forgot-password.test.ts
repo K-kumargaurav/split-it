@@ -3,11 +3,15 @@ jest.mock("next/headers", () => ({
 }));
 
 const findUnique = jest.fn();
+const queryRaw = jest.fn();
+const rateLimitDeleteMany = jest.fn();
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     user: {
       findUnique: (...args: unknown[]) => findUnique(...args),
     },
+    $queryRaw: (...args: unknown[]) => queryRaw(...args),
+    rateLimitBucket: { deleteMany: (...args: unknown[]) => rateLimitDeleteMany(...args) },
   },
 }));
 
@@ -26,6 +30,8 @@ import { __testing as rateTesting } from "@/server/auth/rate-limit";
 
 beforeEach(() => {
   jest.clearAllMocks();
+  queryRaw.mockResolvedValue([{ count: 1 }]);
+  rateLimitDeleteMany.mockResolvedValue({ count: 0 });
   rateTesting.reset();
   createVerificationToken.mockResolvedValue("rawtoken");
 });
@@ -87,6 +93,12 @@ describe("forgotPasswordAction", () => {
 
   it("rate-limits after MAX_ATTEMPTS for the same key", async () => {
     findUnique.mockResolvedValue(null);
+    // Simulate DB-backed rate limiter: allow first MAX_ATTEMPTS, then reject
+    queryRaw.mockReset();
+    for (let i = 0; i < rateTesting.MAX_ATTEMPTS; i += 1) {
+      queryRaw.mockResolvedValueOnce([{ count: i + 1 }]);
+    }
+    queryRaw.mockResolvedValue([]); // after limit: WHERE clause rejects => empty result
     for (let i = 0; i < rateTesting.MAX_ATTEMPTS; i += 1) {
       const r = await forgotPasswordAction({ email: "asha@example.com" });
       expect(r.ok).toBe(true);

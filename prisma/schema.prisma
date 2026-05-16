@@ -566,3 +566,11 @@ model PushSubscription {
   @@map("push_subscriptions")
 }
 
+model RateLimitBucket {
+  key     String   @id
+  count   Int      @default(1)
+  resetAt DateTime @map("reset_at")
+
+  @@map("rate_limit_buckets")
+}
+

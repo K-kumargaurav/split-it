@@ -5,6 +5,8 @@ jest.mock("next/headers", () => ({
 const findUnique = jest.fn();
 const create = jest.fn();
 const update = jest.fn();
+const queryRaw = jest.fn();
+const rateLimitDeleteMany = jest.fn();
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -13,6 +15,8 @@ jest.mock("@/lib/prisma", () => ({
       create: (...args: unknown[]) => create(...args),
       update: (...args: unknown[]) => update(...args),
     },
+    $queryRaw: (...args: unknown[]) => queryRaw(...args),
+    rateLimitBucket: { deleteMany: (...args: unknown[]) => rateLimitDeleteMany(...args) },
   },
 }));
 
@@ -41,6 +45,8 @@ import { registerAction } from "@/server/auth/register";
 
 beforeEach(() => {
   jest.clearAllMocks();
+  queryRaw.mockResolvedValue([{ count: 1 }]);
+  rateLimitDeleteMany.mockResolvedValue({ count: 0 });
   rateTesting.reset();
   allocateHandle.mockResolvedValue("asha");
   generateUniqueHandle.mockResolvedValue("asha");
@@ -209,6 +215,13 @@ describe("registerAction rate limit", () => {
   it("blocks after MAX_ATTEMPTS within the window", async () => {
     findUnique.mockResolvedValue(null);
     create.mockResolvedValue({ id: "u1" });
+
+    // Simulate DB-backed rate limiter: allow first MAX_ATTEMPTS, then reject
+    queryRaw.mockReset();
+    for (let i = 0; i < rateTesting.MAX_ATTEMPTS; i += 1) {
+      queryRaw.mockResolvedValueOnce([{ count: i + 1 }]);
+    }
+    queryRaw.mockResolvedValue([]); // after limit: WHERE clause rejects => empty result
 
     for (let i = 0; i < rateTesting.MAX_ATTEMPTS; i += 1) {
       const r = await registerAction({

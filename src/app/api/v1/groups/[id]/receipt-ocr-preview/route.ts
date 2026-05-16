@@ -46,7 +46,7 @@ export async function POST(
 
   // 10 OCR requests per minute per user — caps Google Vision API spend and
   // prevents memory exhaustion from concurrent sharp re-encodes.
-  if (!consumeRateLimit(`ocr:${session.user.id}`, { max: 10, windowMs: 60_000 })) {
+  if (!(await consumeRateLimit(`ocr:${session.user.id}`, { max: 10, windowMs: 60_000 }))) {
     return errorResponse("RATE_LIMITED", "Too many OCR requests. Please wait a minute.", 429);
   }
 

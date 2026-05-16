@@ -10,6 +10,8 @@ jest.mock("@/lib/prisma", () => ({
       findUnique: (...args: unknown[]) => findUnique(...args),
       update: (...args: unknown[]) => update(...args),
     },
+    $queryRaw: jest.fn().mockResolvedValue([{ count: 1 }]),
+    rateLimitBucket: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
   },
 }));
 

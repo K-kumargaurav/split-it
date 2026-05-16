@@ -59,7 +59,7 @@ export async function resendVerificationAction(
 
   const ip = getClientIp(await headers());
   const rateKey = `resend-verify:${parsed.data.email}:${ip}`;
-  if (!consumeRateLimit(rateKey)) {
+  if (!(await consumeRateLimit(rateKey))) {
     return {
       ok: false,
       formError: "Too many requests. Please wait a minute before trying again.",

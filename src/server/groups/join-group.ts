@@ -231,10 +231,10 @@ async function acceptInviteLink(
   // be used as a brute-force vector while individual users still get fair
   // access across links.
   if (
-    !consumeRateLimit(`invite-link:${link.id}`, {
+    !(await consumeRateLimit(`invite-link:${link.id}`, {
       max: LINK_RATE_MAX,
       windowMs: LINK_RATE_WINDOW_MS,
-    })
+    }))
   ) {
     throw new AppError(
       "RATE_LIMITED",

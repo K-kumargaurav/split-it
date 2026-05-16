@@ -199,7 +199,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const ip = getClientIp(request);
         const rateKey = `login:${parsed.data.email}:${ip}`;
-        if (!consumeRateLimit(rateKey)) return null;
+        if (!(await consumeRateLimit(rateKey))) return null;
 
         const user = await prisma.user.findUnique({
           where: { email: parsed.data.email },
@@ -255,7 +255,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new EmailNotVerifiedError();
         }
 
-        clearRateLimit(rateKey);
+        await clearRateLimit(rateKey);
 
         return {
           id: user.id,
@@ -290,10 +290,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // single attacker can't share rate budget by switching one of the
         // two. Kept at 10/15min on the email key per SPEC §2.1 ratio.
         const ip = getClientIp(request);
-        if (!consumeRateLimit(`otp-verify:${email}`, { max: 10, windowMs: OTP_TTL_MS })) {
+        if (!(await consumeRateLimit(`otp-verify:${email}`, { max: 10, windowMs: OTP_TTL_MS }))) {
           return null;
         }
-        if (!consumeRateLimit(`otp-verify-ip:${ip}`, { max: 30, windowMs: OTP_TTL_MS })) {
+        if (!(await consumeRateLimit(`otp-verify-ip:${ip}`, { max: 30, windowMs: OTP_TTL_MS }))) {
           return null;
         }
 

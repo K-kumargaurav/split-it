@@ -54,7 +54,7 @@ export async function checkHandleAvailability(rawHandle: unknown): Promise<Check
   // Per-IP rate limit on the lookup endpoint — handle availability is a cheap
   // way to enumerate registered users otherwise.
   const ip = getClientIp(await headers());
-  if (!consumeRateLimit(`handle-check:${ip}`, { max: 30, windowMs: 60_000 })) {
+  if (!(await consumeRateLimit(`handle-check:${ip}`, { max: 30, windowMs: 60_000 }))) {
     return { status: "rate-limited", message: "Too many checks. Try again in a moment." };
   }
 

@@ -33,7 +33,7 @@ export async function resendEmailOtpAction(rawEmail: unknown): Promise<ResendOtp
   }
 
   const ip = getClientIp(await headers());
-  if (!consumeRateLimit(`otp-resend:${email}:${ip}`)) {
+  if (!(await consumeRateLimit(`otp-resend:${email}:${ip}`))) {
     return {
       ok: false,
       formError: "Please wait a minute before requesting another code.",

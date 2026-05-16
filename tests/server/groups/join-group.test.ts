@@ -13,6 +13,8 @@ const groupMemberCreate = jest.fn();
 const groupMemberCount = jest.fn();
 const auditLogCreate = jest.fn();
 const transaction = jest.fn();
+const queryRaw = jest.fn();
+const rateLimitDeleteMany = jest.fn();
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -31,6 +33,8 @@ jest.mock("@/lib/prisma", () => ({
       count: (...a: unknown[]) => groupMemberCount(...a),
     },
     $transaction: (cb: (tx: unknown) => unknown) => transaction(cb),
+    $queryRaw: (...a: unknown[]) => queryRaw(...a),
+    rateLimitBucket: { deleteMany: (...a: unknown[]) => rateLimitDeleteMany(...a) },
   },
 }));
 
@@ -83,6 +87,8 @@ function liveLink(overrides: Partial<Record<string, unknown>> = {}): unknown {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  queryRaw.mockResolvedValue([{ count: 1 }]);
+  rateLimitDeleteMany.mockResolvedValue({ count: 0 });
   wireTransaction();
   rateLimitTesting.reset();
   groupMemberCount.mockResolvedValue(3);
@@ -218,6 +224,13 @@ describe("joinViaInviteLink — shareable link branch", () => {
   });
 
   it("enforces the 10 joins/hour rate limit per link", async () => {
+    // Simulate DB-backed rate limiter: allow first 10, then reject
+    queryRaw.mockReset();
+    for (let i = 0; i < 10; i++) {
+      queryRaw.mockResolvedValueOnce([{ count: i + 1 }]);
+    }
+    queryRaw.mockResolvedValue([]); // after limit: WHERE clause rejects => empty result
+
     // First 10 calls succeed; the 11th gets RATE_LIMITED. Each call needs a
     // distinct user so the membership-existence check doesn't short-circuit
     // — the limiter is the gate we're verifying.

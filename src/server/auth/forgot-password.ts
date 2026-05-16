@@ -27,7 +27,7 @@ export async function forgotPasswordAction(rawInput: unknown): Promise<ForgotPas
 
   const ip = getClientIp(await headers());
   const rateKey = `forgot-pw:${parsed.data.email}:${ip}`;
-  if (!consumeRateLimit(rateKey)) {
+  if (!(await consumeRateLimit(rateKey))) {
     return {
       ok: false,
       formError: "Too many requests. Please wait a minute before trying again.",

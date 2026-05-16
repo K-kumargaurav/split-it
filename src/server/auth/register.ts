@@ -46,7 +46,7 @@ export async function registerAction(rawInput: unknown): Promise<RegisterResult>
   }
 
   const ip = getClientIp(await headers());
-  if (!consumeRateLimit(`register:${ip}`)) {
+  if (!(await consumeRateLimit(`register:${ip}`))) {
     return {
       ok: false,
       formError: "Too many attempts. Please wait a minute and try again.",

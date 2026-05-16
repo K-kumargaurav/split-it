@@ -28,7 +28,7 @@ export async function POST(
   }
 
   const userId = session.user.id;
-  if (!consumeRateLimit(`receipt:${userId}`, { max: 5, windowMs: 60_000 })) {
+  if (!(await consumeRateLimit(`receipt:${userId}`, { max: 5, windowMs: 60_000 }))) {
     return errorResponse("RATE_LIMITED", "Too many receipt uploads. Try again later.", 429);
   }
 

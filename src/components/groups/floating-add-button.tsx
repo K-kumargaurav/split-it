@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Plus } from "lucide-react";
 
 interface FloatingAddButtonProps {
@@ -11,7 +11,7 @@ interface FloatingAddButtonProps {
 export function FloatingAddButton({ href }: FloatingAddButtonProps) {
   return (
     <div className="fixed bottom-24 right-4 z-50 sm:hidden">
-      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+      <m.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
         <Link
           href={href}
           aria-label="Add expense"
@@ -19,7 +19,7 @@ export function FloatingAddButton({ href }: FloatingAddButtonProps) {
         >
           <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden="true" />
         </Link>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

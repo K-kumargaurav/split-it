@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { toast } from "sonner";
 
 import { PremiumInput } from "@/components/ui/premium-input";
@@ -39,6 +39,7 @@ interface CreatedGroupResponse {
 
 export function CreateGroupForm() {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -81,8 +82,10 @@ export function CreateGroupForm() {
       }
       const body = (await response.json()) as CreatedGroupResponse;
       toast.success("Group created");
-      router.push(`/groups/${body.group.id}`);
-      router.refresh();
+      startTransition(() => {
+        router.push(`/groups/${body.group.id}`);
+        router.refresh();
+      });
     } catch {
       setServerError("Couldn't create the group. Please try again.");
     }
@@ -138,7 +141,7 @@ export function CreateGroupForm() {
           {ICONS.map((emoji) => {
             const active = selectedIcon === emoji;
             return (
-              <motion.button
+              <m.button
                 key={emoji}
                 type="button"
                 whileTap={{ scale: 0.92 }}
@@ -154,7 +157,7 @@ export function CreateGroupForm() {
                 )}
               >
                 {emoji}
-              </motion.button>
+              </m.button>
             );
           })}
         </div>
@@ -167,7 +170,7 @@ export function CreateGroupForm() {
           {COLORS.map((hex) => {
             const active = selectedColor === hex;
             return (
-              <motion.button
+              <m.button
                 key={hex}
                 type="button"
                 whileTap={{ scale: 0.9 }}
@@ -246,7 +249,7 @@ export function CreateGroupForm() {
       ) : null}
 
       {/* Submit */}
-      <motion.button
+      <m.button
         type="submit"
         disabled={isSubmitting}
         whileTap={{ scale: 0.98 }}
@@ -287,7 +290,7 @@ export function CreateGroupForm() {
             Create Group
           </>
         )}
-      </motion.button>
+      </m.button>
     </form>
   );
 }

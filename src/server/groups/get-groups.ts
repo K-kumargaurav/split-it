@@ -1,7 +1,10 @@
+import { cache } from "react";
+
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
-import { computeNetBalance, getUserNetBalance, type ExpenseRow, type SettlementRow } from "@/server/balance/calculate-balances";
+import { batchLoadLedger } from "@/server/balance/batch-load-ledger";
+import { computeNetBalance } from "@/server/balance/calculate-balances";
 
 // Per-group balance is sourced from `getUserNetBalance` — the same function
 // the group's Balances section uses — so the header and the line-item list
@@ -53,42 +56,7 @@ export async function getGroupsForUser(userId: string): Promise<GroupSummary[]> 
 
   const groupIds = memberships.map(({ group }) => group.id);
 
-  // Batch load all expenses + settlements in 2 queries instead of 2N —
-  // fixes the N+1 pattern where getUserNetBalance ran separate DB calls per group.
-  const [rawExpenses, rawSettlements] = await Promise.all([
-    prisma.expense.findMany({
-      where: { groupId: { in: groupIds }, status: "ACTIVE", deletedAt: null },
-      select: {
-        groupId: true,
-        payers: { select: { userId: true, amountPaise: true } },
-        participants: { select: { userId: true, amountPaise: true } },
-      },
-    }),
-    prisma.settlement.findMany({
-      where: {
-        groupId: { in: groupIds },
-        status: "CONFIRMED",
-        deletedAt: null,
-        payerId: { not: null },
-      },
-      select: { groupId: true, payerId: true, receiverId: true, amountPaise: true },
-    }),
-  ]);
-
-  const expensesByGroup = new Map<string, ExpenseRow[]>();
-  for (const e of rawExpenses) {
-    const bucket = expensesByGroup.get(e.groupId) ?? [];
-    bucket.push({ payers: e.payers, participants: e.participants });
-    expensesByGroup.set(e.groupId, bucket);
-  }
-
-  const settlementsByGroup = new Map<string, SettlementRow[]>();
-  for (const s of rawSettlements) {
-    if (!s.payerId) continue;
-    const bucket = settlementsByGroup.get(s.groupId) ?? [];
-    bucket.push({ payerId: s.payerId, receiverId: s.receiverId, amountPaise: s.amountPaise });
-    settlementsByGroup.set(s.groupId, bucket);
-  }
+  const { expensesByGroup, settlementsByGroup } = await batchLoadLedger(groupIds);
 
   return memberships
     .map(({ group, role }) => ({
@@ -133,26 +101,32 @@ export type GroupDetail = Prisma.GroupGetPayload<{
   viewerRole: "OWNER" | "MEMBER";
 };
 
-export async function getGroupById(
+export const getGroupById = cache(async function getGroupById(
   userId: string,
   groupId: string,
 ): Promise<GroupDetail> {
-  const group = await prisma.group.findFirst({
-    where: { id: groupId, deletedAt: null },
-    include: {
-      members: {
-        select: {
-          id: true,
-          role: true,
-          joinedAt: true,
-          user: {
-            select: { id: true, handle: true, displayName: true, avatarUrl: true },
+  // Fetch group metadata and ledger data in parallel. The ledger query is
+  // cheap to discard if the group doesn't exist or the user isn't a member,
+  // and parallelizing saves a full DB round-trip (~50-100ms).
+  const [group, ledger] = await Promise.all([
+    prisma.group.findFirst({
+      where: { id: groupId, deletedAt: null },
+      include: {
+        members: {
+          select: {
+            id: true,
+            role: true,
+            joinedAt: true,
+            user: {
+              select: { id: true, handle: true, displayName: true, avatarUrl: true },
+            },
           },
         },
+        _count: { select: { expenses: true } },
       },
-      _count: { select: { expenses: true } },
-    },
-  });
+    }),
+    batchLoadLedger([groupId]),
+  ]);
 
   if (!group) {
     throw new AppError("NOT_FOUND", "Group not found.");
@@ -160,17 +134,18 @@ export async function getGroupById(
 
   const viewer = group.members.find((m) => m.user.id === userId);
   if (!viewer) {
-    // Membership check after the row exists so we never leak the existence of
-    // groups the user can't see — same 403 either way is fine since findFirst
-    // already returned a row, and we control which row.
     throw new AppError("FORBIDDEN", "You don't have access to this group.");
   }
 
-  const balance = await getUserNetBalance(group.id, userId);
+  const balance = computeNetBalance(
+    ledger.expensesByGroup.get(groupId) ?? [],
+    ledger.settlementsByGroup.get(groupId) ?? [],
+    userId,
+  );
 
   return {
     ...group,
     balancePaise: Number(balance),
     viewerRole: viewer.role,
   };
-}
+});

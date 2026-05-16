@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { getGroupMembers } from "@/server/groups/manage-members";
 
@@ -22,7 +22,7 @@ export async function GET(
 
   try {
     const result = await getGroupMembers(session.user.id, params.id);
-    return NextResponse.json({
+    return cachedJson({
       members: result.members,
       viewerRole: result.viewerRole,
       ownerId: result.ownerId,

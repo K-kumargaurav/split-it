@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
 
@@ -27,7 +27,7 @@ export async function GET(
       params.expId,
       params.propId,
     );
-    return NextResponse.json({ proposal });
+    return cachedJson({ proposal });
   } catch (err) {
     console.error(
       `GET /groups/${params.id}/expenses/${params.expId}/proposals/${params.propId} failed`,

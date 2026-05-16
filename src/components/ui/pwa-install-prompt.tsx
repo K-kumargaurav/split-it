@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import Image from "next/image";
 
 const STORAGE_KEY = "pwa-prompt";
@@ -62,7 +62,7 @@ export function PwaInstallPrompt() {
       {show && (
         <>
           {/* Backdrop */}
-          <motion.div
+          <m.div
             key="backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -73,7 +73,7 @@ export function PwaInstallPrompt() {
           />
 
           {/* Bottom sheet */}
-          <motion.div
+          <m.div
             key="sheet"
             role="dialog"
             aria-modal="true"
@@ -117,7 +117,7 @@ export function PwaInstallPrompt() {
             >
               Not now
             </button>
-          </motion.div>
+          </m.div>
         </>
       )}
     </AnimatePresence>

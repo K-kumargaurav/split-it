@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { useMemo, useState, useTransition } from "react";
+import { m } from "framer-motion";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/cn";
@@ -37,6 +37,7 @@ export function RecurringForm({ groupId, members }: RecurringFormProps) {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [frequency, setFrequency] = useState<Frequency>("MONTHLY");
+  const [, startTransition] = useTransition();
   const [nextRunDate, setNextRunDate] = useState(today);
   const [showEndDate, setShowEndDate] = useState(false);
   const [endDate, setEndDate] = useState("");
@@ -135,8 +136,10 @@ export function RecurringForm({ groupId, members }: RecurringFormProps) {
         return;
       }
       toast.success("Recurring expense set up");
-      router.push(`/groups/${groupId}/recurring`);
-      router.refresh();
+      startTransition(() => {
+        router.push(`/groups/${groupId}/recurring`);
+        router.refresh();
+      });
     } catch {
       setError("Couldn't reach the server. Please try again.");
     } finally {
@@ -158,7 +161,7 @@ export function RecurringForm({ groupId, members }: RecurringFormProps) {
         <legend className="mb-2 text-[13px] text-[#8B93A7]">Frequency</legend>
         <div className="flex flex-wrap gap-2">
           {FREQ_OPTIONS.map((f) => (
-            <motion.button key={f.value} type="button" aria-pressed={frequency === f.value}
+            <m.button key={f.value} type="button" aria-pressed={frequency === f.value}
               onClick={() => setFrequency(f.value)} whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
               className={cn("rounded-full px-4 py-2 text-sm transition",
@@ -167,7 +170,7 @@ export function RecurringForm({ groupId, members }: RecurringFormProps) {
                   ? "bg-[#00C896] font-semibold text-[#0E1116]"
                   : "border border-white/[0.06] bg-white/[0.04] font-medium text-[#8B93A7] hover:text-[#F5F7FA]")}>
               {f.label}
-            </motion.button>
+            </m.button>
           ))}
         </div>
       </fieldset>

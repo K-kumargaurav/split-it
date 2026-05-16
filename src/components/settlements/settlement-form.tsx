@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Smartphone, Copy } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,6 +48,7 @@ export function SettlementForm({
   defaultReceiverId,
 }: SettlementFormProps) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
 
   const [receiverId, setReceiverId] = useState<string>(() => {
     if (defaultReceiverId && debts.some((d) => d.receiverId === defaultReceiverId)) {
@@ -176,10 +177,10 @@ export function SettlementForm({
         </p>
         <button
           type="button"
-          onClick={() => {
+          onClick={() => startTransition(() => {
             router.push(`/groups/${groupId}`);
             router.refresh();
-          }}
+          })}
           className="mt-6 inline-flex h-12 items-center justify-center rounded-2xl bg-accent px-6 text-sm font-semibold text-bg transition hover:opacity-90"
         >
           Back to group

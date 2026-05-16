@@ -4,6 +4,13 @@
 // reflect that internal call shape: full ledger reads (not the per-user
 // aggregate that the old buggy implementation used).
 
+// React's `cache()` is a server-only API unavailable in Jest — stub it as
+// an identity wrapper so the `cache(fn)` call in get-groups.ts is a no-op.
+jest.mock("react", () => ({
+  ...jest.requireActual("react"),
+  cache: (fn: unknown) => fn,
+}));
+
 const memberFindMany = jest.fn();
 const memberFindUnique = jest.fn();
 const expenseFindMany = jest.fn();
@@ -197,10 +204,12 @@ describe("getGroupById", () => {
     // Alice owes Bob 2500 → viewer's net is -2500.
     expenseFindMany.mockResolvedValue([
       {
+        groupId: "g_1",
         payers: [{ userId: BOB, amountPaise: BigInt(2500) }],
         participants: [{ userId: USER_ID, amountPaise: BigInt(2500) }],
       },
     ]);
+    settlementFindMany.mockResolvedValue([]);
 
     const result = await getGroupById(USER_ID, "g_1");
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 import { formatPaise } from "@/lib/format";
@@ -54,7 +54,7 @@ export function ExpenseCard({
   }
 
   return (
-    <motion.div
+    <m.div
       role="button"
       tabIndex={0}
       aria-label={`${title}, ${formatPaise(totalAmountPaise)}`}
@@ -100,6 +100,6 @@ export function ExpenseCard({
           </p>
         ) : null}
       </div>
-    </motion.div>
+    </m.div>
   );
 }

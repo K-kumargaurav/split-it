@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { usePathname, useSearchParams } from "next/navigation";
 
 function GroupLayoutClientInner({ children }: { children: React.ReactNode }) {
@@ -11,7 +11,7 @@ function GroupLayoutClientInner({ children }: { children: React.ReactNode }) {
 
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <motion.div
+      <m.div
         key={`${pathname}?${tab}`}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -19,7 +19,7 @@ function GroupLayoutClientInner({ children }: { children: React.ReactNode }) {
         transition={{ duration: 0.15, ease: "easeOut" }}
       >
         {children}
-      </motion.div>
+      </m.div>
     </AnimatePresence>
   );
 }

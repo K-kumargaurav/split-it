@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 import { formatDateTime, formatRelativeTime } from "@/lib/format";
@@ -133,19 +133,19 @@ export function AuditEntry({ entry, viewerId, isLast }: Props) {
               aria-expanded={open}
               className="inline-flex items-center gap-1 rounded text-[12px] text-text-secondary transition hover:text-text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/40"
             >
-              <motion.span
+              <m.span
                 animate={{ rotate: open ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
                 className="inline-flex"
               >
                 <ChevronDown size={13} aria-hidden="true" />
-              </motion.span>
+              </m.span>
               {open ? "Hide changes" : "View changes"}
             </button>
 
             <AnimatePresence initial={false}>
               {open && (
-                <motion.div
+                <m.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
@@ -159,7 +159,7 @@ export function AuditEntry({ entry, viewerId, isLast }: Props) {
                       </li>
                     ))}
                   </ul>
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </div>

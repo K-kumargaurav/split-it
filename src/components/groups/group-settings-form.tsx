@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 import { PremiumInput } from "@/components/ui/premium-input";
@@ -114,7 +114,7 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
           {ICONS.map((emoji) => {
             const active = icon === emoji;
             return (
-              <motion.button
+              <m.button
                 key={emoji}
                 type="button"
                 whileTap={{ scale: 0.92 }}
@@ -130,7 +130,7 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
                 )}
               >
                 {emoji}
-              </motion.button>
+              </m.button>
             );
           })}
         </div>
@@ -143,7 +143,7 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
           {COLORS.map((hex) => {
             const active = color === hex;
             return (
-              <motion.button
+              <m.button
                 key={hex}
                 type="button"
                 whileTap={{ scale: 0.9 }}
@@ -222,7 +222,7 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
       ) : null}
 
       {/* Save button */}
-      <motion.button
+      <m.button
         type="submit"
         disabled={submitting}
         whileTap={{ scale: 0.98 }}
@@ -233,7 +233,7 @@ export function GroupSettingsForm({ group, isOwner }: GroupSettingsFormProps) {
         )}
       >
         {submitting ? "Saving…" : "Save changes"}
-      </motion.button>
+      </m.button>
     </form>
   );
 }

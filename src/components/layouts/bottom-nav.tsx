@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Bell, LayoutDashboard, User, Users, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/cn";
@@ -57,7 +57,7 @@ export function BottomNav() {
           const active = match(pathname);
           return (
             <li key={href}>
-              <motion.div whileTap={{ scale: 0.9 }} transition={{ duration: 0.12 }}>
+              <m.div whileTap={{ scale: 0.9 }} transition={{ duration: 0.12 }}>
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
@@ -84,7 +84,7 @@ export function BottomNav() {
                     {label}
                   </span>
                 </Link>
-              </motion.div>
+              </m.div>
             </li>
           );
         })}

@@ -288,18 +288,20 @@ export function computeNetBalance(
   return balance;
 }
 
-// Pure functions are exported for test reuse — the Prisma-backed wrappers
-// remain the public API but tests can drive the algorithm directly with
-// in-memory rows.
-export const __testing = {
-  buildDirectFromLedger(
-    expenses: ExpenseRow[],
-    settlements: SettlementRow[],
-  ): BalanceMap {
-    const net = new Map<string, Map<string, bigint>>();
-    for (const e of expenses) applyExpense(net, e);
-    for (const s of settlements) applySettlement(net, s);
-    return flattenNet(net);
-  },
-  simplify,
-};
+// Pure in-memory computation of the full direct balance map. Used by the
+// batch-load path and the balances API to avoid redundant DB calls.
+export function buildDirectFromLedger(
+  expenses: ExpenseRow[],
+  settlements: SettlementRow[],
+): BalanceMap {
+  const net = new Map<string, Map<string, bigint>>();
+  for (const e of expenses) applyExpense(net, e);
+  for (const s of settlements) applySettlement(net, s);
+  return flattenNet(net);
+}
+
+// Pure simplification of a direct balance map into minimum transfers.
+export { simplify as simplifyBalances };
+
+// Backwards-compatible test export.
+export const __testing = { buildDirectFromLedger, simplify };

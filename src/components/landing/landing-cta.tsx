@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { FadeIn } from "@/components/ui/motion";
 
@@ -31,7 +31,7 @@ export function LandingCta({ isAuthed }: Props) {
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <motion.div whileTap={{ scale: 0.97 }}>
+            <m.div whileTap={{ scale: 0.97 }}>
               <Link
                 href={isAuthed ? "/dashboard" : "/register"}
                 className="inline-flex items-center gap-2 h-[52px] px-8 rounded-2xl bg-accent text-bg font-semibold text-[15px] transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -39,7 +39,7 @@ export function LandingCta({ isAuthed }: Props) {
                 Get started free
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
-            </motion.div>
+            </m.div>
             {!isAuthed && (
               <Link
                 href="/login"

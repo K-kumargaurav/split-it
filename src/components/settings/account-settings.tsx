@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Download, Key, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/cn";
@@ -68,7 +68,7 @@ export function AccountSettings() {
         label="Export my data"
         description="Download all your data as JSON"
         action={
-          <motion.button
+          <m.button
             type="button"
             whileTap={{ scale: 0.97 }}
             onClick={() => void handleExport()}
@@ -76,7 +76,7 @@ export function AccountSettings() {
           >
             <Download size={13} aria-hidden="true" />
             Export
-          </motion.button>
+          </m.button>
         }
       />
 
@@ -89,7 +89,7 @@ export function AccountSettings() {
           </p>
 
           {!confirming ? (
-            <motion.button
+            <m.button
               type="button"
               whileTap={{ scale: 0.97 }}
               onClick={() => setConfirming(true)}
@@ -97,7 +97,7 @@ export function AccountSettings() {
             >
               <Trash2 size={14} aria-hidden="true" />
               Delete account
-            </motion.button>
+            </m.button>
           ) : (
             <div className="mt-3 space-y-3">
               <p className="text-[13px] text-text-secondary">
@@ -119,7 +119,7 @@ export function AccountSettings() {
                 <p role="alert" className="text-[13px] text-error">{error}</p>
               ) : null}
               <div className="flex flex-wrap gap-3">
-                <motion.button
+                <m.button
                   type="button"
                   whileTap={{ scale: 0.97 }}
                   onClick={() => void handleDelete()}
@@ -131,7 +131,7 @@ export function AccountSettings() {
                   )}
                 >
                   {deleting ? "Deleting…" : "Delete permanently"}
-                </motion.button>
+                </m.button>
                 <button
                   type="button"
                   onClick={() => { setConfirming(false); setConfirmText(""); setError(null); }}

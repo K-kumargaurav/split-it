@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse } from "@/lib/api-response";
 import { createGroup } from "@/server/groups/create-group";
 import { getGroupsForUser } from "@/server/groups/get-groups";
 
@@ -15,7 +15,7 @@ export async function GET(): Promise<NextResponse> {
 
   try {
     const groups = await getGroupsForUser(session.user.id);
-    return NextResponse.json({ groups });
+    return cachedJson({ groups });
   } catch (err) {
     console.error("GET /api/v1/groups failed", err);
     return errorFromThrown(err);

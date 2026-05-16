@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { X } from "lucide-react";
 
 export interface GroupOption {
@@ -28,7 +28,7 @@ export function GroupSelectorModal({ isOpen, groups, onClose }: GroupSelectorMod
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
+        <m.div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -38,7 +38,7 @@ export function GroupSelectorModal({ isOpen, groups, onClose }: GroupSelectorMod
           aria-modal="true"
           aria-labelledby="group-selector-title"
         >
-          <motion.div
+          <m.div
             className="relative w-full max-w-sm rounded-3xl border border-white/[0.08] bg-[#161B22] p-6"
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -88,8 +88,8 @@ export function GroupSelectorModal({ isOpen, groups, onClose }: GroupSelectorMod
                 </li>
               ))}
             </ul>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

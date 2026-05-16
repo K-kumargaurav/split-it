@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getUserNetBalance } from "@/server/balance/calculate-balances";
+import { batchLoadLedger } from "@/server/balance/batch-load-ledger";
+import { computeNetBalance } from "@/server/balance/calculate-balances";
 import { serializePaise } from "@/lib/api-response";
 import type { DashboardData, DashboardGroupSummary } from "@/server/dashboard/types";
 
@@ -64,7 +65,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   startOfMonth.setHours(0, 0, 0, 0);
 
   const [
-    perGroupBalances,
+    ledger,
     lastExpenseDates,
     lastExpensePerGroup,
     pendingSettlements,
@@ -72,9 +73,9 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     votedProposalIds,
     settledThisMonthResult,
   ] = await Promise.all([
-    // One canonical net per group — same function the group-detail page uses
-    // for its Balances section. Pending settlements are excluded by design.
-    Promise.all(groupIds.map((id) => getUserNetBalance(id, userId))),
+    // Batch-load all expenses + settlements in 2 queries (not 2N), then
+    // compute each group's net balance in-memory via computeNetBalance.
+    batchLoadLedger(groupIds),
     prisma.expense.groupBy({
       by: ["groupId"],
       where: {
@@ -132,9 +133,14 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
 
   const balanceByGroup = new Map<string, string>();
   const lastActivityByGroup = new Map<string, Date>();
-  groupIds.forEach((id, i) => {
-    balanceByGroup.set(id, serializePaise(perGroupBalances[i] ?? BigInt(0)));
-  });
+  for (const id of groupIds) {
+    const net = computeNetBalance(
+      ledger.expensesByGroup.get(id) ?? [],
+      ledger.settlementsByGroup.get(id) ?? [],
+      userId,
+    );
+    balanceByGroup.set(id, serializePaise(net));
+  }
 
   for (const row of lastExpenseDates) {
     if (row._max.createdAt) lastActivityByGroup.set(row.groupId, row._max.createdAt);

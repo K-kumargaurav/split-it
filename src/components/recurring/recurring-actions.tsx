@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 import { formatDate, formatPaise } from "@/lib/format";
@@ -104,7 +104,7 @@ export function RecurringCard({
   }
 
   return (
-    <motion.div
+    <m.div
       className={cn(
         "group relative rounded-2xl bg-[#161B22] shadow-card",
         "border border-white/5 border-l-2",
@@ -188,6 +188,6 @@ export function RecurringCard({
           </p>
         ) : null}
       </div>
-    </motion.div>
+    </m.div>
   );
 }

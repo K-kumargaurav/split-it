@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   type LucideIcon,
   Receipt,
@@ -97,7 +97,7 @@ export function NotificationItem({
   }
 
   return (
-    <motion.div
+    <m.div
       layout
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
@@ -143,6 +143,6 @@ export function NotificationItem({
           </p>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

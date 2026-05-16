@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download } from "lucide-react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 
@@ -93,7 +93,7 @@ export function ExportSection({ groupId }: ExportSectionProps) {
 
       {/* Export buttons */}
       <div className="flex flex-wrap gap-3">
-        <motion.button
+        <m.button
           type="button"
           whileTap={{ scale: 0.97 }}
           onClick={() => download("pdf")}
@@ -106,9 +106,9 @@ export function ExportSection({ groupId }: ExportSectionProps) {
         >
           <Download size={15} aria-hidden="true" />
           {busy === "pdf" ? "Generating…" : "Export PDF"}
-        </motion.button>
+        </m.button>
 
-        <motion.button
+        <m.button
           type="button"
           whileTap={{ scale: 0.97 }}
           onClick={() => download("csv")}
@@ -121,7 +121,7 @@ export function ExportSection({ groupId }: ExportSectionProps) {
         >
           <Download size={15} aria-hidden="true" />
           {busy === "csv" ? "Generating…" : "Export CSV"}
-        </motion.button>
+        </m.button>
       </div>
 
       {error ? (

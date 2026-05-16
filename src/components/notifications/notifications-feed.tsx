@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import useSWRInfinite from "swr/infinite";
 
 import { cn } from "@/lib/cn";
@@ -169,7 +169,7 @@ export function NotificationsFeed(): JSX.Element {
                 )}
               >
                 {isActive && (
-                  <motion.span
+                  <m.span
                     layoutId="notif-tab-indicator"
                     className="absolute inset-0 rounded-xl bg-[#00C896]/10"
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}

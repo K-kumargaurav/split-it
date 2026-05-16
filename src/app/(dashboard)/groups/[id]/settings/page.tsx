@@ -4,8 +4,14 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
-import { DangerZone } from "@/components/groups/danger-zone";
-import { ExportSection } from "@/components/groups/export-section";
+import dynamic from "next/dynamic";
+
+const ExportSection = dynamic(() =>
+  import("@/components/groups/export-section").then((mod) => mod.ExportSection),
+);
+const DangerZone = dynamic(() =>
+  import("@/components/groups/danger-zone").then((mod) => mod.DangerZone),
+);
 import { GroupSettingsForm } from "@/components/groups/group-settings-form";
 import { getGroupById } from "@/server/groups/get-groups";
 

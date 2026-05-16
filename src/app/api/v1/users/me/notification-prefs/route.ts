@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { updateNotificationPrefsSchema } from "@/lib/validations/notifications";
 
@@ -25,7 +25,7 @@ export async function GET(): Promise<NextResponse> {
         whatsappSms: true,
       },
     });
-    return NextResponse.json({ prefs });
+    return cachedJson({ prefs });
   } catch (err) {
     console.error("GET /users/me/notification-prefs failed", err);
     return errorFromThrown(err);

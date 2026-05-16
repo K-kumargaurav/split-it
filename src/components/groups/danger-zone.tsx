@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 
@@ -49,7 +49,7 @@ export function DangerZone({ groupId, groupName }: DangerZoneProps) {
         <p className="text-[14px] text-text-secondary leading-relaxed">
           Archived groups are hidden from your dashboard. All balances and history remain readable.
         </p>
-        <motion.button
+        <m.button
           type="button"
           whileTap={{ scale: 0.97 }}
           onClick={() => setConfirming(true)}
@@ -59,7 +59,7 @@ export function DangerZone({ groupId, groupName }: DangerZoneProps) {
           )}
         >
           Archive group
-        </motion.button>
+        </m.button>
       </div>
     );
   }
@@ -92,7 +92,7 @@ export function DangerZone({ groupId, groupName }: DangerZoneProps) {
       ) : null}
 
       <div className="flex flex-wrap gap-3">
-        <motion.button
+        <m.button
           type="button"
           whileTap={{ scale: 0.97 }}
           onClick={archive}
@@ -104,7 +104,7 @@ export function DangerZone({ groupId, groupName }: DangerZoneProps) {
           )}
         >
           {submitting ? "Archiving…" : "Archive permanently"}
-        </motion.button>
+        </m.button>
 
         <button
           type="button"

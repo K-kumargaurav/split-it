@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { Bell } from "lucide-react";
 import useSWR from "swr";
 
@@ -109,7 +109,7 @@ function NavBell() {
       <Bell size={18} aria-hidden="true" />
       <AnimatePresence>
         {unread > 0 && (
-          <motion.span
+          <m.span
             key="badge"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -122,7 +122,7 @@ function NavBell() {
             <span className="relative flex h-4 w-4 items-center justify-center rounded-full bg-[#00C896] text-[9px] font-semibold leading-none text-[#0E1116]">
               {unread > 9 ? "9+" : unread}
             </span>
-          </motion.span>
+          </m.span>
         )}
       </AnimatePresence>
     </Link>
@@ -184,7 +184,7 @@ function AvatarMenu({ user }: { user: NavbarProps["user"] }) {
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             key="dropdown"
             role="menu"
             aria-label="Profile menu"
@@ -226,7 +226,7 @@ function AvatarMenu({ user }: { user: NavbarProps["user"] }) {
                 </button>
               </li>
             </ul>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

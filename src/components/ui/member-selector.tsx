@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 
@@ -42,7 +42,7 @@ export function MemberSelector({
             .toUpperCase();
 
           return (
-            <motion.button
+            <m.button
               key={member.id}
               type="button"
               onClick={() => onToggle(member.id)}
@@ -72,7 +72,7 @@ export function MemberSelector({
                   Guest
                 </span>
               ) : null}
-            </motion.button>
+            </m.button>
           );
         })}
       </div>

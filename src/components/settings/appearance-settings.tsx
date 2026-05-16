@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { LayoutGroup, motion } from "framer-motion";
+import { LayoutGroup, m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 
@@ -35,7 +35,7 @@ export function AppearanceSettings() {
                 className="relative rounded-xl px-4 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
               >
                 {isActive && (
-                  <motion.span
+                  <m.span
                     layoutId="themePill"
                     className="absolute inset-0 rounded-xl bg-[#0E1116]"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}

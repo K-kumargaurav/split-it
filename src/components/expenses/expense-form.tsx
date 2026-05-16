@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -10,7 +10,13 @@ import { z } from "zod";
 import { cn } from "@/lib/cn";
 import { formatPaise, rupeesToPaise } from "@/lib/format";
 import { equalSplit, percentageSplit } from "@/lib/split";
-import { ReceiptUploader, type OcrPrefill } from "@/components/expenses/receipt-uploader";
+import dynamic from "next/dynamic";
+import type { OcrPrefill } from "@/components/expenses/receipt-uploader";
+
+const ReceiptUploader = dynamic(
+  () => import("@/components/expenses/receipt-uploader").then((mod) => mod.ReceiptUploader),
+  { ssr: false },
+);
 import { AmountInput } from "@/components/ui/amount-input";
 import { MemberSelector, type SelectorMember } from "@/components/ui/member-selector";
 import { PremiumCard } from "@/components/ui/premium-card";
@@ -89,6 +95,7 @@ export function ExpenseForm({
   categories,
 }: ExpenseFormProps) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
   const [splitType, setSplitType] = useState<SplitType>("EQUAL");
 
@@ -377,8 +384,10 @@ export function ExpenseForm({
     }
 
     toast.success("Expense added");
-    router.push(`/groups/${groupId}`);
-    router.refresh();
+    startTransition(() => {
+      router.push(`/groups/${groupId}`);
+      router.refresh();
+    });
   }
 
   const memberById = new Map<

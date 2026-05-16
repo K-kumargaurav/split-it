@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { createExpense, type CreatedExpense } from "@/server/expenses/create-expense";
 import {
@@ -87,7 +87,7 @@ export async function GET(
       cursor,
       limit,
     );
-    return NextResponse.json(page);
+    return cachedJson(page);
   } catch (err) {
     console.error(`GET /api/v1/groups/${params.id}/expenses failed`, err);
     return errorFromThrown(err);

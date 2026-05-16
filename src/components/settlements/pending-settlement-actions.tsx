@@ -15,6 +15,7 @@ import { fireConfetti } from "@/lib/confetti";
 interface PendingSettlementActionsProps {
   groupId: string;
   settlementId: string;
+  onComplete?: () => void;
 }
 
 interface PatchErrorBody {
@@ -24,6 +25,7 @@ interface PatchErrorBody {
 export function PendingSettlementActions({
   groupId,
   settlementId,
+  onComplete,
 }: PendingSettlementActionsProps) {
   const router = useRouter();
   const [pending, setPending] = useState<"confirm" | "dispute" | null>(null);
@@ -63,6 +65,7 @@ export function PendingSettlementActions({
     }
 
     setPending(null);
+    onComplete?.();
     if (action === "confirm") {
       toast.success("Settlement confirmed");
       fireConfetti();

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { getGroupById } from "@/server/groups/get-groups";
 import { archiveGroup, updateGroup } from "@/server/groups/update-group";
@@ -23,7 +23,7 @@ export async function GET(
 
   try {
     const group = await getGroupById(session.user.id, params.id);
-    return NextResponse.json({ group });
+    return cachedJson({ group });
   } catch (err) {
     if (!(err instanceof AppError)) {
       console.error(`GET /api/v1/groups/${params.id} failed`, err);

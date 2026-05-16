@@ -1,3 +1,7 @@
+"use client";
+
+import { useOptimistic } from "react";
+
 import { formatPaise, formatRelativeTime } from "@/lib/format";
 import { PendingSettlementActions } from "@/components/settlements/pending-settlement-actions";
 import type { SettlementListItem } from "@/server/settlements/get-settlements";
@@ -28,7 +32,13 @@ export function PendingSettlementsSection({
   pending,
   viewerId,
 }: PendingSettlementsSectionProps) {
-  if (pending.length === 0) return null;
+  const [optimisticPending, removeSettlement] = useOptimistic(
+    pending,
+    (state: SettlementListItem[], removedId: string) =>
+      state.filter((s) => s.id !== removedId),
+  );
+
+  if (optimisticPending.length === 0) return null;
   return (
     <section
       aria-labelledby="pending-settlements-heading"
@@ -38,7 +48,7 @@ export function PendingSettlementsSection({
         Pending settlements
       </h2>
       <ul className="divide-y divide-[#FFB020]/10">
-        {pending.map((s) => {
+        {optimisticPending.map((s) => {
           const isReceiver = s.receiver.userId === viewerId;
           const isPayer = "userId" in s.payer && s.payer.userId === viewerId;
           return (
@@ -69,7 +79,11 @@ export function PendingSettlementsSection({
                 </p>
               </div>
               {isReceiver ? (
-                <PendingSettlementActions groupId={groupId} settlementId={s.id} />
+                <PendingSettlementActions
+                  groupId={groupId}
+                  settlementId={s.id}
+                  onComplete={() => removeSettlement(s.id)}
+                />
               ) : (
                 <span className="rounded-full bg-[#FFB020]/10 px-2 py-0.5 text-xs font-medium text-[#FFB020]">
                   Awaiting confirmation

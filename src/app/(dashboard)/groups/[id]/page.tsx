@@ -48,7 +48,7 @@ export default async function GroupPage({ params, searchParams }: GroupPageProps
   const cursor = typeof searchParams?.cursor === "string" ? searchParams.cursor : undefined;
   const activeTab = searchParams?.tab === "balances" ? "balances" : "expenses";
 
-  const [{ items: expenses, nextCursor }, { items: settlements }, categories] = await Promise.all([
+  const [{ items: expenses, nextCursor }, { items: settlements }, categories, balanceData] = await Promise.all([
     searchExpenses(session.user.id, params.id, filters, cursor),
     getSettlementsForGroup(session.user.id, params.id, undefined, 50),
     prisma.category.findMany({
@@ -56,20 +56,15 @@ export default async function GroupPage({ params, searchParams }: GroupPageProps
       select: { id: true, name: true, emoji: true },
       orderBy: [{ isSystem: "desc" }, { name: "asc" }],
     }),
+    group.balanceMode === "DIRECT"
+      ? calculateDirectBalances(group.id, session.user.id)
+      : calculateSimplifiedBalances(group.id, session.user.id),
   ]);
 
   const balanceLines =
     group.balanceMode === "DIRECT"
-      ? toDirectLines(
-          await calculateDirectBalances(group.id, session.user.id),
-          session.user.id,
-          group.members,
-        )
-      : toSimplifiedLines(
-          await calculateSimplifiedBalances(group.id, session.user.id),
-          session.user.id,
-          group.members,
-        );
+      ? toDirectLines(balanceData as Awaited<ReturnType<typeof calculateDirectBalances>>, session.user.id, group.members)
+      : toSimplifiedLines(balanceData as Awaited<ReturnType<typeof calculateSimplifiedBalances>>, session.user.id, group.members);
 
   const pendingSettlements = settlements.filter((s) => s.status === "PENDING_CONFIRMATION");
   const confirmedSettlements = settlements.filter((s) => s.status === "CONFIRMED");

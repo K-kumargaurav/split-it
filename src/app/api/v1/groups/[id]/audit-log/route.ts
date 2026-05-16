@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import {
   getAuditLog,
@@ -70,7 +70,7 @@ export async function GET(
       parsed.data.cursor,
       parsed.data.limit ?? 20,
     );
-    return NextResponse.json({
+    return cachedJson({
       items: page.items.map(serializeAuditEntry),
       nextCursor: page.nextCursor,
     });

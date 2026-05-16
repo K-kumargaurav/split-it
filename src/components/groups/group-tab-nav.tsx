@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 
@@ -51,7 +51,7 @@ export function GroupTabNav({ groupId, activeTab }: GroupTabNavProps) {
               )}
             >
               {isActive && (
-                <motion.span
+                <m.span
                   layoutId="group-tab-indicator"
                   className="absolute inset-0 rounded-xl bg-[#00C896]/10"
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}

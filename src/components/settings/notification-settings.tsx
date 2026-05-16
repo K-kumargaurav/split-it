@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 
@@ -73,7 +73,7 @@ function ToggleRow({ label, description, enabled, onToggle }: ToggleRowProps) {
           enabled ? "bg-[#00C896]" : "bg-white/10",
         )}
       >
-        <motion.span
+        <m.span
           className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm"
           animate={{ x: enabled ? 20 : 0 }}
           transition={{ type: "spring", stiffness: 500, damping: 30 }}

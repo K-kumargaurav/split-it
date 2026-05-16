@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 
@@ -81,7 +81,7 @@ interface CardData {
 
 function FloatingCard({ card, index }: { card: CardData; index: number }) {
   return (
-    <motion.div
+    <m.div
       animate={{ y: [0, -8, 0] }}
       transition={{
         duration: 3 + index * 0.3,
@@ -113,6 +113,6 @@ function FloatingCard({ card, index }: { card: CardData; index: number }) {
       >
         {card.category}
       </div>
-    </motion.div>
+    </m.div>
   );
 }

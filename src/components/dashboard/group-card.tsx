@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { formatPaise, formatRelativeTime } from "@/lib/format";
 
@@ -52,7 +52,7 @@ export function GroupCard({
     .join(" · ");
 
   return (
-    <motion.div
+    <m.div
       role="link"
       tabIndex={0}
       aria-label={`${name} group — ${statusLabel} ${balance !== 0 ? formatPaise(Math.abs(balance)) : ""}`}
@@ -105,7 +105,7 @@ export function GroupCard({
 
       {/* Settlement progress bar */}
       <div className="h-0.5 overflow-hidden rounded-full bg-white/5">
-        <motion.div
+        <m.div
           className="h-full rounded-full bg-[#00C896]"
           initial={{ width: "0%" }}
           whileInView={{ width: `${settlementProgress}%` }}
@@ -113,6 +113,6 @@ export function GroupCard({
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
         />
       </div>
-    </motion.div>
+    </m.div>
   );
 }

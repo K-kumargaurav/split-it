@@ -8,12 +8,22 @@ const nextConfig = {
   // client at src/generated/prisma is a regular TS import and doesn't need
   // externalizing. sharp is listed so it uses the platform binary instead of
   // a bundled WASM fallback.
+  images: {
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
+      },
+    ],
+  },
   experimental: {
     serverComponentsExternalPackages: [
       "@prisma/client",
       "@prisma/adapter-pg",
       "sharp",
     ],
+    optimizePackageImports: ["lucide-react", "framer-motion"],
     serverActions: {
       allowedOrigins: [
         "spliteasy.info",
@@ -51,6 +61,15 @@ const pwaConfig = withPWA({
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
     {
+      // Hashed static assets are immutable — cache forever.
+      urlPattern: /\/_next\/static\/.*/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "next-static",
+        expiration: { maxEntries: 200, maxAgeSeconds: 365 * 24 * 60 * 60 },
+      },
+    },
+    {
       urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
       handler: "CacheFirst",
       options: {
@@ -59,9 +78,28 @@ const pwaConfig = withPWA({
       },
     },
     {
+      // Group detail — show stale instantly, revalidate in background.
+      urlPattern: /\/api\/v1\/groups\/[^/]+$/,
+      handler: "StaleWhileRevalidate",
+      options: {
+        cacheName: "api-group-detail",
+        expiration: { maxEntries: 30, maxAgeSeconds: 300 },
+      },
+    },
+    {
       urlPattern: /\/api\/v1\/groups$/,
       handler: "StaleWhileRevalidate",
       options: { cacheName: "api-groups" },
+    },
+    {
+      // Expenses list — prefer network but fall back to cache after 3s.
+      urlPattern: /\/api\/v1\/groups\/[^/]+\/expenses/,
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "api-expenses",
+        networkTimeoutSeconds: 3,
+        expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+      },
     },
   ],
 });

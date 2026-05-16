@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, LayoutGroup } from "framer-motion";
+import { m, LayoutGroup } from "framer-motion";
 
 export interface TabItem {
   id: string;
@@ -33,7 +33,7 @@ export function TabNav({ tabs, activeTab, onChange }: TabNavProps) {
                 className="relative flex-1 flex-shrink-0 cursor-pointer whitespace-nowrap rounded-xl px-4 py-2 text-center text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896]"
               >
                 {isActive && (
-                  <motion.span
+                  <m.span
                     layoutId="activeTab"
                     className="absolute inset-0 rounded-xl bg-[#0E1116]"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}

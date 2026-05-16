@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
 interface Props {
@@ -36,14 +36,14 @@ export function LandingNavbar({ isAuthed }: Props) {
         {/* Desktop */}
         <div className="hidden sm:flex items-center gap-3">
           {isAuthed ? (
-            <motion.div whileTap={{ scale: 0.97 }}>
+            <m.div whileTap={{ scale: 0.97 }}>
               <Link
                 href="/dashboard"
                 className="h-10 px-4 rounded-button bg-accent text-bg font-semibold text-sm flex items-center transition hover:bg-accent/90"
               >
                 Dashboard
               </Link>
-            </motion.div>
+            </m.div>
           ) : (
             <>
               <Link
@@ -52,14 +52,14 @@ export function LandingNavbar({ isAuthed }: Props) {
               >
                 Sign in
               </Link>
-              <motion.div whileTap={{ scale: 0.97 }}>
+              <m.div whileTap={{ scale: 0.97 }}>
                 <Link
                   href="/register"
                   className="h-10 px-4 rounded-button bg-accent text-bg font-semibold text-sm flex items-center transition hover:bg-accent/90"
                 >
                   Get started free
                 </Link>
-              </motion.div>
+              </m.div>
             </>
           )}
         </div>
@@ -79,7 +79,7 @@ export function LandingNavbar({ isAuthed }: Props) {
       {/* Mobile menu */}
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             id="mobile-menu"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -113,7 +113,7 @@ export function LandingNavbar({ isAuthed }: Props) {
                 </Link>
               </>
             )}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </header>

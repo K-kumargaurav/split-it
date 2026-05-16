@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { MotionProvider } from "@/components/motion-provider";
 import { PwaInstallPrompt } from "@/components/ui/pwa-install-prompt";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -66,7 +67,9 @@ export default function RootLayout({
         className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} antialiased bg-[#0E1116]`}
       >
         <ThemeProvider>
-          {children}
+          <MotionProvider>
+            {children}
+          </MotionProvider>
           <PwaInstallPrompt />
           <Toaster
             position="bottom-center"

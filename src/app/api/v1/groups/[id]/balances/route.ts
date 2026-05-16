@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
 import {
   calculateDirectBalances,
-  calculateSimplifiedBalances,
-  getUserNetBalance,
+  simplifyBalances,
+  type BalanceMap,
 } from "@/server/balance/calculate-balances";
 
 export const runtime = "nodejs";
@@ -54,10 +54,12 @@ export async function GET(
     const userId = session.user.id;
     const groupId = params.id;
 
-    const netBalance = await getUserNetBalance(groupId, userId);
+    // Single DB load — direct balances are computed once, net and simplified
+    // are derived in-memory (previously 3 separate DB round-trips).
+    const direct = await calculateDirectBalances(groupId, userId);
+    const netBalance = deriveNetBalance(direct, userId);
 
     if (modeParam === "direct") {
-      const direct = await calculateDirectBalances(groupId, userId);
       const userIds = collectUsersFromDirect(direct);
       const userMap = await loadUsers(userIds);
       const entries: DirectBalanceEntry[] = [];
@@ -73,14 +75,14 @@ export async function GET(
           });
         }
       }
-      return NextResponse.json({
+      return cachedJson({
         mode: "direct",
         netBalancePaise: serializePaise(netBalance),
         balances: entries,
       });
     }
 
-    const transfers = await calculateSimplifiedBalances(groupId, userId);
+    const transfers = simplifyBalances(direct);
     const userIds = new Set<string>();
     for (const t of transfers) {
       userIds.add(t.from);
@@ -96,7 +98,7 @@ export async function GET(
       })
       .filter((e): e is SimplifiedBalanceEntry => e !== null);
 
-    return NextResponse.json({
+    return cachedJson({
       mode: "simplified",
       netBalancePaise: serializePaise(netBalance),
       balances: entries,
@@ -107,6 +109,19 @@ export async function GET(
     }
     return errorFromThrown(err);
   }
+}
+
+function deriveNetBalance(direct: BalanceMap, userId: string): bigint {
+  let net = BigInt(0);
+  for (const amount of Object.values(direct[userId] ?? {})) {
+    net += amount;
+  }
+  for (const [creditor, debts] of Object.entries(direct)) {
+    if (creditor === userId) continue;
+    const owed = debts[userId];
+    if (owed) net -= owed;
+  }
+  return net;
 }
 
 function collectUsersFromDirect(direct: Record<string, Record<string, bigint>>): Set<string> {

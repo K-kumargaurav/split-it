@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ChevronDown, Search, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -128,22 +128,22 @@ export function ExpenseFilters({ members, categories }: ExpenseFiltersProps) {
               {count}
             </span>
           )}
-          <motion.span
+          <m.span
             animate={{ rotate: open ? 180 : 0 }}
             transition={{ duration: 0.2 }}
             className="flex items-center"
           >
             <ChevronDown size={16} aria-hidden="true" />
-          </motion.span>
+          </m.span>
         </button>
       </div>
 
       {/* ── Active chips ───────────────────────────────────────────── */}
       {chips.length > 0 && (
-        <motion.div layout className="mt-3 flex flex-wrap gap-2">
+        <m.div layout className="mt-3 flex flex-wrap gap-2">
           <AnimatePresence mode="popLayout">
             {chips.map((chip) => (
-              <motion.div
+              <m.div
                 key={chip.key}
                 layout
                 initial={{ opacity: 0, scale: 0.85 }}
@@ -161,16 +161,16 @@ export function ExpenseFilters({ members, categories }: ExpenseFiltersProps) {
                 >
                   <X size={12} aria-hidden="true" />
                 </button>
-              </motion.div>
+              </m.div>
             ))}
           </AnimatePresence>
-        </motion.div>
+        </m.div>
       )}
 
       {/* ── Expanded panel ─────────────────────────────────────────── */}
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             key="filter-panel"
             id="filter-panel"
             initial={{ height: 0, opacity: 0 }}
@@ -273,7 +273,7 @@ export function ExpenseFilters({ members, categories }: ExpenseFiltersProps) {
                 </div>
               )}
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </section>

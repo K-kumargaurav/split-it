@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import {
   createSettlement,
@@ -38,7 +38,7 @@ export async function GET(
 
   try {
     const page = await getSettlementsForGroup(session.user.id, params.id, cursor, limit);
-    return NextResponse.json(page);
+    return cachedJson(page);
   } catch (err) {
     if (!(err instanceof AppError)) {
       console.error(`GET /api/v1/groups/${params.id}/settlements failed`, err);

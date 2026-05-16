@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { updateProfileSchema } from "@/lib/validations/profile";
 
@@ -37,7 +37,7 @@ export async function GET(): Promise<NextResponse> {
     if (!user) {
       return errorResponse("NOT_FOUND", "Profile not found.", 404);
     }
-    return NextResponse.json({ user });
+    return cachedJson({ user });
   } catch (err) {
     console.error("GET /users/me failed", err);
     return errorFromThrown(err);

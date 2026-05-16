@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Plus, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,7 +39,7 @@ export function QuickActions({ groups }: QuickActionsProps) {
         </h2>
         <div className="flex flex-col gap-3 sm:flex-row">
           {/* Add Expense */}
-          <motion.button
+          <m.button
             type="button"
             whileTap={{ scale: 0.97 }}
             onClick={handleAddExpense}
@@ -48,10 +48,10 @@ export function QuickActions({ groups }: QuickActionsProps) {
           >
             <Plus size={18} aria-hidden="true" />
             Add Expense
-          </motion.button>
+          </m.button>
 
           {/* New Group */}
-          <motion.button
+          <m.button
             type="button"
             whileTap={{ scale: 0.97 }}
             onClick={() => router.push("/groups/new")}
@@ -60,7 +60,7 @@ export function QuickActions({ groups }: QuickActionsProps) {
           >
             <Users size={18} aria-hidden="true" />
             New Group
-          </motion.button>
+          </m.button>
         </div>
       </section>
 

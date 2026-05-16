@@ -66,6 +66,16 @@ export function errorFromThrown(err: unknown, requestId?: string): NextResponse<
   return errorResponse("INTERNAL_ERROR", "Something went wrong.", 500, undefined, requestId);
 }
 
+// Cache-Control for authenticated GET endpoints — serve stale content
+// instantly on back-navigation while revalidating in the background.
+const CACHE_HEADERS = {
+  "Cache-Control": "private, max-age=0, stale-while-revalidate=60",
+} as const;
+
+export function cachedJson<T>(data: T, status = 200): NextResponse {
+  return NextResponse.json(data, { status, headers: CACHE_HEADERS });
+}
+
 // JSON has no native bigint, and `Number(b)` silently rounds anything
 // over 2^53 — for paise that's roughly ₹90 trillion, but the loss starts
 // well before that for numbers used in arithmetic. Always serialize paise

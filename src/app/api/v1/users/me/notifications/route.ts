@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse } from "@/lib/api-response";
 import { getNotificationsForUser } from "@/server/notifications/get-notifications";
 import { inboxQuerySchema } from "@/lib/validations/notifications";
 
@@ -38,7 +38,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       parsed.data.limit,
       parsed.data.filter ?? "all",
     );
-    return NextResponse.json(page);
+    return cachedJson(page);
   } catch (err) {
     console.error("GET /users/me/notifications failed", err);
     return errorFromThrown(err);

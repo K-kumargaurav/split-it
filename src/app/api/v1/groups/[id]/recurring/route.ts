@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
+import { cachedJson, errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { createRecurringTemplate } from "@/server/recurring/create-template";
 import { listRecurringTemplates } from "@/server/recurring/manage-templates";
@@ -23,7 +23,7 @@ export async function GET(
   try {
     const templates = await listRecurringTemplates(session.user.id, params.id);
     // BigInt-safe shape: numbers are already cast in the server function.
-    return NextResponse.json({ templates });
+    return cachedJson({ templates });
   } catch (err) {
     if (!(err instanceof AppError)) {
       console.error(`GET /api/v1/groups/${params.id}/recurring failed`, err);

@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 import { GoogleButton } from "@/components/forms/google-button";
@@ -278,7 +278,7 @@ function ModeTab({
       )}
     >
       {active && (
-        <motion.span
+        <m.span
           layoutId="tab-pill"
           className="absolute inset-0 rounded-xl bg-bg shadow-sm"
           transition={{ type: "spring", stiffness: 400, damping: 30 }}

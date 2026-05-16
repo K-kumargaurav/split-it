@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 import { cn } from "@/lib/cn";
 
@@ -27,7 +27,7 @@ export function ToggleSwitch({
         checked ? "bg-accent" : "bg-white/10",
       )}
     >
-      <motion.span
+      <m.span
         animate={{ x: checked ? 20 : 2 }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
         className="absolute inline-block h-4 w-4 rounded-full bg-white shadow-sm"

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 interface Props {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ interface StaggerProps {
 
 export function FadeIn({ children, delay = 0, className }: Props) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial={{ opacity: 0, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -29,13 +29,13 @@ export function FadeIn({ children, delay = 0, className }: Props) {
       }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
 export function ScaleIn({ children, delay = 0, className }: Props) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial={{ opacity: 0, scale: 0.96 }}
       whileInView={{ opacity: 1, scale: 1 }}
@@ -48,13 +48,13 @@ export function ScaleIn({ children, delay = 0, className }: Props) {
       }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
 export function SlideUp({ children, delay = 0, className }: Props) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -62,7 +62,7 @@ export function SlideUp({ children, delay = 0, className }: Props) {
       transition={{ delay }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -86,7 +86,7 @@ export function StaggerChildren({
   staggerDelay = 0.06,
 }: StaggerProps) {
   return (
-    <motion.div
+    <m.div
       className={className}
       variants={staggerContainer}
       custom={staggerDelay}
@@ -96,11 +96,11 @@ export function StaggerChildren({
     >
       {Array.isArray(children)
         ? children.map((child, i) => (
-            <motion.div key={i} variants={staggerItem}>
+            <m.div key={i} variants={staggerItem}>
               {child}
-            </motion.div>
+            </m.div>
           ))
         : children}
-    </motion.div>
+    </m.div>
   );
 }

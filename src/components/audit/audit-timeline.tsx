@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Clock } from "lucide-react";
 
 import { formatDate } from "@/lib/format";
@@ -253,7 +253,7 @@ export function AuditTimeline({
               </div>
 
               {/* Staggered entries */}
-              <motion.ol
+              <m.ol
                 variants={staggerContainer}
                 initial="hidden"
                 whileInView="show"
@@ -261,15 +261,15 @@ export function AuditTimeline({
                 aria-label={`Activity from ${label}`}
               >
                 {entries.map((entry, i) => (
-                  <motion.li key={entry.id} variants={staggerItem}>
+                  <m.li key={entry.id} variants={staggerItem}>
                     <AuditEntry
                       entry={entry}
                       viewerId={viewerId}
                       isLast={i === entries.length - 1}
                     />
-                  </motion.li>
+                  </m.li>
                 ))}
-              </motion.ol>
+              </m.ol>
             </div>
           ))}
         </div>

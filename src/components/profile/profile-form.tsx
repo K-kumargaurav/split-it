@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { toast } from "sonner";
 
 import { PremiumCard } from "@/components/ui/premium-card";
@@ -239,7 +239,7 @@ export function ProfileForm({ initial }: { initial: ProfileFormInitial }) {
       {/* ── Feedback ─────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {error ? (
-          <motion.p
+          <m.p
             key="error"
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -248,10 +248,10 @@ export function ProfileForm({ initial }: { initial: ProfileFormInitial }) {
             className="rounded-2xl border border-[#FF4757]/20 bg-[rgba(255,71,87,0.06)] px-4 py-3 text-sm text-[#FF4757]"
           >
             {error}
-          </motion.p>
+          </m.p>
         ) : null}
         {success ? (
-          <motion.p
+          <m.p
             key="success"
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -260,7 +260,7 @@ export function ProfileForm({ initial }: { initial: ProfileFormInitial }) {
             className="rounded-2xl border border-[#00C896]/20 bg-[rgba(0,200,150,0.06)] px-4 py-3 text-sm text-[#00C896]"
           >
             Profile saved.
-          </motion.p>
+          </m.p>
         ) : null}
       </AnimatePresence>
 

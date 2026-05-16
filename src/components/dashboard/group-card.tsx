@@ -12,7 +12,7 @@ export interface GroupCardData {
   icon: string;
   memberCount: number;
   netBalancePaise: string;
-  lastActivityDate: Date | null;
+  lastActivityDate: Date | string | null;
   lastExpenseTitle: string | null;
   settlementProgress: number; // 0–100
 }

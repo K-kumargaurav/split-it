@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -138,10 +139,11 @@ function MenuLink({
 function Avatar({ image, initial }: { image: string | null; initial: string }) {
   if (image) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         src={image}
         alt=""
+        width={28}
+        height={28}
         className="h-7 w-7 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700"
       />
     );

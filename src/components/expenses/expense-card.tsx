@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { m } from "framer-motion";
 import { useRouter } from "next/navigation";
 
@@ -30,7 +31,7 @@ const shortDateFmt = new Intl.DateTimeFormat("en-IN", {
   month: "short",
 });
 
-export function ExpenseCard({
+export const ExpenseCard = memo(function ExpenseCard({
   id,
   groupId,
   title,
@@ -102,4 +103,4 @@ export function ExpenseCard({
       </div>
     </m.div>
   );
-}
+});

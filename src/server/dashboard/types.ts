@@ -12,12 +12,12 @@ export interface DashboardGroupSummary {
   memberCount: number;
   // Positive: others owe you. Negative: you owe. Zero: settled.
   balancePaise: string;
-  lastActivityAt: Date;
+  lastActivityAt: Date | string;
   // Card preview — first 4 members (sorted by joinedAt) plus the title/date of
   // the most-recent active expense, used by GroupCard for the avatar row and
   // last-expense line. `null` when the group has no expenses yet.
   members: DashboardGroupMember[];
-  lastExpense: { title: string; date: Date } | null;
+  lastExpense: { title: string; date: Date | string } | null;
 }
 
 export interface DashboardPending {

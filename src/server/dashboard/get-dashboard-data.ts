@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+
 import { prisma } from "@/lib/prisma";
 import { batchLoadLedger } from "@/server/balance/batch-load-ledger";
 import { computeNetBalance } from "@/server/balance/calculate-balances";
@@ -18,7 +20,7 @@ import type { DashboardData, DashboardGroupSummary } from "@/server/dashboard/ty
 // All money is in paise (BigInt in DB → number in JS — safe up to 2^53 paise,
 // roughly ₹90 trillion, comfortably above any plausible single-user balance).
 
-export async function getDashboardData(userId: string): Promise<DashboardData> {
+async function fetchDashboardData(userId: string): Promise<DashboardData> {
   const memberships = await prisma.groupMember.findMany({
     where: {
       userId,
@@ -172,7 +174,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       })),
       lastExpense: lastExpenseByGroup.get(group.id) ?? null,
     }))
-    .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
+    .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime());
 
   const netBalancePaise = serializePaise(
     groups.reduce((s, g) => s + BigInt(g.balancePaise), BigInt(0)),
@@ -194,4 +196,14 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       expenseEditVotesPending,
     },
   };
+}
+
+// Cache for 30s with tag-based on-demand invalidation. Dates survive the
+// JSON round-trip as ISO strings — formatRelativeTime already accepts both.
+export function getDashboardData(userId: string): Promise<DashboardData> {
+  return unstable_cache(
+    () => fetchDashboardData(userId),
+    [`dashboard-${userId}`],
+    { tags: [`dashboard-${userId}`], revalidate: 30 },
+  )();
 }

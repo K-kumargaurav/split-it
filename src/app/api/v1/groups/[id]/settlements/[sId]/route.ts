@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
+import { invalidateDashboard } from "@/server/dashboard/invalidate";
 import {
   confirmSettlement,
   disputeSettlement,
@@ -59,6 +60,7 @@ export async function PATCH(
       return errorResponse("NOT_FOUND", "Settlement not found.", 404);
     }
 
+    invalidateDashboard(session.user.id);
     return NextResponse.json({ settlement: serializeSettlement(updated) });
   } catch (err) {
     if (!(err instanceof AppError)) {

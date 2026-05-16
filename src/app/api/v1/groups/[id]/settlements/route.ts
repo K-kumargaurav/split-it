@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { cachedJson, errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
+import { invalidateDashboard } from "@/server/dashboard/invalidate";
 import {
   createSettlement,
   type CreatedSettlement,
@@ -65,6 +66,7 @@ export async function POST(
 
   try {
     const settlement = await createSettlement(session.user.id, params.id, raw);
+    invalidateDashboard(session.user.id);
     return NextResponse.json(
       { settlement: serializeSettlement(settlement) },
       { status: 201 },

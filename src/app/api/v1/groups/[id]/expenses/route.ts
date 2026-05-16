@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { cachedJson, errorFromThrown, errorResponse, serializePaise } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { createExpense, type CreatedExpense } from "@/server/expenses/create-expense";
+import { invalidateDashboard } from "@/server/dashboard/invalidate";
 import {
   searchExpenses,
   type ExpenseFilters,
@@ -112,6 +113,7 @@ export async function POST(
 
   try {
     const expense = await createExpense(session.user.id, params.id, raw);
+    invalidateDashboard(session.user.id);
     return NextResponse.json({ expense: serializeExpense(expense) }, { status: 201 });
   } catch (err) {
     console.error(`POST /api/v1/groups/${params.id}/expenses failed`, err);

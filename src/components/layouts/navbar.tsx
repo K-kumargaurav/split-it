@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -166,10 +167,11 @@ function AvatarMenu({ user }: { user: NavbarProps["user"] }) {
         className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0E1116]"
       >
         {user.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={user.avatarUrl}
             alt=""
+            width={32}
+            height={32}
             className="h-full w-full object-cover"
           />
         ) : (

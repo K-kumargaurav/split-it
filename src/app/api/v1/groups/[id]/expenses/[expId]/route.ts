@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { errorFromThrown, errorResponse } from "@/lib/api-response";
+import { invalidateDashboard } from "@/server/dashboard/invalidate";
 import { deleteExpense } from "@/server/expenses/delete-expense";
 import { proposeExpenseEdit } from "@/server/expenses/propose-edit";
 
@@ -55,6 +56,7 @@ export async function DELETE(
 
   try {
     const result = await deleteExpense(session.user.id, params.id, params.expId);
+    invalidateDashboard(session.user.id);
     return NextResponse.json(result);
   } catch (err) {
     console.error(`DELETE /groups/${params.id}/expenses/${params.expId} failed`, err);

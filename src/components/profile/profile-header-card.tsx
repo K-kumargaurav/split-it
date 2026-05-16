@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Camera } from "lucide-react";
 
 import { formatDate } from "@/lib/format";
@@ -33,10 +34,11 @@ export function ProfileHeaderCard({
         <div className="group relative flex-shrink-0">
           <div className="relative h-[72px] w-[72px]">
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={avatarUrl}
                 alt="Your avatar"
+                width={72}
+                height={72}
                 className="h-full w-full rounded-full object-cover ring-2 ring-[#00C896]"
               />
             ) : (

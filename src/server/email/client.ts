@@ -40,6 +40,9 @@ function getTransporter(): Transporter {
     secure: env.port === 465,
     requireTLS: env.port !== 465,
     auth: { user: env.user, pass: env.pass },
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
   });
   return cachedTransporter;
 }

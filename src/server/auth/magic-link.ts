@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { isRedirectError } from "next/dist/client/components/redirect";
 
 import { signIn } from "@/lib/auth";
 import { magicLinkSchema } from "@/lib/validations/auth";
@@ -61,6 +62,12 @@ export async function requestMagicLink(rawInput: unknown): Promise<MagicLinkResu
       redirect: false,
     });
   } catch (err) {
+    // Auth.js v5 beta throws NEXT_REDIRECT even with redirect:false for the
+    // nodemailer provider. The email is already sent at that point — treat as
+    // success rather than surfacing a false "couldn't send" error.
+    if (isRedirectError(err)) {
+      return GENERIC_OK;
+    }
     console.error("requestMagicLink failed", err);
     return {
       ok: false,

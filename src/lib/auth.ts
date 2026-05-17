@@ -147,6 +147,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user: process.env.BREVO_SMTP_USER,
           pass: process.env.BREVO_SMTP_PASS,
         },
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 15_000,
       },
       from: brevoFrom,
       // Custom sender so the magic-link email matches the rest of our

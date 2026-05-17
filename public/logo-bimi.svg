@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny-ps" viewBox="0 0 32 32">
+  <title>SplitEasy</title>
+  <rect width="32" height="32" rx="8" fill="#00C896"/>
+  <g fill="#FFFFFF">
+    <!-- Top horizontal line -->
+    <rect x="10" y="9" width="12" height="2" rx="1"/>
+    <!-- Second horizontal line -->
+    <rect x="10" y="13" width="12" height="2" rx="1"/>
+    <!-- Vertical stem and diagonal -->
+    <path d="M13 9 v6 c0 3 2 5 5 5.5 l-5.5 4.5 l-1.5 -1.5 l4 -3.2 c-2.2 -0.8 -3.5 -2.8 -3.5 -5.3 v-6 z"/>
+  </g>
+</svg>

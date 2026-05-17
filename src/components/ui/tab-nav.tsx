@@ -20,7 +20,7 @@ export function TabNav({ tabs, activeTab, onChange }: TabNavProps) {
         <div
           role="tablist"
           aria-label="Group sections"
-          className="flex min-w-full rounded-2xl bg-[#161B22] p-1"
+          className="inline-flex sm:flex sm:min-w-full rounded-2xl bg-[#161B22] p-1"
         >
           {tabs.map((tab) => {
             const isActive = tab.id === activeTab;
@@ -30,7 +30,7 @@ export function TabNav({ tabs, activeTab, onChange }: TabNavProps) {
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => onChange(tab.id)}
-                className="relative flex-1 flex-shrink-0 cursor-pointer whitespace-nowrap rounded-xl px-4 py-2 text-center text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896]"
+                className="relative sm:flex-1 flex-shrink-0 cursor-pointer whitespace-nowrap rounded-xl px-3.5 sm:px-4 py-2 text-center text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C896]"
               >
                 {isActive && (
                   <m.span

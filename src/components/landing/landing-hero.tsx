@@ -32,7 +32,7 @@ export function LandingHero({ isAuthed }: Props) {
         animate={{ scale: [1, 1.1, 1] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       >
-        <div className="h-[700px] w-[700px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(0,200,150,0.08)_0%,transparent_70%)]" />
+        <div className="h-[400px] w-[400px] sm:h-[700px] sm:w-[700px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(0,200,150,0.08)_0%,transparent_70%)]" />
       </m.div>
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-3xl mx-auto w-full">

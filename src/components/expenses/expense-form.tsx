@@ -542,7 +542,7 @@ export function ExpenseForm({
         <div
           role="tablist"
           aria-label="Split type"
-          className="mt-5 grid grid-cols-3 gap-1 rounded-2xl bg-card p-1"
+          className="mt-5 grid grid-cols-3 gap-0.5 sm:gap-1 rounded-2xl bg-card p-1"
         >
           {(["EQUAL", "EXACT", "PERCENTAGE"] as const).map((t) => (
             <button
@@ -635,7 +635,7 @@ export function ExpenseForm({
                         onChange={(e) =>
                           setExactInputs((prev) => ({ ...prev, [id]: e.target.value }))
                         }
-                        className="w-28 rounded-xl border px-2 py-1 text-right font-mono text-sm text-text-primary outline-none focus:border-accent bg-surface-subtle border-border-dashed"
+                        className="w-24 sm:w-28 rounded-xl border px-2 py-1 text-right font-mono text-sm text-text-primary outline-none focus:border-accent bg-surface-subtle border-border-dashed"
                       />
                     </div>
                   </li>
@@ -692,7 +692,7 @@ export function ExpenseForm({
                           onChange={(e) =>
                             setPercentInputs((prev) => ({ ...prev, [id]: e.target.value }))
                           }
-                          className="w-20 rounded-xl border px-2 py-1 text-right font-mono text-sm text-text-primary outline-none focus:border-accent bg-surface-subtle border-border-dashed"
+                          className="w-16 sm:w-20 rounded-xl border px-2 py-1 text-right font-mono text-sm text-text-primary outline-none focus:border-accent bg-surface-subtle border-border-dashed"
                         />
                         <span className="text-xs text-text-secondary">%</span>
                       </div>

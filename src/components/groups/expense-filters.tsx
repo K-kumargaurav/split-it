@@ -180,7 +180,7 @@ export function ExpenseFilters({ members, categories }: ExpenseFiltersProps) {
             className="overflow-hidden"
           >
             <div className="mt-2 rounded-2xl border border-white/[0.06] bg-[#161B22] p-5">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Row 1 — dates */}
                 <PremiumInput
                   id="filter-date-from" label="From" type="date"

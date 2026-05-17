@@ -16,7 +16,7 @@ export function LandingCta({ isAuthed }: Props) {
       aria-labelledby="cta-heading"
     >
       <FadeIn>
-        <div className="mx-auto max-w-3xl rounded-3xl border border-white/5 bg-[linear-gradient(135deg,rgba(0,200,150,0.08),transparent)] px-8 py-16 text-center shadow-elevated">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-white/5 bg-[linear-gradient(135deg,rgba(0,200,150,0.08),transparent)] px-5 py-12 sm:px-8 sm:py-16 text-center shadow-elevated">
           <p className="text-[12px] font-semibold text-accent uppercase tracking-widest mb-4">
             Get started today
           </p>

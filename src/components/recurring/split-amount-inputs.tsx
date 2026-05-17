@@ -81,7 +81,7 @@ export function ExactInputs({
               placeholder="0.00"
               value={exactInputs[id] ?? ""}
               onChange={(e) => onChange(id, e.target.value)}
-              className="w-28 rounded-xl border border-white/[0.06] bg-card px-3 py-1.5 text-right font-mono text-sm text-[#F5F7FA] focus:border-[#00C896] focus:outline-none focus:ring-1 focus:ring-[#00C896]/10"
+              className="w-24 sm:w-28 rounded-xl border border-white/[0.06] bg-card px-3 py-1.5 text-right font-mono text-sm text-[#F5F7FA] focus:border-[#00C896] focus:outline-none focus:ring-1 focus:ring-[#00C896]/10"
             />
           </div>
         );
@@ -135,7 +135,7 @@ export function PercentInputs({
                   placeholder="0"
                   value={percentInputs[id] ?? ""}
                   onChange={(e) => onChange(id, e.target.value)}
-                  className="w-20 rounded-xl border border-white/[0.06] bg-card px-3 py-1.5 text-right font-mono text-sm text-[#F5F7FA] focus:border-[#00C896] focus:outline-none focus:ring-1 focus:ring-[#00C896]/10"
+                  className="w-16 sm:w-20 rounded-xl border border-white/[0.06] bg-card px-3 py-1.5 text-right font-mono text-sm text-[#F5F7FA] focus:border-[#00C896] focus:outline-none focus:ring-1 focus:ring-[#00C896]/10"
                 />
                 <span className="text-[11px] text-[#8B93A7]">%</span>
               </div>

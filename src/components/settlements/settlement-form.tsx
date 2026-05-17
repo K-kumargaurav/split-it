@@ -255,7 +255,7 @@ export function SettlementForm({
         <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
           Payment method
         </p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {PAYMENT_METHODS.map((m) => {
             const isActive = paymentMethod === m.value;
             return (

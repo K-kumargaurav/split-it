@@ -43,7 +43,7 @@ function Step({
       )}
 
       <span
-        className="text-[48px] font-bold text-accent tracking-[-0.03em] leading-none"
+        className="text-[36px] sm:text-[48px] font-bold text-accent tracking-[-0.03em] leading-none"
         aria-hidden="true"
       >
         {number}

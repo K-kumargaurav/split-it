@@ -38,7 +38,7 @@ export const AmountInput = forwardRef<HTMLInputElement, AmountInputProps>(
               onBlur={() => setFocused(false)}
               placeholder="0.00"
               aria-invalid={Boolean(error)}
-              className="min-w-[120px] bg-transparent text-center text-[32px] font-semibold tabular-nums text-text-primary caret-accent outline-none placeholder:text-white/[0.15]"
+              className="min-w-[80px] sm:min-w-[120px] bg-transparent text-center text-[24px] sm:text-[32px] font-semibold tabular-nums text-text-primary caret-accent outline-none placeholder:text-white/[0.15]"
             />
           </div>
         </div>

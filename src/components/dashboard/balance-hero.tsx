@@ -101,7 +101,7 @@ export function BalanceHero({
           <p className="text-[13px] text-[#8B93A7]">Total Balance</p>
           <h2
             id="balance-heading"
-            className="mt-1 text-[52px] font-semibold leading-none tracking-tight text-[#F5F7FA] tabular-nums"
+            className="mt-1 text-[36px] sm:text-[52px] font-semibold leading-none tracking-tight text-[#F5F7FA] tabular-nums"
           >
             <AnimatedBalance targetPaise={Math.abs(net)} />
           </h2>

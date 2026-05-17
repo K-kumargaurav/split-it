@@ -24,7 +24,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <main className="flex min-h-screen">
       <LeftPanel />
-      <section className="flex w-full flex-col items-center justify-center bg-bg px-8 py-12 lg:w-1/2">
+      <section className="flex w-full flex-col items-center justify-center bg-bg px-5 sm:px-8 py-12 lg:w-1/2">
         <div className="w-full max-w-sm">{children}</div>
       </section>
     </main>

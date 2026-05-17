@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { toast } from "sonner";
@@ -8,10 +9,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import { INVITE_LINK_DEFAULT_MAX_USES, INVITE_LINK_MAX_USES_CAP } from "@/lib/validations/invites";
-
-// Modal launched from the members page. Two tabs share the same dialog so
-// the inviter can swap between flows without losing context. Each tab posts
-// to /api/v1/groups/[id]/invite with the appropriate `type` discriminator.
 
 interface InviteDialogProps {
   groupId: string;
@@ -21,6 +18,13 @@ interface InviteDialogProps {
 
 interface InviteErrorBody {
   error?: { code?: string; message?: string };
+}
+
+interface SearchUser {
+  id: string;
+  handle: string;
+  displayName: string;
+  avatarUrl: string | null;
 }
 
 const MAX_USES_OPTIONS = [10, 25, 100, 250, INVITE_LINK_MAX_USES_CAP];
@@ -34,11 +38,18 @@ export function InviteDialog({ groupId, open, onClose }: InviteDialogProps) {
   const [tab, setTab] = useState<"find" | "link">("find");
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Find-user tab state (email or username).
+  // Find-user tab state.
   const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<SearchUser[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const [findSubmitting, setFindSubmitting] = useState(false);
   const [findMessage, setFindMessage] = useState<string | null>(null);
   const [findError, setFindError] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLUListElement>(null);
 
   // Link tab state.
   const [maxUses, setMaxUses] = useState<number>(INVITE_LINK_DEFAULT_MAX_USES);
@@ -57,60 +68,157 @@ export function InviteDialog({ groupId, open, onClose }: InviteDialogProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  // Debounced user search
+  const searchUsers = useCallback(
+    (q: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+
+      const cleaned = q.trim().replace(/^@/, "");
+      if (cleaned.length < 2 || isEmail(q)) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        setSearching(false);
+        return;
+      }
+
+      setSearching(true);
+      debounceRef.current = setTimeout(async () => {
+        try {
+          const res = await fetch(
+            `/api/v1/users/search?q=${encodeURIComponent(cleaned)}&groupId=${encodeURIComponent(groupId)}`,
+          );
+          if (!res.ok) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            setSearching(false);
+            return;
+          }
+          const data = (await res.json()) as { users: SearchUser[] };
+          setSuggestions(data.users);
+          setShowSuggestions(data.users.length > 0);
+          setSelectedIndex(-1);
+        } catch {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        } finally {
+          setSearching(false);
+        }
+      }, 300);
+    },
+    [groupId],
+  );
+
+  function handleQueryChange(value: string): void {
+    setQuery(value);
+    setFindError(null);
+    setFindMessage(null);
+    searchUsers(value);
+  }
+
+  function selectUser(user: SearchUser): void {
+    setQuery(`@${user.handle}`);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    // Auto-submit
+    void inviteByHandle(user.handle);
+  }
+
+  function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+    } else if (e.key === "Enter" && selectedIndex >= 0) {
+      e.preventDefault();
+      const user = suggestions[selectedIndex];
+      if (user) selectUser(user);
+    }
+  }
+
+  async function inviteByHandle(handle: string): Promise<void> {
+    setFindError(null);
+    setFindMessage(null);
+    setFindSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/v1/groups/${groupId}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "handle", handle: handle.toLowerCase() }),
+      });
+
+      setFindSubmitting(false);
+      if (!response.ok) {
+        let body: InviteErrorBody = {};
+        try {
+          body = (await response.json()) as InviteErrorBody;
+        } catch { /* fall through */ }
+        setFindError(body.error?.message ?? "Couldn't add user.");
+        return;
+      }
+
+      setQuery("");
+      toast.success("User added to group");
+      setFindMessage("User added to the group.");
+      router.refresh();
+    } catch {
+      setFindSubmitting(false);
+      setFindError("Couldn't reach the server. Try again.");
+    }
+  }
 
   async function submitFind(e: React.FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     setFindError(null);
     setFindMessage(null);
+    setShowSuggestions(false);
     const trimmed = query.trim();
     if (!trimmed) {
       setFindError("Enter a username or email address.");
       return;
     }
 
-    // Determine whether the input is an email or a handle
     const isEmailInput = isEmail(trimmed);
     const payload = isEmailInput
       ? { type: "email" as const, email: trimmed.toLowerCase() }
       : { type: "handle" as const, handle: trimmed.replace(/^@/, "").toLowerCase() };
 
     setFindSubmitting(true);
-    let response: Response;
     try {
-      response = await fetch(`/api/v1/groups/${groupId}/invite`, {
+      const response = await fetch(`/api/v1/groups/${groupId}/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      setFindSubmitting(false);
+      if (!response.ok) {
+        let body: InviteErrorBody = {};
+        try {
+          body = (await response.json()) as InviteErrorBody;
+        } catch { /* fall through */ }
+        setFindError(body.error?.message ?? "Couldn't send invite.");
+        return;
+      }
+
+      const body = (await response.json()) as { status: string };
+      setQuery("");
+      if (body.status === "ADDED_DIRECTLY") {
+        toast.success("User added to group");
+        setFindMessage("User added to the group.");
+      } else {
+        toast.success("Invite sent");
+        setFindMessage("Invitation email sent.");
+      }
+      router.refresh();
     } catch {
       setFindSubmitting(false);
       setFindError("Couldn't reach the server. Try again.");
-      return;
     }
-
-    setFindSubmitting(false);
-    if (!response.ok) {
-      let body: InviteErrorBody = {};
-      try {
-        body = (await response.json()) as InviteErrorBody;
-      } catch {
-        // fall through
-      }
-      setFindError(body.error?.message ?? "Couldn't send invite.");
-      return;
-    }
-
-    const body = (await response.json()) as { status: string };
-    setQuery("");
-    if (body.status === "ADDED_DIRECTLY") {
-      toast.success("User added to group");
-      setFindMessage("User added to the group.");
-    } else {
-      toast.success("Invite sent");
-      setFindMessage("Invitation email sent.");
-    }
-    router.refresh();
   }
 
   async function submitLink(): Promise<void> {
@@ -119,38 +227,31 @@ export function InviteDialog({ groupId, open, onClose }: InviteDialogProps) {
     setLinkExpires(null);
     setCopied(false);
     setLinkSubmitting(true);
-    let response: Response;
     try {
-      response = await fetch(`/api/v1/groups/${groupId}/invite`, {
+      const response = await fetch(`/api/v1/groups/${groupId}/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "link", maxUses }),
       });
+
+      setLinkSubmitting(false);
+      if (!response.ok) {
+        let body: InviteErrorBody = {};
+        try {
+          body = (await response.json()) as InviteErrorBody;
+        } catch { /* fall through */ }
+        setLinkError(body.error?.message ?? "Couldn't generate link.");
+        return;
+      }
+
+      const body = (await response.json()) as { token: string; expiresAt: string };
+      const url = `${window.location.origin}/invite/${encodeURIComponent(body.token)}`;
+      setLinkUrl(url);
+      setLinkExpires(new Date(body.expiresAt));
     } catch {
       setLinkSubmitting(false);
       setLinkError("Couldn't reach the server. Try again.");
-      return;
     }
-
-    setLinkSubmitting(false);
-    if (!response.ok) {
-      let body: InviteErrorBody = {};
-      try {
-        body = (await response.json()) as InviteErrorBody;
-      } catch {
-        // fall through
-      }
-      setLinkError(body.error?.message ?? "Couldn't generate link.");
-      return;
-    }
-
-    const body = (await response.json()) as {
-      token: string;
-      expiresAt: string;
-    };
-    const url = `${window.location.origin}/invite/${encodeURIComponent(body.token)}`;
-    setLinkUrl(url);
-    setLinkExpires(new Date(body.expiresAt));
   }
 
   async function copyLink(): Promise<void> {
@@ -163,6 +264,8 @@ export function InviteDialog({ groupId, open, onClose }: InviteDialogProps) {
       setCopied(false);
     }
   }
+
+  if (!open) return null;
 
   return (
     <div
@@ -220,25 +323,89 @@ export function InviteDialog({ groupId, open, onClose }: InviteDialogProps) {
 
         {tab === "find" ? (
           <form onSubmit={submitFind} className="space-y-4" noValidate>
-            <div>
+            <div className="relative">
               <label htmlFor="invite-query" className="mb-1.5 block text-[13px] text-text-secondary">
                 Username or email
               </label>
-              <input
-                id="invite-query"
-                type="text"
-                autoComplete="off"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="@username or friend@example.com"
-                className={cn(
-                  "block h-12 w-full rounded-2xl border border-white/[0.06] bg-bg px-4 text-sm text-text-primary transition",
-                  "placeholder:text-text-secondary",
-                  "focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/10",
-                )}
-              />
+              <div className="relative">
+                <input
+                  ref={inputRef}
+                  id="invite-query"
+                  type="text"
+                  autoComplete="off"
+                  value={query}
+                  onChange={(e) => handleQueryChange(e.target.value)}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  onBlur={() => {
+                    // Delay so click on suggestion registers first
+                    setTimeout(() => setShowSuggestions(false), 200);
+                  }}
+                  onKeyDown={handleInputKeyDown}
+                  placeholder="Search @username or type email..."
+                  aria-expanded={showSuggestions}
+                  aria-autocomplete="list"
+                  aria-controls="invite-suggestions"
+                  className={cn(
+                    "block h-12 w-full rounded-2xl border border-white/[0.06] bg-bg px-4 text-sm text-text-primary transition",
+                    "placeholder:text-text-secondary",
+                    "focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/10",
+                  )}
+                />
+                {searching ? (
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-4">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-text-secondary border-t-accent" />
+                  </span>
+                ) : null}
+              </div>
+
+              {/* Autocomplete suggestions dropdown */}
+              {showSuggestions && suggestions.length > 0 ? (
+                <ul
+                  id="invite-suggestions"
+                  ref={suggestionsRef}
+                  role="listbox"
+                  className="absolute left-0 right-0 z-10 mt-1.5 max-h-64 overflow-y-auto rounded-2xl border border-white/[0.06] bg-[#1C2128] shadow-elevated"
+                >
+                  {suggestions.map((user, i) => (
+                    <li
+                      key={user.id}
+                      role="option"
+                      aria-selected={i === selectedIndex}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        selectUser(user);
+                      }}
+                      onMouseEnter={() => setSelectedIndex(i)}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-3 px-4 py-2.5 transition",
+                        i === selectedIndex
+                          ? "bg-accent/10"
+                          : "hover:bg-surface-hover",
+                      )}
+                    >
+                      <UserAvatar user={user} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[14px] font-medium text-text-primary">
+                          {user.displayName}
+                        </p>
+                        <p className="truncate text-[12px] text-text-secondary">
+                          @{user.handle}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-xl bg-accent/10 px-2.5 py-1 text-[11px] font-semibold text-accent">
+                        Add
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
               <p className="mt-2 text-[12px] text-text-secondary">
-                Enter a username to add them directly, or an email to send a 7-day invite link.
+                {query.trim().length > 0 && !isEmail(query) && !searching && suggestions.length === 0 && query.trim().replace(/^@/, "").length >= 2
+                  ? "No users found. Try an email to send an invite link."
+                  : "Start typing to search users, or enter an email for a 7-day invite."}
               </p>
             </div>
 
@@ -367,6 +534,26 @@ export function InviteDialog({ groupId, open, onClose }: InviteDialogProps) {
         )}
       </div>
     </div>
+  );
+}
+
+function UserAvatar({ user }: { user: SearchUser }) {
+  if (user.avatarUrl) {
+    return (
+      <Image
+        src={user.avatarUrl}
+        alt=""
+        width={36}
+        height={36}
+        className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-white/10"
+      />
+    );
+  }
+  const initial = (user.displayName[0] ?? user.handle[0] ?? "?").toUpperCase();
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[13px] font-bold text-accent">
+      {initial}
+    </span>
   );
 }
 

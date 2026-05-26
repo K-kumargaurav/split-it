@@ -44,10 +44,10 @@ export default async function NewSettlementPage({
   const upiRecords = creditorIds.length
     ? await prisma.user.findMany({
         where: { id: { in: creditorIds } },
-        select: { id: true, upiId: true },
+        select: { id: true, upiId: true, phone: true },
       })
     : [];
-  const upiByUserId = new Map(upiRecords.map((u) => [u.id, u.upiId]));
+  const upiByUserId = new Map(upiRecords.map((u) => [u.id, { upiId: u.upiId, phone: u.phone }]));
   const debts = toDebtOptions(direct, session.user.id, group.members, upiByUserId);
 
   return (
@@ -82,7 +82,7 @@ function toDebtOptions(
   direct: Record<string, Record<string, bigint>>,
   viewerId: string,
   members: GroupDetail["members"],
-  upiByUserId: Map<string, string | null>,
+  upiByUserId: Map<string, { upiId: string | null; phone: string | null }>,
 ): DebtOption[] {
   const options: DebtOption[] = [];
   for (const [creditorId, debts] of Object.entries(direct)) {
@@ -93,11 +93,13 @@ function toDebtOptions(
     const member = members.find((m) => m.user.id === creditorId);
     if (!member) continue;
 
+    const record = upiByUserId.get(creditorId);
     options.push({
       receiverId: creditorId,
       receiverDisplayName: member.user.displayName,
       receiverHandle: member.user.handle,
-      receiverUpiId: upiByUserId.get(creditorId) ?? null,
+      receiverUpiId: record?.upiId ?? null,
+      receiverPhone: record?.phone ?? null,
       amountPaise: Number(owed),
     });
   }

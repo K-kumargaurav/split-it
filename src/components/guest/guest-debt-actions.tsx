@@ -5,13 +5,14 @@ import { useState } from "react";
 
 import { cn } from "@/lib/cn";
 import { formatPaise } from "@/lib/format";
-import { generateUpiLink } from "@/lib/upi";
+import { UpiPaymentBlock } from "@/components/settlements/upi-payment-block";
 
 interface GuestDebtActionsProps {
   token: string;
   receiverId: string;
   receiverDisplayName: string;
   receiverUpiId: string | null;
+  receiverPhone: string | null;
   amountPaise: number;
 }
 
@@ -25,20 +26,13 @@ export function GuestDebtActions({
   receiverId,
   receiverDisplayName,
   receiverUpiId,
+  receiverPhone,
   amountPaise,
 }: GuestDebtActionsProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const upiLink = receiverUpiId
-    ? safeBuildUpiLink({
-        vpa: receiverUpiId,
-        name: receiverDisplayName,
-        amountPaise,
-      })
-    : null;
 
   async function markPaid(): Promise<void> {
     setError(null);
@@ -79,24 +73,13 @@ export function GuestDebtActions({
   }
 
   return (
-    <div className="space-y-2">
-      {upiLink ? (
-        <a
-          href={upiLink}
-          className="flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
-        >
-          Pay via UPI
-        </a>
-      ) : null}
-      {receiverUpiId ? (
-        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-          Pay to <span className="font-mono font-medium text-slate-700 dark:text-slate-200">{receiverUpiId}</span>
-        </p>
-      ) : (
-        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-          {receiverDisplayName} hasn&apos;t added a UPI ID yet — pay them another way and tap below to record it.
-        </p>
-      )}
+    <div className="space-y-3">
+      <UpiPaymentBlock
+        vpa={receiverUpiId}
+        displayName={receiverDisplayName}
+        amountPaise={amountPaise}
+        phone={receiverPhone}
+      />
       <button
         type="button"
         onClick={markPaid}
@@ -119,22 +102,3 @@ export function GuestDebtActions({
   );
 }
 
-// Wrap generateUpiLink so a malformed stored VPA never throws past React; the
-// caller hides the button if this returns null.
-function safeBuildUpiLink(args: {
-  vpa: string;
-  name: string;
-  amountPaise: number;
-}): string | null {
-  if (args.amountPaise <= 0) return null;
-  try {
-    return generateUpiLink({
-      vpa: args.vpa,
-      name: args.name,
-      amount: BigInt(args.amountPaise),
-      note: "SplitEasy settlement",
-    });
-  } catch {
-    return null;
-  }
-}

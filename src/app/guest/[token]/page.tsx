@@ -101,6 +101,7 @@ export default async function GuestPage({ params }: GuestPageProps) {
                     receiverId={d.receiverId}
                     receiverDisplayName={d.receiverDisplayName}
                     receiverUpiId={d.receiverUpiId}
+                    receiverPhone={d.receiverPhone}
                     amountPaise={Number(d.amountPaise)}
                   />
                 </li>

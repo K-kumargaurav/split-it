@@ -2,15 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { Smartphone, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/cn";
 import { formatPaise, paiseToRupees, rupeesToPaise } from "@/lib/format";
-import { generateUpiLink } from "@/lib/upi";
 import { AmountInput } from "@/components/ui/amount-input";
 import { PremiumCard } from "@/components/ui/premium-card";
 import { PremiumSelect } from "@/components/ui/premium-select";
+import { UpiPaymentBlock } from "@/components/settlements/upi-payment-block";
 
 // Mark-as-paid form. Receivers are limited to people the viewer *directly*
 // owes — per SPEC §3.4 the underlying ledger is direct debts, so this is the
@@ -23,6 +22,7 @@ export interface DebtOption {
   receiverDisplayName: string;
   receiverHandle: string;
   receiverUpiId: string | null;
+  receiverPhone: string | null;
   amountPaise: number;
 }
 
@@ -190,14 +190,6 @@ export function SettlementForm({
   }
 
   const showUpiBlock = paymentMethod === "UPI" && selected !== undefined;
-  const upiLink =
-    showUpiBlock && selected!.receiverUpiId
-      ? safeBuildUpiLink({
-          vpa: selected!.receiverUpiId,
-          name: selected!.receiverDisplayName,
-          amountPaise: safeRupeesToPaise(amountRupees),
-        })
-      : null;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -284,55 +276,18 @@ export function SettlementForm({
       </PremiumCard>
 
       {/* UPI block */}
-      {showUpiBlock && upiLink ? (
-        <PremiumCard className="p-5 space-y-4">
-          {/* Copyable UPI ID pill */}
-          <div className="flex items-center justify-between">
-            <p className="text-[13px] text-text-secondary">Paying to</p>
-            <button
-              type="button"
-              onClick={() => {
-                void navigator.clipboard.writeText(selected!.receiverUpiId ?? "");
-                toast.success("UPI ID copied");
-              }}
-              className="flex items-center gap-1.5 rounded-full border border-border-dashed px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:text-text-primary"
-            >
-              <span className="font-mono">{selected!.receiverUpiId}</span>
-              <Copy size={11} />
-            </button>
-          </div>
-
-          {/* Pay via UPI button */}
-          <a
-            href={upiLink}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-accent text-bg text-sm font-semibold transition hover:opacity-90"
-          >
-            <Smartphone size={18} />
-            Pay via UPI
-          </a>
-
-          {/* Desktop fallback placeholder */}
-          <div className="hidden sm:block">
-            <p className="text-center text-[11px] text-text-secondary">
-              On desktop? Scan with your UPI app:
-            </p>
-            <div
-              className="mx-auto mt-2 flex h-32 w-32 items-center justify-center rounded-xl border-2 border-dashed border-border-dashed text-[10px] uppercase tracking-wider text-text-secondary"
-              aria-hidden="true"
-            >
-              QR placeholder
-            </div>
-          </div>
+      {showUpiBlock ? (
+        <PremiumCard className="p-5">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+            Paying to
+          </p>
+          <UpiPaymentBlock
+            vpa={selected!.receiverUpiId}
+            displayName={selected!.receiverDisplayName}
+            amountPaise={safeRupeesToPaise(amountRupees)}
+            phone={selected!.receiverPhone}
+          />
         </PremiumCard>
-      ) : null}
-
-      {showUpiBlock && !upiLink ? (
-        <div
-          className="rounded-2xl border border-[rgba(255,176,32,0.2)] bg-[rgba(255,176,32,0.06)] text-warning px-4 py-3 text-sm"
-        >
-          {selected!.receiverDisplayName} hasn&apos;t added a UPI ID yet — pay them
-          another way and record it here.
-        </div>
       ) : null}
 
       {/* Transaction reference */}
@@ -397,23 +352,3 @@ function safeRupeesToPaise(value: string): number {
   }
 }
 
-// Wrap generateUpiLink so a mid-typing amount or a malformed stored VPA never
-// throws past React (the canonical generator throws on invalid input). Callers
-// only render the link when this returns non-null.
-function safeBuildUpiLink(args: {
-  vpa: string;
-  name: string;
-  amountPaise: number;
-}): string | null {
-  if (args.amountPaise <= 0) return null;
-  try {
-    return generateUpiLink({
-      vpa: args.vpa,
-      name: args.name,
-      amount: BigInt(args.amountPaise),
-      note: "SplitEasy settlement",
-    });
-  } catch {
-    return null;
-  }
-}

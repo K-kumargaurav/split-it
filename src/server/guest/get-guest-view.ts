@@ -26,6 +26,7 @@ export interface GuestDebt {
   receiverDisplayName: string;
   receiverHandle: string;
   receiverUpiId: string | null;
+  receiverPhone: string | null;
   amountPaise: string;
 }
 
@@ -94,7 +95,7 @@ export async function getGuestView(token: string): Promise<GuestView> {
               select: {
                 amountPaise: true,
                 user: {
-                  select: { id: true, handle: true, displayName: true, upiId: true },
+                  select: { id: true, handle: true, displayName: true, upiId: true, phone: true },
                 },
               },
             },
@@ -128,7 +129,7 @@ export async function getGuestView(token: string): Promise<GuestView> {
   // each payer covered. Mirrors `applyExpense` in calculate-balances.ts.
   const debtMap = new Map<
     string,
-    { displayName: string; handle: string; upiId: string | null; amount: bigint }
+    { displayName: string; handle: string; upiId: string | null; phone: string | null; amount: bigint }
   >();
 
   for (const p of participations) {
@@ -156,6 +157,7 @@ export async function getGuestView(token: string): Promise<GuestView> {
           displayName: payer.user.displayName,
           handle: payer.user.handle,
           upiId: payer.user.upiId,
+          phone: payer.user.phone ?? null,
           amount: portion,
         });
       }
@@ -180,6 +182,7 @@ export async function getGuestView(token: string): Promise<GuestView> {
       receiverDisplayName: info.displayName,
       receiverHandle: info.handle,
       receiverUpiId: info.upiId,
+      receiverPhone: info.phone,
       amountPaise: serializePaise(info.amount),
     });
     totalOwed += info.amount;
